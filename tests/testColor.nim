@@ -5,9 +5,17 @@ import gin2
 import math
 
 suite "Color":
-  test "point class can create from 4":
-    var point = newPoint(0.cint, 1.cint)
+  test "color class can create from 4":
+    var color = newColor(0, 0, 0, 0)
+    assert color.r == 0
+    assert color.g == 0
+    assert color.b == 0
+    assert color.a == 0
     
-  test "point class can create from 3":
-    var point = newPoint(0.cint, 1.cint)
+  test "color class can create from 3":
+    var color = newColor(0, 0, 0)
+    assert color.r == 0
+    assert color.g == 0
+    assert color.b == 0
+    assert color.a == 255
     
