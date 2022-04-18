@@ -36,7 +36,7 @@ proc `-`*(p: Point, a: Point): Point =
   result = p
   result.x -= a.x
   result.y -= a.y
-  
+
 proc `/`*(p: Point, i: cint): Point =
   result = p
   result.x = (result.x / i).cint
@@ -47,7 +47,7 @@ proc `/`*(p: Point, i: cint): Point =
 proc `*=`*(p: var Point, i: cint) =
   p.x *= i
   p.y *= i
-  
+
 proc `/=`*(p: var Point, i: cint) =
   p.x = (p.x / i).cint
   p.y = (p.y / i).cint

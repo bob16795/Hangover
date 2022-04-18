@@ -20,3 +20,4 @@ proc mix*(a, b: Color, ratio: float = 0.5): Color =
   result.g = (a.g.float * afactor + b.g.float * bfactor).uint8
   result.b = (a.b.float * afactor + b.b.float * bfactor).uint8
   result.a = (a.a.float * afactor + b.a.float * bfactor).uint8
+
