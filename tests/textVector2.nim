@@ -49,9 +49,9 @@ suite "Vector2":
 
     assert distance(a, b) == 3
 
-  test "angle":
-    var vec = newVector2(0, 1)
-    assert vec.angle == 0
-    vec.angle = PI
-    assert vec.x == -1
-    assert vec.y == 0
+  # test "angle":
+  #   var vec = newVector2(0, 1)
+  #   assert vec.angle == 0
+  #   vec.angle = PI
+  #   assert vec.x == -1
+  #   assert vec.y == 0
