@@ -1,5 +1,7 @@
 import types/graphicsContext
 import types/texture
+import types/shader
+import types/font
 
 import os, glfw
 
@@ -18,11 +20,17 @@ proc resizeBuffer*(win: Window, res: tuple[w, h: int32]) =
 
   glMatrixMode(GL_PROJECTION)
 
-  var projection = ortho(0f, res.w.float, res.h.float, 0, -1, 1f)
+  var projection = ortho(0f, res.w.float, 0, res.h.float, -1, 1f)
 
   glLoadMatrixf(projection.caddr)
 
   glMatrixMode(GL_MODELVIEW)
+
+  fontProgram.use()
+  glUniformMatrix4fv(glGetUniformLocation(fontProgram.id, "projection"), 1,
+      GL_FALSE.GLboolean, projection.caddr);
+
+
 
 proc initGraphics*(data: GraphicsInitData): GraphicsContext =
   glfw.initialize()
@@ -39,9 +47,11 @@ proc initGraphics*(data: GraphicsInitData): GraphicsContext =
   if not gladLoadGL(getProcAddress):
     quit "Error initialising OpenGL"
 
-  resizeBuffer(result.window, (w: data.size.x, h: data.size.y))
-
   setupTexture()
+  initFT()
+
+
+  resizeBuffer(result.window, (w: data.size.x, h: data.size.y))
 
 proc deinitGraphics*(ctx: GraphicsContext) =
   ctx.window.destroy()
@@ -53,3 +63,4 @@ proc finishRender*(ctx: GraphicsContext) =
 
 proc clearBuffer*(ctx: GraphicsContext, color: Color) =
   glClearColor(color.rf, color.gf, color.bf, color.af)
+  glClear(GL_COLOR_BUFFER_BIT)

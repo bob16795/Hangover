@@ -5,7 +5,7 @@ import rect
 import vector2
 
 type
-  Texture = object
+  Texture* = object
     tex*: GLuint
     size*: Vector2
   Vertex = object
@@ -61,10 +61,11 @@ proc newTexture*(image: string): Texture =
 
   result.size = newVector2(width, height)
 
-proc renderTexture*(texture: Texture, srcRect, dstRect: Rect) =
+proc draw*(texture: Texture, srcRect, dstRect: Rect) =
   verts = vertices(dstRect.location, dstRect.location + dstRect.size,
       srcRect.location, srcRect.location + srcRect.size)
 
+  glUseProgram(0)
   # glUseProgram(program)
   glEnable(GL_TEXTURE_2D)
   glBindTexture(GL_TEXTURE_2D, texture.tex)

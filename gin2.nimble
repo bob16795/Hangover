@@ -11,5 +11,6 @@ srcDir        = "src"
 
 requires "nim >= 1.6.4"
 requires "https://github.com/define-private-public/stb_image-Nim"
+requires "https://github.com/jangko/freetype"
 requires "glfw"
 requires "glm"
