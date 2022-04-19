@@ -28,5 +28,5 @@ jobs:
       - uses: egor-tensin/setup-mingw@v2
         with:
           platform: x64
-      - run: apt install libopenal-dev
+      - run: sudo apt install libopenal-dev
       - run: nimble test -Y
