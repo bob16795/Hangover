@@ -1,26 +1,39 @@
 import gin2
 import glfw
+import sugar
+import random
 
 var data = newGraphicsInitData()
 
 var ctx = initGraphics(data)
 
-var texture = newTexture("examples/sprites.bmp")
+var texture = newTexture("examples/content/sprites.bmp")
 
-while true:
-  # Swap buffers
-  glfw.pollEvents()
+randomize()
 
-  # Check if we are still running
-  if glfw.shouldClose(ctx.window):
-    break
+var tiles = newSeq[int](30 * 30)
+for i in 0..<(30 * 30):
+  tiles[i] = rand(1)
 
-  glClearColor(0.0f, 0.0f, 1.0f, 1.0f)
-  glClear(GL_COLOR_BUFFER_BIT)
-  glPushMatrix()
-  glMatrixMode(GL_MODELVIEW)
-  renderTexture(texture, newRect(0, 0, 1, 1), newRect(0, 0, 500, 500))
-  glPopMatrix()
-  finishRender(ctx)
+var loop = newLoop(60)
+
+loop.updateProc =
+  proc (dt: float): bool =
+    glfw.pollEvents()
+    if glfw.shouldClose(ctx.window):
+      return true
+    return false
+
+loop.drawProc =
+  proc (dt: float, ctx: GraphicsContext) =
+    clearBuffer(ctx, newColor(0, 0, 0, 255))
+    for x in 0..29:
+      for y in 0..29:
+        renderTexture(texture, newRect(tiles[x * 30 + y].float32 * 0.5, 0,
+            0.5, 1), newRect(32 * x.float32, 32 * y.float32, 32, 32))
+    finishRender(ctx)
+
+while not loop.done:
+  loop.update(ctx)
 
 deinitGraphics(ctx)
