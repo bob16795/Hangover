@@ -1,5 +1,6 @@
 import gin2
 import random
+import sugar
 
 Game:
   var
@@ -7,6 +8,8 @@ Game:
     tiles: seq[int]
     font: Font
     c: float32
+    snd: Sound
+    sng: Song
 
   proc Setup(): GraphicsInitData =
     result = newGraphicsInitData()
@@ -20,6 +23,10 @@ Game:
       tiles[i] = rand(3)
 
     font = newFont("examples/content/font.ttf", 55)
+    snd = newSound("examples/content/sound.wav")
+    sng = newSong("examples/content/song.wav")
+    createListener(EVENT_PRESS_KEY, (data: pointer) => play(snd))
+    play(sng)
 
   proc Update(dt: float): bool =
     return false

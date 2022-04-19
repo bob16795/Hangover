@@ -13,7 +13,6 @@ import math
 import os
 
 
-
 proc resizeBuffer*(data: pointer) =
   var res = cast[ptr tuple[w, h: int32]](data)[]
   glViewport(0, 0, GLsizei(res.w), GLsizei(res.h))

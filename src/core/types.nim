@@ -5,6 +5,8 @@ import types/point
 import types/color
 import types/rect
 import types/font
+import types/sound
+import types/song
 
 export graphicsContext
 export texture
@@ -13,3 +15,5 @@ export point
 export color
 export rect
 export font
+export sound
+export song

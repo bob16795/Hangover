@@ -1,11 +1,14 @@
 {
   "folders": [
-	{
-		"path": "."
-	},
-	{
-		"path": "../gin"
-	}
-],
+    {
+      "path": "."
+    },
+    {
+      "path": "../gin"
+    },
+    {
+      "path": "../siu"
+    }
+  ],
   "settings": {}
 }

@@ -2,6 +2,7 @@ import loop
 import glfw
 import types/font
 import events
+import audio
 
 template Game*(body: untyped) =
   body
@@ -11,6 +12,8 @@ template Game*(body: untyped) =
       data = Setup()
       ctx = initGraphics(data)
       loop = newLoop(60)
+
+    initAudio()
 
     Initialize()
 
