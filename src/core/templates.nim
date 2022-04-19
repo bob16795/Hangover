@@ -1,6 +1,7 @@
 import loop
 import glfw
 import types/font
+import events
 
 template Game*(body: untyped) =
   body
@@ -12,6 +13,8 @@ template Game*(body: untyped) =
       loop = newLoop(60)
 
     Initialize()
+
+    setupEventCallbacks(ctx)
 
     deinitFT()
 

@@ -1,21 +1,21 @@
 import types/graphicsContext
 import types/texture
 import types/shader
+import types/color
 import types/font
 
-import os, glfw
-
+import events
 import lib/gl
-
+import glfw
 import glm
 
 import math
+import os
 
-import types/color
 
-export gl
 
-proc resizeBuffer*(win: Window, res: tuple[w, h: int32]) =
+proc resizeBuffer*(data: pointer) =
+  var res = cast[ptr tuple[w, h: int32]](data)[]
   glViewport(0, 0, GLsizei(res.w), GLsizei(res.h))
 
   glMatrixMode(GL_PROJECTION)
@@ -28,8 +28,7 @@ proc resizeBuffer*(win: Window, res: tuple[w, h: int32]) =
 
   fontProgram.use()
   glUniformMatrix4fv(glGetUniformLocation(fontProgram.id, "projection"), 1,
-      GL_FALSE.GLboolean, projection.caddr);
-
+      GL_FALSE.GLboolean, projection.caddr)
 
 
 proc initGraphics*(data: GraphicsInitData): GraphicsContext =
@@ -42,16 +41,16 @@ proc initGraphics*(data: GraphicsInitData): GraphicsContext =
 
   result.window = newWindow(c)
 
-  result.window.framebufferSizeCb = resizeBuffer
-
   if not gladLoadGL(getProcAddress):
     quit "Error initialising OpenGL"
 
   setupTexture()
   initFT()
 
+  createListener(EVENT_RESIZE, resizeBuffer)
 
-  resizeBuffer(result.window, (w: data.size.x, h: data.size.y))
+  var res = (w: data.size.x, h: data.size.y)
+  resizeBuffer(addr res)
 
 proc deinitGraphics*(ctx: GraphicsContext) =
   ctx.window.destroy()
