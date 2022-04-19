@@ -29,4 +29,5 @@ jobs:
         with:
           platform: x64
       - run: sudo apt install libopenal-dev
+      - run: nimble develop -Y
       - run: nimble test -Y
