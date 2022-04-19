@@ -1,3 +1,3 @@
-# Gin - Too
+# Hangover
 
-gintoo (prononuced gin2), is a complete rewrite of gin.
+Hangover is a complete rewrite of gin.
