@@ -1,4 +1,4 @@
-import types/graphicsContext
+import types/appdata
 import types/texture
 import types/vector2
 import types/point
@@ -8,7 +8,7 @@ import types/font
 import types/sound
 import types/song
 
-export graphicsContext
+export appData
 export texture
 export vector2
 export point

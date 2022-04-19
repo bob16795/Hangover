@@ -1,4 +1,4 @@
-import types/graphicsContext
+import types/appdata
 import types/texture
 import types/shader
 import types/color
@@ -12,6 +12,7 @@ import glm
 import math
 import os
 
+from loop import GraphicsContext
 
 proc resizeBuffer*(data: pointer) =
   var res = cast[ptr tuple[w, h: int32]](data)[]
@@ -30,7 +31,7 @@ proc resizeBuffer*(data: pointer) =
       GL_FALSE.GLboolean, projection.caddr)
 
 
-proc initGraphics*(data: GraphicsInitData): GraphicsContext =
+proc initGraphics*(data: AppData): GraphicsContext =
   glfw.initialize()
 
   var c = DefaultOpenglWindowConfig

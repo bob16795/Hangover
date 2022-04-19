@@ -4,9 +4,9 @@ import glfw
 
 import os
 
-import types/graphicsContext
-
 type
+  GraphicsContext* = object
+    window*: Window
   Loop = object
     targetFPS: float64
 

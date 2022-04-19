@@ -11,8 +11,8 @@ Game:
     snd: Sound
     sng: Song
 
-  proc Setup(): GraphicsInitData =
-    result = newGraphicsInitData()
+  proc Setup(): AppData =
+    result = newAppData()
     result.name = "Game"
 
   proc Initialize() =

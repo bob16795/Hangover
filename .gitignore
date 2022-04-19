@@ -4,9 +4,12 @@ examples/*
 !examples/content/
 !examples/content/*
 
+
 tests/*
 !tests/*.nim
 !tests/config.nims
 
 *.exe
 *.dll
+
+!src/assets/libs/*

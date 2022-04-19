@@ -1,6 +1,6 @@
-import types/graphicsContext
 import glfw
 import sugar
+from loop import GraphicsContext
 
 type
   EventId = int

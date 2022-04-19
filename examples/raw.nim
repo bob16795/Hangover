@@ -3,7 +3,7 @@ import glfw
 import sugar
 import random
 
-var data = newGraphicsInitData()
+var data = newAppData()
 
 var ctx = initGraphics(data)
 
