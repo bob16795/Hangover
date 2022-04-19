@@ -6,6 +6,7 @@ Game:
     texture: Texture
     tiles: seq[int]
     font: Font
+    c: float32
 
   proc Setup(): GraphicsInitData =
     result = newGraphicsInitData()
@@ -16,7 +17,7 @@ Game:
     tiles = newSeq[int](30 * 30)
     randomize()
     for i in 0..<(30 * 30):
-      tiles[i] = rand(1)
+      tiles[i] = rand(3)
 
     font = newFont("examples/content/font.ttf", 55)
 
@@ -27,7 +28,6 @@ Game:
     clearBuffer(ctx, newColor(0, 0, 0, 255))
     for x in 0..29:
       for y in 0..29:
-        texture.draw(newRect(tiles[x * 30 + y].float32 * 0.5, 0,
-            0.5, 1), newRect(32 * x.float32, 32 * y.float32, 32, 32))
-    font.draw("This is sample text", newPoint(30, 30), newColor(0,
-        0, 0))
+        texture.draw(newRect(tiles[x * 30 + y].float32 * 0.25, 0,
+            0.25, 1), newRect(32 * x.float32, 32 * y.float32, 32, 32))
+    font.draw("This is sample text", newPoint(30, 30), newColor(0, 0, 0))
