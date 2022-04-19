@@ -9,6 +9,8 @@ import glm
 
 import math
 
+import types/color
+
 export gl
 
 proc resizeBuffer*(win: Window, res: tuple[w, h: int32]) =
@@ -48,3 +50,6 @@ proc deinitGraphics*(ctx: GraphicsContext) =
 proc finishRender*(ctx: GraphicsContext) =
   glFlush()
   glfw.swapBuffers(ctx.window)
+
+proc clearBuffer*(ctx: GraphicsContext, color: Color) =
+  glClearColor(color.rf, color.gf, color.bf, color.af)

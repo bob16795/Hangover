@@ -1,0 +1,59 @@
+import sugar
+
+import glfw
+
+import os
+
+import types/graphicsContext
+
+type
+  Loop = object
+    targetFPS: float64
+
+    lastTime: float64
+    timer: float64
+
+    dt*: float64
+    currentTime: float64
+    nextTime: float64
+
+    frames: int
+    updates: int
+
+    done*: bool
+
+    updateProc*: (dt: float) -> bool
+    drawProc*: (dt: float, ctx: GraphicsContext) -> void
+
+
+proc newLoop*(fps: float64): Loop =
+  result.targetFPS = 1.0 / fps
+  result.timer = glfw.getTime()
+  result.nextTime = result.timer + result.targetFPS
+  result.dt = 0
+  result.currentTime = 0
+  result.frames = 0
+  result.updates = 0
+
+proc update*(loop: var Loop, ctx: GraphicsContext) =
+  if loop.done:
+    return
+  loop.lastTime = loop.currentTime
+  loop.currentTime = glfw.getTime()
+  if (loop.nextTime > loop.currentTime):
+    sleep(((loop.nextTime - loop.currentTime) * 1000).int)
+  else:
+    loop.nextTime = loop.currentTime
+  loop.dt = loop.currentTime - loop.lastTime
+  loop.nextTime += loop.targetFPS
+
+  if loop.updateProc(loop.dt):
+    loop.done = true
+  loop.updates += 1
+  loop.dt = 0
+
+  loop.drawProc(loop.dt, ctx)
+  loop.frames += 1
+  if (glfw.getTime() - loop.timer > 1.0):
+    loop.timer += 1
+    loop.frames = 0

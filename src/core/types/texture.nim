@@ -40,8 +40,8 @@ proc newTexture*(image: string): Texture =
   glBindTexture(GL_TEXTURE_2D, result.tex)
 
   # set the texture wrapping/filtering options
-  # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
-  # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
       GL_NEAREST.GLint)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
@@ -63,7 +63,7 @@ proc newTexture*(image: string): Texture =
 
 proc renderTexture*(texture: Texture, srcRect, dstRect: Rect) =
   verts = vertices(dstRect.location, dstRect.location + dstRect.size,
-      srcRect.location, srcRect.size)
+      srcRect.location, srcRect.location + srcRect.size)
 
   # glUseProgram(program)
   glEnable(GL_TEXTURE_2D)
