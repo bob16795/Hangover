@@ -1,7 +1,7 @@
 #!/bin/bash
 
 contents() {
-echo "id ICON \"$2\""
+echo "GLFW_ICON ICON \"$2\""
 echo "1 VERSIONINFO"
 echo -n "FILEVERSION  "
 echo $1 | sed "s/\./,/g
