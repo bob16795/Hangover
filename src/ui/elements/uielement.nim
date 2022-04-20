@@ -29,7 +29,8 @@ method checkHover*(e: UIElement, parentRect: Rect,
   if not e.isActive:
     return false
 
-method update*(e: var UIElement, parentRect: Rect, dt: cuint): bool {.base.} =
+method update*(e: var UIElement, parentRect: Rect, mousePos: Vector2,
+    dt: float32): bool {.base.} =
   # if not e.isActive:
   #   if e.tween.valid:
   #     e.tween.reset()

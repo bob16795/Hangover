@@ -23,7 +23,7 @@ type
     done*: bool
 
     updateProc*: (dt: float) -> bool
-    drawProc*: (dt: float, ctx: GraphicsContext) -> void
+    drawProc*: (ctx: GraphicsContext) -> void
 
 
 proc newLoop*(fps: float64): Loop =
@@ -34,6 +34,9 @@ proc newLoop*(fps: float64): Loop =
   result.currentTime = 0
   result.frames = 0
   result.updates = 0
+
+proc forceDraw*(loop: var Loop, ctx: GraphicsContext) =
+  loop.drawProc(ctx)
 
 proc update*(loop: var Loop, ctx: GraphicsContext) =
   if loop.done:
@@ -52,7 +55,7 @@ proc update*(loop: var Loop, ctx: GraphicsContext) =
   loop.updates += 1
   loop.dt = 0
 
-  loop.drawProc(loop.dt, ctx)
+  loop.drawProc(ctx)
   loop.frames += 1
   if (glfw.getTime() - loop.timer > 1.0):
     loop.timer += 1

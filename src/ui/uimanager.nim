@@ -14,12 +14,14 @@ type
   UIManager* {.acyclic.} = object
     elements: seq[UIElement]
     size: Vector2
+    mousePos: Vector2
 
 var
   um*: UIManager
 
 proc mouseMove*(data: pointer) =
   var pos = cast[ptr tuple[x, y: float64]](data)[]
+  um.mousePos = newVector2(pos.x, pos.y)
   for e in um.elements:
     discard e.checkHover(newRect(newVector2(0, 0), um.size), newVector2(pos.x, pos.y))
 
@@ -41,3 +43,8 @@ proc addUIElements*(elems: seq[UIElement]) =
 proc drawUI*() =
   for e in um.elements:
     e.draw(newRect(newVector2(0, 0), um.size))
+
+proc updateUI*(dt: float32) =
+  for i in 0..<len um.elements:
+    discard um.elements[i].update(newRect(newVector2(0, 0), um.size),
+        um.mousePos, dt)

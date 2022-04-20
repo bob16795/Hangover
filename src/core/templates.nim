@@ -20,6 +20,9 @@ template Game*(body: untyped) =
 
     setupEventCallbacks(ctx)
 
+
+    createListener(EVENT_RESIZE, (p: pointer) => loop.forceDraw(ctx))
+
     deinitFT()
 
     loop.updateProc =
@@ -27,13 +30,13 @@ template Game*(body: untyped) =
         glfw.pollEvents()
         if glfw.shouldClose(ctx.window):
           return true
+        updateUI(dt)
         return Update(dt)
 
-    loop.drawProc =
-      proc (dt: float, ctx: GraphicsContext) =
-        Draw(dt, ctx)
-        drawUI()
-        finishRender(ctx)
+    loop.drawProc = proc (ctx: GraphicsContext) =
+      Draw(ctx)
+      drawUI()
+      finishRender(ctx)
 
     while not loop.done:
       loop.update(ctx)

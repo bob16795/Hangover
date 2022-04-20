@@ -35,17 +35,19 @@ Game:
     play(sng)
 
     var elem: UIElement
-    elem = newUIButton(uiTexture, newUIRectangle(20, 20, -20, -20, 0, 0, 1, 1),
-        nil, "fdsafdsahuicvxzhvu  wqe")
+    elem = newUIButton(uiTexture, newUIRectangle(25, 25, -25, -25, 0, 0, 0.5,
+        1), nil, "1")
+    addUIElement(elem)
+    elem = newUIButton(uiTexture, newUIRectangle(25, 25, -25, -25, 0.5, 0, 1,
+        1), nil, "2")
     addUIElement(elem)
 
   proc Update(dt: float): bool =
     return false
 
-  proc Draw(dt: float, ctx: GraphicsContext) =
+  proc Draw(ctx: GraphicsContext) =
     clearBuffer(ctx, newColor(0, 0, 0, 255))
     for x in 0..29:
       for y in 0..29:
         texture.draw(newRect(tiles[x * 30 + y].float32 * SPRITES, 0,
             SPRITES, 1), newRect(32 * x.float32, 32 * y.float32, 32, 32))
-    # font.draw("This is sample text", newPoint(30, 30), newColor(0, 0, 0))
