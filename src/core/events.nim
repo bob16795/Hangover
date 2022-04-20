@@ -26,9 +26,11 @@ proc sendEvent(event: EventId, data: pointer) =
 proc createListener*(event: EventId, call: EventListener) =
   listeners &= (id: event, call: call)
 
-include events/input
+include events/keyboard
+include events/mouse
 include events/resize
 
 proc setupEventCallbacks*(ctx: GraphicsContext) =
   ctx.window.keyCb = keyCb
   ctx.window.framebufferSizeCb = resizeCB
+  ctx.window.cursorPositionCb = mouseMoveCb

@@ -13,3 +13,7 @@ export graphics
 export templates
 export events
 export loop
+
+import ui/uimanager
+
+export uimanager

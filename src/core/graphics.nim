@@ -20,7 +20,7 @@ proc resizeBuffer*(data: pointer) =
 
   glMatrixMode(GL_PROJECTION)
 
-  var projection = ortho(0f, res.w.float, 0, res.h.float, -1, 1f)
+  var projection = ortho(0f, res.w.float, res.h.float, 0, 1, -1f)
 
   glLoadMatrixf(projection.caddr)
 

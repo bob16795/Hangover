@@ -14,6 +14,7 @@ template Game*(body: untyped) =
       loop = newLoop(60)
 
     initAudio()
+    initUIManager(data.size)
 
     Initialize()
 
@@ -31,6 +32,7 @@ template Game*(body: untyped) =
     loop.drawProc =
       proc (dt: float, ctx: GraphicsContext) =
         Draw(dt, ctx)
+        drawUI()
         finishRender(ctx)
 
     while not loop.done:

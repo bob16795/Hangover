@@ -80,3 +80,6 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect) =
   glDrawElements(GL_QUADS, 4, GL_UNSIGNED_INT, nil)
   glBindTexture(GL_TEXTURE_2D, 0)
   glDisable(GL_TEXTURE_2D)
+
+proc isDefined*(texture: Texture): bool =
+  return texture.tex != 0

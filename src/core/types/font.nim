@@ -3,10 +3,12 @@ import ../lib/gl
 import point
 import color
 import shader
+import vector2
 
 type
   Font* = object
     face: FT_Face
+    size: int
     characters: seq[Character]
   Character* = object
     id: GLuint
@@ -107,6 +109,7 @@ proc newFont*(face: string, size: int): Font =
     )
   glBindTexture(GL_TEXTURE_2D, 0)
   discard FT_Done_Face(result.face)
+  result.size = size
 
 proc draw*(font: Font, text: string, position: Point, color: Color) =
   var pos = position
@@ -122,17 +125,17 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
   for c in text:
     var
       ch = font.characters[c.int]
-      xpos = pos.x + ch.bearing.x
-      ypos = pos.y - (ch.size.y - ch.bearing.y)
       w = ch.size.x
       h = ch.size.y
+      xpos = pos.x + ch.bearing.x
+      ypos = pos.y + ch.bearing.y - (ch.size.y + ch.bearing.y) + (font.size / 2).int
       vertices = [
-        [xpos.GLfloat, ypos.GLfloat + h.GLfloat, 0.0.GLfloat, 0.0.GLfloat],
-        [xpos.GLfloat, ypos.GLfloat, 0.0.GLfloat, 1.0.GLfloat],
-        [xpos.GLfloat + w.GLfloat, ypos.GLfloat, 1.0.GLfloat, 1.0.GLfloat],
-        [xpos.GLfloat, ypos.GLfloat + h.GLfloat, 0.0.GLfloat, 0.0.GLfloat],
-        [xpos.GLfloat + w.GLfloat, ypos.GLfloat, 1.0.GLfloat, 1.0.GLfloat],
-        [xpos.GLfloat + w.GLfloat, ypos.GLfloat + h.GLfloat, 1.0.GLfloat, 0.0.GLfloat]
+        [xpos.GLfloat, ypos.GLfloat + h.GLfloat, 0.0.GLfloat, 1.0.GLfloat],
+        [xpos.GLfloat, ypos.GLfloat, 0.0.GLfloat, 0.0.GLfloat],
+        [xpos.GLfloat + w.GLfloat, ypos.GLfloat, 1.0.GLfloat, 0.0.GLfloat],
+        [xpos.GLfloat, ypos.GLfloat + h.GLfloat, 0.0.GLfloat, 1.0.GLfloat],
+        [xpos.GLfloat + w.GLfloat, ypos.GLfloat, 1.0.GLfloat, 0.0.GLfloat],
+        [xpos.GLfloat + w.GLfloat, ypos.GLfloat + h.GLfloat, 1.0.GLfloat, 1.0.GLfloat]
       ]
 
     # render texture
@@ -150,3 +153,10 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
   glBindVertexArray(0)
   glBindTexture(GL_TEXTURE_2D, 0)
   glDisable(GL_BLEND)
+
+proc sizeText*(font: Font, text: string): Vector2 =
+  for c in text:
+    var
+      ch = font.characters[c.int]
+    result.x += (ch.advance shr 6).float32
+  result.y = font.size.float32
