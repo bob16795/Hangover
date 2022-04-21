@@ -19,12 +19,12 @@ type
     buttonToggle*: bool
     buttonPressed*: bool
 
-proc newUIButton*(texture: Texture, bounds: UIRectangle,
+proc newUIButton*(texture: Texture, font: Font, bounds: UIRectangle,
         action: UIAction = nil, text = "", disableProc: proc(): bool = nil,
             sprite: Sprite = Sprite(), toggle: bool = false): UIButton =
   result = UIButton()
 
-  result.font = newFont("examples/content/font.ttf", 55)
+  result.font = font
 
   result.isActive = true
   result.bounds = bounds
