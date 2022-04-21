@@ -4,6 +4,7 @@ import point
 import color
 import shader
 import vector2
+import texture
 
 type
   Font* = object
@@ -112,6 +113,7 @@ proc newFont*(face: string, size: int): Font =
   result.size = size
 
 proc draw*(font: Font, text: string, position: Point, color: Color) =
+  finishDraw()
   var pos = position
   glEnable(GL_BLEND)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
