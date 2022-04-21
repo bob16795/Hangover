@@ -4,13 +4,12 @@ type
   Shader* = object
     id*: GLuint
 
-proc newShader*(vCode, gCode, v2Code, fCode: string): Shader =
+proc newShader*(vCode, gCode, fCode: string): Shader =
   var
     vShaderCode = [vCode.cstring]
     gShaderCode = [gCode.cstring]
-    v2ShaderCode = [v2Code.cstring]
     fShaderCode = [fCode.cstring]
-    geometry, vertex, fragment, postvertex: GLuint
+    geometry, vertex, fragment: GLuint
     success: GLint
     infoLog: cstring = cast[cstring](alloc0(512))
 
@@ -34,16 +33,6 @@ proc newShader*(vCode, gCode, v2Code, fCode: string): Shader =
     glGetShaderInfoLog(geometry, 512, nil, infoLog)
     quit $infoLog
 
-  # postvertex Shader
-  postvertex = glCreateShader(GL_VERTEX_SHADER)
-  glShaderSource(postvertex, 1, cast[cstringArray](addr v2ShaderCode), nil)
-  glCompileShader(postvertex)
-  # print compile errors if any
-  glGetShaderiv(postvertex, GL_COMPILE_STATUS, addr success)
-  if success == 0:
-    glGetShaderInfoLog(postvertex, 512, nil, infoLog)
-    quit $infoLog
-
   # fragment Shader
   fragment = glCreateShader(GL_FRAGMENT_SHADER)
   glShaderSource(fragment, 1, cast[cstringArray](addr fShaderCode), nil)
@@ -58,7 +47,6 @@ proc newShader*(vCode, gCode, v2Code, fCode: string): Shader =
   result.id = glCreateProgram()
   glAttachShader(result.id, vertex)
   glAttachShader(result.id, geometry)
-  glAttachShader(result.id, postvertex)
   glAttachShader(result.id, fragment)
   glLinkProgram(result.id)
   # print linking errors if any

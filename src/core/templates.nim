@@ -20,12 +20,20 @@ template Game*(body: untyped) =
     template setPercent(perc: float): untyped =
       pc = perc
       drawLoading(pc, loadStatus)
+      glfw.pollEvents()
+      if glfw.shouldClose(ctx.window):
+        quit()
+      finishDraw()
       finishRender(ctx)
       when defined(GinDebug):
         echo "loaded " & $(pc * 100).int & "% - " & loadStatus
     template setStatus(status: string): untyped =
       loadStatus = status
       drawLoading(pc, loadStatus, ctx)
+      glfw.pollEvents()
+      if glfw.shouldClose(ctx.window):
+        quit()
+      finishDraw()
       finishRender(ctx)
 
     body
@@ -34,13 +42,13 @@ template Game*(body: untyped) =
     initAudio()
     initUIManager(data.size)
 
-    Initialize()
 
     setupEventCallbacks(ctx)
 
-    createListener(EVENT_RESIZE, (p: pointer) => loop.forceDraw(ctx))
+    Initialize()
 
     deinitFT()
+    createListener(EVENT_RESIZE, (p: pointer) => loop.forceDraw(ctx))
 
     loop.updateProc =
       proc (dt: float): bool =

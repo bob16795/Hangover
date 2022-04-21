@@ -63,17 +63,6 @@ void main() {
   EndPrimitive();
 }
 """
-  postVertexCode = """
-#version 330 core
-in vec4 vertex;
-
-uniform mat4 projection;
-
-void post()
-{
-    gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
-}
-"""
   fragmentCode = """
 #version 330 core
 in vec2 texCoords;
@@ -115,7 +104,7 @@ proc setupTexture*() =
   glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 4 * sizeof(
       GLfloat), cast[pointer](0))
   glBindBuffer(GL_ARRAY_BUFFER, 0)
-  textureProgram = newShader(vertexCode, geoCode, postVertexCode, fragmentCode)
+  textureProgram = newShader(vertexCode, geoCode, fragmentCode)
 
 proc newTexture*(image: string): Texture =
   glGenTextures(1, addr result.tex)
