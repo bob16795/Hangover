@@ -5,13 +5,31 @@ import events
 import audio
 
 template Game*(body: untyped) =
-  body
 
   proc main() =
+    proc Setup(): AppData
+    proc Initialize()
+
     var
+      pc: float
+      loadStatus: string
       data = Setup()
       ctx = initGraphics(data)
-      loop = newLoop(60)
+      loop = newLoop(1000)
+
+    template setPercent(perc: float): untyped =
+      pc = perc
+      drawLoading(pc, loadStatus)
+      finishRender(ctx)
+      when defined(GinDebug):
+        echo "loaded " & $(pc * 100).int & "% - " & loadStatus
+    template setStatus(status: string): untyped =
+      loadStatus = status
+      drawLoading(pc, loadStatus, ctx)
+      finishRender(ctx)
+
+    body
+
 
     initAudio()
     initUIManager(data.size)
@@ -19,7 +37,6 @@ template Game*(body: untyped) =
     Initialize()
 
     setupEventCallbacks(ctx)
-
 
     createListener(EVENT_RESIZE, (p: pointer) => loop.forceDraw(ctx))
 
@@ -36,6 +53,7 @@ template Game*(body: untyped) =
     loop.drawProc = proc (ctx: GraphicsContext) =
       Draw(ctx)
       drawUI()
+      finishDraw()
       finishRender(ctx)
 
     while not loop.done:

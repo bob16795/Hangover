@@ -29,7 +29,10 @@ proc resizeBuffer*(data: pointer) =
   fontProgram.use()
   glUniformMatrix4fv(glGetUniformLocation(fontProgram.id, "projection"), 1,
       GL_FALSE.GLboolean, projection.caddr)
-
+  textureProgram.use()
+  glUniformMatrix4fv(glGetUniformLocation(textureProgram.id, "projection"), 1,
+      GL_FALSE.GLboolean, projection.caddr)
+  resizeCull(data)
 
 proc initGraphics*(data: AppData): GraphicsContext =
   glfw.initialize()

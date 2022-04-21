@@ -37,6 +37,7 @@ proc newLoop*(fps: float64): Loop =
 
 proc forceDraw*(loop: var Loop, ctx: GraphicsContext) =
   loop.drawProc(ctx)
+  loop.frames += 1
 
 proc update*(loop: var Loop, ctx: GraphicsContext) =
   if loop.done:
@@ -59,4 +60,5 @@ proc update*(loop: var Loop, ctx: GraphicsContext) =
   loop.frames += 1
   if (glfw.getTime() - loop.timer > 1.0):
     loop.timer += 1
+    echo "FPS: " & $loop.frames
     loop.frames = 0

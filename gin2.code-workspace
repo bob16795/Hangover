@@ -8,6 +8,9 @@
     },
     {
       "path": "../siu"
+    },
+    {
+      "path": "../wfc"
     }
   ],
   "settings": {}
