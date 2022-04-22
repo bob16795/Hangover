@@ -1,6 +1,6 @@
-import elements/uibutton
-import elements/uielement
-import elements/uirectangle
+import ui/elements/uibutton
+import ui/elements/uielement
+import ui/types/uirectangle
 import core/events
 import core/types/rect
 import core/types/point
@@ -23,7 +23,13 @@ proc mouseMove*(data: pointer) =
   var pos = cast[ptr tuple[x, y: float64]](data)[]
   um.mousePos = newVector2(pos.x, pos.y)
   for e in um.elements:
-    discard e.checkHover(newRect(newVector2(0, 0), um.size), newVector2(pos.x, pos.y))
+    discard e.checkHover(newRect(newVector2(0, 0), um.size), um.mousePos)
+
+proc mouseClick*(data: pointer) =
+  var btn = cast[ptr int](data)[]
+  for e in um.elements:
+    if e.focused:
+      e.click(btn)
 
 proc resizeUI*(data: pointer) =
   var size = cast[ptr tuple[x, y: int32]](data)[]
@@ -32,6 +38,7 @@ proc resizeUI*(data: pointer) =
 proc initUIManager*(size: Point) =
   um.size = newVector2(size.x.float32, size.y.float32)
   createListener(EVENT_MOUSE_MOVE, mouseMove)
+  createListener(EVENT_MOUSE_CLICK, mouseClick)
   createListener(EVENT_RESIZE, resizeUI)
 
 proc addUIElement*(e: UIElement) =

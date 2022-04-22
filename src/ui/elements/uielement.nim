@@ -3,8 +3,8 @@ import core/types/rect
 import core/types/texture
 import core/types/vector2
 import rendering/sprite
-import uirectangle
-import uisprite
+import ui/types/uirectangle
+import ui/types/uisprite
 
 export uirectangle
 export uisprite
@@ -39,6 +39,9 @@ method update*(e: var UIElement, parentRect: Rect, mousePos: Vector2,
   #   e.bounds = e.tween.val(dt)
   return false
 
-method draw*(element: UIElement, parentRect: Rect) {.base.} =
-  if not element.isActive:
+method click*(e: UIElement, button: int) {.base.} =
+  discard
+
+method draw*(e: UIElement, parentRect: Rect) {.base.} =
+  if not e.isActive:
     return

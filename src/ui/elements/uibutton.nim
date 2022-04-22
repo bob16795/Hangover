@@ -3,8 +3,8 @@ import core/types/point
 import core/types/color
 import core/types/rect
 import core/types/font
-import uielement
-import uisprite
+import ui/elements/uielement
+import ui/types/uisprite
 
 type
   UIButton* = ref object of UIElement
@@ -48,17 +48,24 @@ proc newUIButton*(texture: Texture, font: Font, bounds: UIRectangle,
   result.buttonToggle = toggle
 
 method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2): bool =
+  b.focused = false
   if not b.isActive:
     return false
   if b.isDisabled != nil and b.isDisabled():
     return false
 
+  if b.buttonTextUpdate != nil:
+    b.buttonText = b.buttonTextUpdate()
   var bounds = b.bounds.toRect(parentRect)
   if (bounds.x < mousePos.x and bounds.x +
           bounds.width > mousePos.x) and
       (bounds.y < mousePos.y and bounds.y +
               bounds.height > mousePos.y):
+      b.focused = true
       return true
+
+method click*(b: UIButton, button: int) =
+  b.buttonAction(button)
 
 method draw*(b: UIButton, parentRect: Rect) =
   if not b.isActive:
@@ -99,29 +106,5 @@ method update*(b: var UIButton, parentRect: Rect, mousePos: Vector2,
   if not b.isActive:
     return false
   var bounds = b.bounds.toRect(parentRect)
-  b.focused = false
-  if b.buttonTextUpdate != nil:
-    b.buttonText = b.buttonTextUpdate()
-  if (bounds.x < mousePos.x and bounds.x +
-      bounds.width > mousePos.x) and
-     (bounds.y < mousePos.y and bounds.y +
-      bounds.width > mousePos.x):
-      b.focused = true
-      # for j in 1..8:
-      #   if (not ms.pressedButtons.contains(j.uint8) and
-      #           pms.pressedButtons.contains(j.uint8)):
-      #     if b.isDisabled == nil or not b.isDisabled():
-      #       sm.play("click")
-      #       var k = j - 1
-      #       if b.buttonToggle:
-      #         b.buttonPressed = not b.buttonPressed
-      #         if b.buttonPressed:
-      #           k += 8
-      #         if inTextMode(): textModeEnd()
-      #         b.buttonAction(k)
-      #       else:
-      #         if inTextMode(): textModeEnd()
-      #         b.buttonAction(k)
-      # if ms.pressedButtons != @[]:
-      #   return true
+
   return false
