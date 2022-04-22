@@ -5,7 +5,7 @@ import os
 
 const
   SPRITES = 1/6
-  SIZE = 150
+  SIZE = 100
 
 Game:
   var
@@ -24,6 +24,7 @@ Game:
 
   proc Setup(): AppData =
     result = newAppData()
+    # result.size = newPoint(100, 100)
     result.name = "Oh God"
 
   proc Initialize() =
@@ -46,20 +47,21 @@ Game:
 
 
     setStatus("setup ui")
-    var elem: UIElement
-    elem = newUIButton(uiTexture, uiFont, newUIRectangle(25, 25, -25, -25, 0, 0,
-        0.5, 1), nil, "1")
-    addUIElement(elem)
-    elem = newUIButton(uiTexture, uiFont, newUIRectangle(25, 25, -25, -25, 0.5,
-        0, 1, 1), nil, "2")
-    addUIElement(elem)
+    # var elem: UIElement
+    # elem = newUIButton(uiTexture, uiFont, newUIRectangle(25, 25, -25, -25, 0, 0,
+    #     0.5, 1), nil, "1")
+    # addUIElement(elem)
+    # elem = newUIButton(uiTexture, uiFont, newUIRectangle(25, 25, -25, -25, 0.5,
+    #     0, 1, 1), nil, "2")
+    # addUIElement(elem)
 
   proc Update(dt: float): bool =
     return false
 
   proc Draw(ctx: GraphicsContext) =
     clearBuffer(ctx, newColor(0, 0, 0, 255))
+    var r = newRect(0, 0, SPRITES, 1)
     for x in 0..<SIZE:
       for y in 0..<SIZE:
-        texture.draw(newRect(tiles[x * SIZE + y].float32 * SPRITES, 0,
-            SPRITES, 1), newRect(32 * x.float32, 32 * y.float32, 32, 32))
+        r.x = tiles[x * SIZE + y].float32 * SPRITES
+        texture.draw(r, newRect(32 * x.float32, 32 * y.float32, 32, 32))
