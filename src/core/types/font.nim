@@ -5,6 +5,7 @@ import color
 import shader
 import vector2
 import texture
+import rect
 
 type
   Font* = object
@@ -20,29 +21,68 @@ type
 const
   vertexCode = """
 #version 330 core
-layout (location = 0) in vec4 vertex; // <vec2 pos, vec2 tex>
-out vec2 TexCoords;
+in vec4 vertex;
 
 uniform mat4 projection;
+out vec2 texRect;
 
 void main()
 {
     gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
-    TexCoords = vertex.zw;
+    texRect = vertex.zw;
+}
+"""
+  geoCode = """
+#version 330 core
+layout (lines) in;
+layout (triangle_strip, max_vertices = 6) out;
+
+in vec2 texRect[2];
+
+out vec2 texCoords;
+
+void main() {
+  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
+  texCoords = vec2(texRect[0].x, texRect[0].y);
+  EmitVertex();
+
+  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y, gl_in[1].gl_Position.z, gl_in[0].gl_Position.w);
+  texCoords = vec2(texRect[1].x, texRect[0].y);
+  EmitVertex();
+
+  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
+  texCoords = vec2(texRect[1].x, texRect[1].y);
+  EmitVertex();
+  
+  EndPrimitive();
+
+  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
+  texCoords = vec2(texRect[0].x, texRect[0].y);
+  EmitVertex();
+
+  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y, gl_in[0].gl_Position.z, gl_in[1].gl_Position.w);
+  texCoords = vec2(texRect[0].x, texRect[1].y);
+  EmitVertex();
+
+  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
+  texCoords = vec2(texRect[1].x, texRect[1].y);
+  EmitVertex();
+  
+  EndPrimitive();
 }
 """
   fragmentCode = """
 #version 330 core
-in vec2 TexCoords;
+in vec2 texCoords;
 out vec4 color;
 
 uniform sampler2D text;
-uniform vec3 textColor;
+uniform vec3 tintColor;
 
 void main()
 {    
-    vec4 sampled = vec4(1.0, 1.0, 1.0, texture(text, TexCoords).r);
-    color = vec4(textColor, 1.0) * sampled;
+    vec4 sampled = vec4(1.0, 1.0, 1.0, texture(text, texCoords).r);
+    color = vec4(tintColor, 1.0) * sampled;
 }
 """
 var
@@ -64,7 +104,9 @@ proc initFT*() =
   glBindBuffer(GL_ARRAY_BUFFER, 0)
   glBindVertexArray(0)
 
-  fontProgram = newShader(vertexCode, fragmentCode)
+  fontProgram = newShader(vertexCode, geoCode, fragmentCode)
+  fontProgram.registerParam("projection", SPKProj4)
+  fontProgram.registerParam("tintColor", SPKFloat4)
 
 proc deinitFT*() =
   discard FT_Done_FreeType(ft)
@@ -113,17 +155,9 @@ proc newFont*(face: string, size: int): Font =
   result.size = size
 
 proc draw*(font: Font, text: string, position: Point, color: Color) =
-  finishDraw()
   var pos = position
-  glEnable(GL_BLEND)
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-  fontProgram.use()
-
-  glUniform3f(glGetUniformLocation(fontProgram.id, "textColor"), color.rf,
-      color.gf, color.bf)
-  glActiveTexture(GL_TEXTURE0)
-  glBindVertexArray(VAO)
+  var srect = newRect(0, 0, 1, 1)
   for c in text:
     var
       ch = font.characters[c.int]
@@ -131,30 +165,12 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
       h = ch.size.y
       xpos = pos.x + ch.bearing.x
       ypos = pos.y + ch.bearing.y - (ch.size.y + ch.bearing.y) + (font.size / 2).int
-      vertices = [
-        [xpos.GLfloat, ypos.GLfloat + h.GLfloat, 0.0.GLfloat, 1.0.GLfloat],
-        [xpos.GLfloat, ypos.GLfloat, 0.0.GLfloat, 0.0.GLfloat],
-        [xpos.GLfloat + w.GLfloat, ypos.GLfloat, 1.0.GLfloat, 0.0.GLfloat],
-        [xpos.GLfloat, ypos.GLfloat + h.GLfloat, 0.0.GLfloat, 1.0.GLfloat],
-        [xpos.GLfloat + w.GLfloat, ypos.GLfloat, 1.0.GLfloat, 0.0.GLfloat],
-        [xpos.GLfloat + w.GLfloat, ypos.GLfloat + h.GLfloat, 1.0.GLfloat, 1.0.GLfloat]
-      ]
 
     # render texture
-    glBindTexture(GL_TEXTURE_2D, ch.id)
-
-    # update VBO
-    glBindBuffer(GL_ARRAY_BUFFER, VBO)
-    glBufferSubData(GL_ARRAY_BUFFER, GLintptr(0), GLsizeiptr(sizeof(vertices)), addr vertices)
-    glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-    # render quad
-    glDrawArrays(GL_TRIANGLES, 0, 6)
+    var tex = Texture(tex: ch.id)
+    tex.draw(srect, newRect(xpos.float32, ypos.float32, w.float32,
+        h.float32), fontProgram, color)
     pos.x += (ch.advance shr 6).cint
-
-  glBindVertexArray(0)
-  glBindTexture(GL_TEXTURE_2D, 0)
-  glDisable(GL_BLEND)
 
 proc sizeText*(font: Font, text: string): Vector2 =
   for c in text:

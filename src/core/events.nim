@@ -35,3 +35,4 @@ proc setupEventCallbacks*(ctx: GraphicsContext) =
   ctx.window.framebufferSizeCb = sizeCB
   ctx.window.windowSizeCb = resizeCB
   ctx.window.cursorPositionCb = mouseMoveCb
+  ctx.window.mouseButtonCb = mouseButtonCb

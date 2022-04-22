@@ -3,6 +3,7 @@ import ../lib/stbi
 
 import rect
 import vector2
+import color
 import shader
 
 type
@@ -69,20 +70,23 @@ in vec2 texCoords;
 
 out vec4 color;
 
+uniform vec4 tintColor;
 uniform sampler2D text;
 
 void main()
 {
-    color = texture(text, texCoords);
+    color = tintColor * texture(text, texCoords);
 }
 """
-  BATCH_TEXTURES* = 2048
+  # BATCH_TEXTURES* = 4096
 
 var
   VAO, VBO: GLUint
   textureProgram*: Shader
-  queue*: seq[tuple[t: Texture, vs: seq[array[0..3, GLFloat]]]]
-  cullSize*: Vector2
+  queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..3,
+      GLFloat]], c: Color]]
+  buffers: seq[GLUint]
+  cullSize: Vector2
 
 template verts(ds, de: Vector2, ss, se: Vector2): untyped =
   @[
@@ -94,17 +98,26 @@ proc resizeCull*(data: pointer) =
   var size = cast[ptr tuple[w, h: int32]](data)[]
   cullSize = newVector2(size.w, size.h)
 
+proc addVBO*() =
+  buffers &= 0.GLuint
+  glGenBuffers(1, addr buffers[^1])
+
+proc setVBOS*(count: int) =
+  # echo $count
+  if count < len(buffers):
+    glDeleteBuffers((len(buffers) - count).GLsizei, addr buffers[count])
+    buffers = buffers[0..<count]
+  elif count > len(buffers):
+    while count > len(buffers):
+      addVBO()
+
 proc setupTexture*() =
   glGenVertexArrays(1, addr VAO)
-  glGenBuffers(1, addr VBO)
+  addVBO()
   glBindVertexArray(VAO)
-  glBindBuffer(GL_ARRAY_BUFFER, VBO)
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * BATCH_TEXTURES * 2 * 4, nil, GL_DYNAMIC_DRAW)
-  glEnableVertexAttribArray(0)
-  glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 4 * sizeof(
-      GLfloat), cast[pointer](0))
-  glBindBuffer(GL_ARRAY_BUFFER, 0)
   textureProgram = newShader(vertexCode, geoCode, fragmentCode)
+  textureProgram.registerParam("tintColor", SPKFloat4)
+  textureProgram.registerParam("projection", SPKProj4)
 
 proc newTexture*(image: string): Texture =
   glGenTextures(1, addr result.tex)
@@ -142,45 +155,61 @@ proc aabb*(a, b: Rect): bool =
     return true
 
 
-proc draw*(texture: Texture, srcRect, dstRect: Rect) =
+proc draw*(texture: Texture, srcRect, dstRect: Rect, program = textureProgram,
+    color = newColor(255, 255, 255, 255)) =
   if (not dstRect.aabb(newRect(newVector2(0, 0), cullSize))): return
   var vertices = verts(dstRect.location, dstRect.location + dstRect.size,
       srcRect.location, srcRect.location + srcRect.size)
   if queue == @[]:
-    queue &= (t: texture, vs: vertices)
+    queue &= (u: true, p: program, t: texture, vs: vertices, c: color)
     return
-  if texture == queue[^1].t and len(queue[^1].vs) / 2 + 1 < BATCH_TEXTURES:
+  if texture == queue[^1].t: #and len(queue[^1].vs) / 2 + 1 < BATCH_TEXTURES:
     queue[^1].vs &= vertices
   else:
-    queue &= (t: texture, vs: vertices)
+    queue &= (u: true, p: program, t: texture, vs: vertices, c: color)
 
 proc finishDraw*() =
+  if queue != @[]:
+    for i in 0..<len(queue):
+      if pqueue.len() > i and queue[i] == pqueue[i]: queue[i].u = false
+
   # set texture
   glEnable(GL_BLEND)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-  textureProgram.use()
 
   glActiveTexture(GL_TEXTURE0)
   glBindVertexArray(VAO)
-  for q in queue:
+  glEnableVertexAttribArray(0)
+  setVBOS(len(queue))
+  for i in 0..<len(queue):
+    var q = queue[i]
+    var color = [q.c.rf, q.c.gf, q.c.bf, q.c.af]
+    q.p.setParam("tintColor", addr color)
+    # glUniform4f(glGetUniformLocation(q.p.id, "tintColor"), q.c.rf,
+    #   q.c.gf, q.c.bf, q.c.af)
+    q.p.use()
     var last = len(q.vs)
     var vertices = q.vs
 
     glBindTexture(GL_TEXTURE_2D, q.t.tex)
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[i])
 
     # update VBO
-    glBindBuffer(GL_ARRAY_BUFFER, VBO)
-    glBufferSubData(GL_ARRAY_BUFFER, GLintptr(0), GLsizeiptr(len(vertices) *
-        sizeof(vertices[0])), addr(vertices[0]))
+    if q.u:
+      glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(len(vertices) *
+          sizeof(vertices[0])),
+          addr(vertices[0]), GL_STREAM_DRAW)
+    glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 4 * sizeof(
+        GLfloat), cast[pointer](0))
     glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     # render
     glDrawArrays(GL_LINES, 0, (len(vertices)).GLsizei)
-
   glBindVertexArray(0)
   glBindTexture(GL_TEXTURE_2D, 0)
   glDisable(GL_BLEND)
+  pqueue = queue
   queue = @[]
 
 proc isDefined*(texture: Texture): bool =

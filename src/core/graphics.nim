@@ -26,12 +26,8 @@ proc resizeBuffer*(data: pointer) =
 
   glMatrixMode(GL_MODELVIEW)
 
-  fontProgram.use()
-  glUniformMatrix4fv(glGetUniformLocation(fontProgram.id, "projection"), 1,
-      GL_FALSE.GLboolean, projection.caddr)
-  textureProgram.use()
-  glUniformMatrix4fv(glGetUniformLocation(textureProgram.id, "projection"), 1,
-      GL_FALSE.GLboolean, projection.caddr)
+  fontProgram.setParam("projection", projection.caddr)
+  textureProgram.setParam("projection", projection.caddr)
   resizeCull(data)
 
 proc initGraphics*(data: AppData): GraphicsContext =
@@ -60,6 +56,7 @@ proc deinitGraphics*(ctx: GraphicsContext) =
   glfw.terminate()
 
 proc finishRender*(ctx: GraphicsContext) =
+  finishDraw()
   glFlush()
   glfw.swapBuffers(ctx.window)
 

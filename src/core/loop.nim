@@ -60,5 +60,5 @@ proc update*(loop: var Loop, ctx: GraphicsContext) =
   loop.frames += 1
   if (glfw.getTime() - loop.timer > 1.0):
     loop.timer += 1
-    echo "FPS: " & $loop.frames
+    # echo "FPS: " & $loop.frames
     loop.frames = 0

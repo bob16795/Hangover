@@ -15,7 +15,7 @@ template Game*(body: untyped) =
       loadStatus: string
       data = Setup()
       ctx = initGraphics(data)
-      loop = newLoop(1000)
+      loop = newLoop(60)
 
     template setPercent(perc: float): untyped =
       pc = perc
@@ -61,7 +61,6 @@ template Game*(body: untyped) =
     loop.drawProc = proc (ctx: GraphicsContext) =
       Draw(ctx)
       drawUI()
-      finishDraw()
       finishRender(ctx)
 
     while not loop.done:

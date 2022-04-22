@@ -17,6 +17,9 @@ Game:
     snd: Sound
     sng: Song
     um: UIManager
+    delta: float32
+    tmr: float32
+    fps: int
 
   proc drawLoading(pc: float32, loadStatus: string, ctx: GraphicsContext) =
     clearBuffer(ctx, newColor(0, 0, 255, 255))
@@ -47,21 +50,25 @@ Game:
 
 
     setStatus("setup ui")
-    # var elem: UIElement
-    # elem = newUIButton(uiTexture, uiFont, newUIRectangle(25, 25, -25, -25, 0, 0,
-    #     0.5, 1), nil, "1")
-    # addUIElement(elem)
-    # elem = newUIButton(uiTexture, uiFont, newUIRectangle(25, 25, -25, -25, 0.5,
-    #     0, 1, 1), nil, "2")
-    # addUIElement(elem)
+    var elem: UIElement
+    elem = newUIButton(uiTexture, uiFont, newUIRectangle(5, 5, 55, 55, 0, 0,
+        0, 0), (b: int)=>echo b, "q")
+    addUIElement(elem)
 
   proc Update(dt: float): bool =
+    tmr += dt
+    if tmr > 1:
+      delta = fps.float32
+      fps = 0
+      tmr -= 1
     return false
 
   proc Draw(ctx: GraphicsContext) =
+    fps += 1
     clearBuffer(ctx, newColor(0, 0, 0, 255))
     var r = newRect(0, 0, SPRITES, 1)
     for x in 0..<SIZE:
       for y in 0..<SIZE:
         r.x = tiles[x * SIZE + y].float32 * SPRITES
         texture.draw(r, newRect(32 * x.float32, 32 * y.float32, 32, 32))
+    uiFont.draw($delta, newPoint(0, 100), newColor(0, 0, 0))
