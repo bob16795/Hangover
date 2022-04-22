@@ -14,10 +14,6 @@ export sprite
 type
   UIAction* = (i: int) -> void
   UIUpdate* = () -> string
-  UITextAlign* = enum
-    ALeft,
-    ARight,
-    ACenter
   UIElement* = ref object of RootObj
     focused*: bool
     isActive*: bool
@@ -31,6 +27,7 @@ method checkHover*(e: UIElement, parentRect: Rect,
 
 method update*(e: var UIElement, parentRect: Rect, mousePos: Vector2,
     dt: float32): bool {.base.} =
+  e.focused = false
   # if not e.isActive:
   #   if e.tween.valid:
   #     e.tween.reset()

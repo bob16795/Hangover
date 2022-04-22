@@ -1,11 +1,13 @@
-import ui/elements/uibutton
 import ui/elements/uielement
+import ui/elements/uibutton
+import ui/elements/uitext
 import ui/types/uirectangle
 import core/events
 import core/types/rect
 import core/types/point
 import core/types/vector2
 
+export uitext
 export uibutton
 export uielement
 export uirectangle

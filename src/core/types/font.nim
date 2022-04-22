@@ -10,7 +10,7 @@ import rect
 type
   Font* = object
     face: FT_Face
-    size: int
+    size*: int
     characters: seq[Character]
   Character* = object
     id: GLuint
@@ -159,6 +159,7 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
 
   var srect = newRect(0, 0, 1, 1)
   for c in text:
+    if not font.characters.len > c.int: continue
     var
       ch = font.characters[c.int]
       w = ch.size.x
@@ -174,6 +175,7 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
 
 proc sizeText*(font: Font, text: string): Vector2 =
   for c in text:
+    if not font.characters.len > c.int: continue
     var
       ch = font.characters[c.int]
     result.x += (ch.advance shr 6).float32
