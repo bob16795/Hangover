@@ -114,6 +114,7 @@ proc deinitFT*() =
 proc newFont*(face: string, size: int): Font =
   if FT_New_Face(ft, face, 0, result.face).int != 0:
     quit "failed to load font"
+  result.size = size
   discard FT_Set_Pixel_Sizes(result.face, 0, size.cuint)
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 
@@ -152,7 +153,6 @@ proc newFont*(face: string, size: int): Font =
     )
   glBindTexture(GL_TEXTURE_2D, 0)
   discard FT_Done_Face(result.face)
-  result.size = size
 
 proc draw*(font: Font, text: string, position: Point, color: Color) =
   var pos = position
@@ -165,7 +165,8 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
       w = ch.size.x
       h = ch.size.y
       xpos = pos.x + ch.bearing.x
-      ypos = pos.y + ch.bearing.y - (ch.size.y + ch.bearing.y) + (font.size / 2).int
+      ypos = pos.y + ch.bearing.y - (ch.size.y + ch.bearing.y) + (
+          font.size.float32 * 0.75).int
 
     # render texture
     var tex = Texture(tex: ch.id)

@@ -163,7 +163,7 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, program = textureProgram,
   if queue == @[]:
     queue &= (u: true, p: program, t: texture, vs: vertices, c: color)
     return
-  if texture == queue[^1].t: #and len(queue[^1].vs) / 2 + 1 < BATCH_TEXTURES:
+  if texture == queue[^1].t and color == queue[^1].c:
     queue[^1].vs &= vertices
   else:
     queue &= (u: true, p: program, t: texture, vs: vertices, c: color)

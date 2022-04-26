@@ -1,5 +1,7 @@
 import sugar
 
+import types/vector2
+
 import glfw
 
 import os
@@ -7,6 +9,9 @@ import os
 type
   GraphicsContext* = object
     window*: Window
+    size*: Vector2
+    pos*: Vector2
+
   Loop = object
     targetFPS: float64
 
@@ -23,7 +28,7 @@ type
     done*: bool
 
     updateProc*: (dt: float) -> bool
-    drawProc*: (ctx: GraphicsContext) -> void
+    drawProc*: (ctx: var GraphicsContext) -> void
 
 
 proc newLoop*(fps: float64): Loop =
@@ -35,11 +40,11 @@ proc newLoop*(fps: float64): Loop =
   result.frames = 0
   result.updates = 0
 
-proc forceDraw*(loop: var Loop, ctx: GraphicsContext) =
+proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
   loop.drawProc(ctx)
   loop.frames += 1
 
-proc update*(loop: var Loop, ctx: GraphicsContext) =
+proc update*(loop: var Loop, ctx: var GraphicsContext) =
   if loop.done:
     return
   loop.lastTime = loop.currentTime

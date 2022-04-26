@@ -11,6 +11,9 @@
     },
     {
       "path": "../wfc"
+    },
+    {
+      "path": "../chess"
     }
   ],
   "settings": {}

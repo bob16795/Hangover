@@ -24,4 +24,4 @@ proc draw*(sprite: Sprite, position: Vector2, rotation: uint,
   if size == newVector2(0, 0):
     trgSize = sprite.sourceBounds.size
   sprite.texture.draw(sprite.sourceBounds, newRect(position,
-                        trgSize))
+                        trgSize), color = c)

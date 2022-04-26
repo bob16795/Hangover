@@ -1,24 +1,25 @@
 import glfw
 import sugar
 from loop import GraphicsContext
+export glfw.Key
 
 type
   EventId = int
   EventListener = proc(data: pointer)
 
-template `+`(v: EventId): EventId =
-  cast[EventId](cast[int](v) + 1)
+# template `+`(v: EventId): EventId =
+#   cast[EventId](cast[int](v) + 1)
 
 var
   lastEventId: EventId
   listeners: seq[tuple[id: EventId, call: EventListener]]
 
-template createEvent(name: untyped): untyped =
+template createEvent*(name: untyped): untyped =
   var name = lastEventId
   export name
-  lastEventId = + lastEventId
+  lastEventId = cast[EventId](cast[int](lastEventId) + 1)
 
-proc sendEvent(event: EventId, data: pointer) =
+proc sendEvent*(event: EventId, data: pointer) =
   for e in listeners:
     if e.id == event:
       e.call(data)

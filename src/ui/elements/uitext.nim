@@ -9,9 +9,9 @@ import strutils
 
 type
   UITextAlign* = enum
+    ACenter,
     ALeft,
-    ARight,
-    ACenter
+    ARight
   UIText* = ref object of UIElement
     font: ptr Font
     text*: string
@@ -48,7 +48,7 @@ method draw*(t: UIText, parentRect: Rect) =
     var posx: float32 = bounds.x
     case t.align:
       of ACenter:
-        posx = bounds.x + (bounds.width - sizeText(t.font[], text).x / 2)
+        posx = bounds.x + (bounds.width - sizeText(t.font[], text).x) / 2
       of ARight:
         posx = bounds.x + bounds.width - sizeText(t.font[], text).x
       else: discard

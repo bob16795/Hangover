@@ -12,7 +12,7 @@ type
 
 const
   tmp = getTempDir() & "/gin2"
-  ginIcon {.strdefine.} = staticExec("nimble path gin2") & "/assets/icon.ico"
+  ginIcon {.strdefine.}: string = staticExec("nimble path gin2") & "/assets/icon.ico"
   ginAppName {.strdefine.} = "Gin Game"
   rcGen = staticExec("nimble path gin2") & "/assets/rcgen.sh"
   tmpRc = tmp & "/gingame.rc"

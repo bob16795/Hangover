@@ -8,7 +8,6 @@ template Game*(body: untyped) =
 
   proc main() =
     proc Setup(): AppData
-    proc Initialize()
 
     var
       pc: float
@@ -45,7 +44,7 @@ template Game*(body: untyped) =
 
     setupEventCallbacks(ctx)
 
-    Initialize()
+    Initialize(ctx)
 
     deinitFT()
     createListener(EVENT_RESIZE, (p: pointer) => loop.forceDraw(ctx))
@@ -58,7 +57,7 @@ template Game*(body: untyped) =
         updateUI(dt)
         return Update(dt)
 
-    loop.drawProc = proc (ctx: GraphicsContext) =
+    loop.drawProc = proc (ctx: var GraphicsContext) =
       Draw(ctx)
       drawUI()
       finishRender(ctx)

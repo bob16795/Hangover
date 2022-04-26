@@ -24,7 +24,12 @@ proc readWav*(
     byteRate = f.readUint32()
     blockAlign = f.readUint16()
     bitsPerSample2 = f.readUint16()
+  var
+    subchunk2ID = f.readStr(4)
+    subchunk2Size = f.readUint32()
+    data = f.readStr(int subchunk2Size)
 
+  if subchunk2ID == "LIST":
     subchunk2ID = f.readStr(4)
     subchunk2Size = f.readUint32()
 

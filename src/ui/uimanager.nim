@@ -1,5 +1,7 @@
 import ui/elements/uielement
 import ui/elements/uibutton
+import ui/elements/uipanel
+import ui/elements/uigroup
 import ui/elements/uitext
 import ui/types/uirectangle
 import core/events
@@ -8,6 +10,8 @@ import core/types/point
 import core/types/vector2
 
 export uitext
+export uipanel
+export uigroup
 export uibutton
 export uielement
 export uirectangle
@@ -57,3 +61,6 @@ proc updateUI*(dt: float32) =
   for i in 0..<len um.elements:
     discard um.elements[i].update(newRect(newVector2(0, 0), um.size),
         um.mousePos, dt)
+
+proc setUIActive*(i: int, value: bool) =
+  um.elements[i].isActive = value

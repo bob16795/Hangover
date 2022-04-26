@@ -1,4 +1,5 @@
 import math
+import point
 
 type
   Vector2* = object
@@ -81,3 +82,7 @@ proc rotated*(p: Vector2, phi: float32): Vector2 =
 
 proc rotate*(p: var Vector2, phi: float32) =
   p = p.rotated(phi)
+
+proc toPoint*(p: var Vector2): Point =
+  result.x = p.x.cint
+  result.y = p.y.cint

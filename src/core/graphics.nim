@@ -1,5 +1,6 @@
 import types/appdata
 import types/texture
+import types/vector2
 import types/shader
 import types/color
 import types/font
@@ -63,3 +64,26 @@ proc finishRender*(ctx: GraphicsContext) =
 proc clearBuffer*(ctx: GraphicsContext, color: Color) =
   glClearColor(color.rf, color.gf, color.bf, color.af)
   glClear(GL_COLOR_BUFFER_BIT)
+
+proc isFullscreen*(ctx: GraphicsContext): bool = monitor(ctx.window) != NoMonitor
+
+
+proc setFullscreen*(ctx: var GraphicsContext, fs: bool) =
+  if isFullscreen(ctx) == fs: return
+
+  var mon = getPrimaryMonitor()
+  if fs:
+    var
+      pos = ctx.window.pos()
+      size = ctx.window.size()
+    ctx.pos.x = pos.x.float32
+    ctx.pos.y = pos.y.float32
+    ctx.size.x = size.w.float32
+    ctx.size.y = size.h.float32
+    var mode = mon.videoMode()
+    ctx.window.monitor = (monitor: mon, xpos: 0.int32, ypos: 0.int32,
+        width: mode.size.w, height: mode.size.h, refreshRate: 0.int32)
+  else:
+    ctx.window.monitor = (monitor: NoMonitor, xpos: ctx.pos.x.int32,
+        ypos: ctx.pos.y.int32, width: ctx.size.x.int32,
+        height: ctx.size.y.int32, refreshRate: 0.int32)

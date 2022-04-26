@@ -20,6 +20,7 @@ Game:
     delta: float32
     tmr: float32
     fps: int
+    fs: bool
 
   proc drawLoading(pc: float32, loadStatus: string, ctx: GraphicsContext) =
     clearBuffer(ctx, newColor(0, 0, 255, 255))
@@ -30,7 +31,15 @@ Game:
     # result.size = newPoint(100, 100)
     result.name = "Oh God"
 
-  proc Initialize() =
+  proc setFs() =
+    fs = not fs
+
+  proc processKey(data: pointer) =
+    var key = cast[ptr Key](data)[]
+    if key == keyF11:
+      setFs()
+
+  proc Initialize(ctx: var GraphicsContext) =
     setStatus("setup font")
     uiFont = newFont(getAppDir() / "content/font.ttf", 55)
     setStatus("setup textures")
@@ -45,14 +54,13 @@ Game:
     setStatus("setup sounds")
     snd = newSound(getAppDir() / "content/sound.wav")
     sng = newSong(getAppDir() / "content/song.wav")
-    createListener(EVENT_PRESS_KEY, (data: pointer) => play(snd))
+    createListener(EVENT_PRESS_KEY, (data: pointer) => processKey(data))
     play(sng)
-
 
     setStatus("setup ui")
     var elem: UIElement
     elem = newUIButton(uiTexture, uiFont, newUIRectangle(5, 5, 45, 45, 0, 0,
-        0, 0), (b: int)=>echo b, "q")
+        0, 0), (b: int)=>setFs(), "q")
     addUIElement(elem)
     elem = newUIText(uiFont, newUIRectangle(0, 0, 55, 55, 0, 0,
         0, 0), () => $delta, align = ALeft)
@@ -66,7 +74,8 @@ Game:
       tmr -= 1
     return false
 
-  proc Draw(ctx: GraphicsContext) =
+  proc Draw(ctx: var GraphicsContext) =
+    setFullscreen(ctx, fs)
     clearBuffer(ctx, newColor(0, 0, 0, 255))
     var r = newRect(0, 0, SPRITES, 1)
     for x in 0..<SIZE:
