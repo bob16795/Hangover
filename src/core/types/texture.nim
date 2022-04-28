@@ -14,15 +14,18 @@ type
 const
   vertexCode = """
 #version 330 core
-in vec4 vertex;
+layout (location = 0) in vec4 vertex;
+layout (location = 1) in vec4 tintColorIn;
 
 uniform mat4 projection;
 out vec2 texRect;
+out vec4 tintColorGeo;
 
 void main()
 {
     gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
     texRect = vertex.zw;
+    tintColorGeo = tintColorIn;
 }
 """
   geoCode = """
@@ -31,34 +34,42 @@ layout (lines) in;
 layout (triangle_strip, max_vertices = 6) out;
 
 in vec2 texRect[2];
+in vec4 tintColorGeo[2];
 
 out vec2 texCoords;
+out vec4 tintColor;
 
 void main() {
   gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
   texCoords = vec2(texRect[0].x, texRect[0].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
 
   gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y, gl_in[1].gl_Position.z, gl_in[0].gl_Position.w);
   texCoords = vec2(texRect[1].x, texRect[0].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
 
   gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[1].x, texRect[1].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
   
   EndPrimitive();
 
   gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
   texCoords = vec2(texRect[0].x, texRect[0].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
 
   gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y, gl_in[0].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[0].x, texRect[1].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
 
   gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[1].x, texRect[1].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
   
   EndPrimitive();
@@ -67,10 +78,10 @@ void main() {
   fragmentCode = """
 #version 330 core
 in vec2 texCoords;
+in vec4 tintColor;
 
 out vec4 color;
 
-uniform vec4 tintColor;
 uniform sampler2D text;
 
 void main()
@@ -78,20 +89,19 @@ void main()
     color = tintColor * texture(text, texCoords);
 }
 """
-  # BATCH_TEXTURES* = 4096
 
 var
   VAO, VBO: GLUint
   textureProgram*: Shader
-  queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..3,
-      GLFloat]], c: Color]]
+  queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
+      GLFloat]]]]
   buffers: seq[GLUint]
   cullSize: Vector2
 
-template verts(ds, de: Vector2, ss, se: Vector2): untyped =
+template verts(ds, de: Vector2, ss, se: Vector2, c: Color): untyped =
   @[
-    [ds.x, ds.y, ss.x, ss.y],
-    [de.x, de.y, se.x, se.y],
+    [ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af],
+    [de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af],
   ]
 
 proc resizeCull*(data: pointer) =
@@ -159,14 +169,14 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, program = textureProgram,
     color = newColor(255, 255, 255, 255)) =
   if (not dstRect.aabb(newRect(newVector2(0, 0), cullSize))): return
   var vertices = verts(dstRect.location, dstRect.location + dstRect.size,
-      srcRect.location, srcRect.location + srcRect.size)
+      srcRect.location, srcRect.location + srcRect.size, color)
   if queue == @[]:
-    queue &= (u: true, p: program, t: texture, vs: vertices, c: color)
+    queue &= (u: true, p: program, t: texture, vs: vertices)
     return
-  if texture == queue[^1].t and color == queue[^1].c:
+  if texture == queue[^1].t:
     queue[^1].vs &= vertices
   else:
-    queue &= (u: true, p: program, t: texture, vs: vertices, c: color)
+    queue &= (u: true, p: program, t: texture, vs: vertices)
 
 proc finishDraw*() =
   if queue != @[]:
@@ -180,14 +190,9 @@ proc finishDraw*() =
 
   glActiveTexture(GL_TEXTURE0)
   glBindVertexArray(VAO)
-  glEnableVertexAttribArray(0)
   setVBOS(len(queue))
   for i in 0..<len(queue):
     var q = queue[i]
-    var color = [q.c.rf, q.c.gf, q.c.bf, q.c.af]
-    q.p.setParam("tintColor", addr color)
-    # glUniform4f(glGetUniformLocation(q.p.id, "tintColor"), q.c.rf,
-    #   q.c.gf, q.c.bf, q.c.af)
     q.p.use()
     var last = len(q.vs)
     var vertices = q.vs
@@ -200,8 +205,12 @@ proc finishDraw*() =
       glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(len(vertices) *
           sizeof(vertices[0])),
           addr(vertices[0]), GL_STREAM_DRAW)
-    glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 4 * sizeof(
+    glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 8 * sizeof(
         GLfloat), cast[pointer](0))
+    glEnableVertexAttribArray(0)
+    glVertexAttribPointer(1, 4, cGL_FLOAT, GL_FALSE.GLboolean, 8 * sizeof(
+        GLfloat), cast[pointer](4 * sizeof(GLfloat)))
+    glEnableVertexAttribArray(1)
     glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     # render

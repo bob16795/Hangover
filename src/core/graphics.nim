@@ -18,14 +18,7 @@ from loop import GraphicsContext
 proc resizeBuffer*(data: pointer) =
   var res = cast[ptr tuple[w, h: int32]](data)[]
   glViewport(0, 0, GLsizei(res.w), GLsizei(res.h))
-
-  glMatrixMode(GL_PROJECTION)
-
   var projection = ortho(0f, res.w.float, res.h.float, 0, 1, -1f)
-
-  glLoadMatrixf(projection.caddr)
-
-  glMatrixMode(GL_MODELVIEW)
 
   fontProgram.setParam("projection", projection.caddr)
   textureProgram.setParam("projection", projection.caddr)
@@ -49,7 +42,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
 
   createListener(EVENT_RESIZE, resizeBuffer)
 
-  var res = (w: data.size.x, h: data.size.y)
+  var res = (w: data.size.x.int32, h: data.size.y.int32)
   resizeBuffer(addr res)
 
 proc deinitGraphics*(ctx: GraphicsContext) =
