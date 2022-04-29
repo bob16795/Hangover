@@ -21,15 +21,18 @@ type
 const
   vertexCode = """
 #version 330 core
-in vec4 vertex;
+layout (location = 0) in vec4 vertex;
+layout (location = 1) in vec4 tintColorIn;
 
 uniform mat4 projection;
 out vec2 texRect;
+out vec4 tintColorGeo;
 
 void main()
 {
     gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
     texRect = vertex.zw;
+    tintColorGeo = tintColorIn;
 }
 """
   geoCode = """
@@ -38,34 +41,42 @@ layout (lines) in;
 layout (triangle_strip, max_vertices = 6) out;
 
 in vec2 texRect[2];
+in vec4 tintColorGeo[2];
 
 out vec2 texCoords;
+out vec4 tintColor;
 
 void main() {
   gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
   texCoords = vec2(texRect[0].x, texRect[0].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
 
   gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y, gl_in[1].gl_Position.z, gl_in[0].gl_Position.w);
   texCoords = vec2(texRect[1].x, texRect[0].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
 
   gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[1].x, texRect[1].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
   
   EndPrimitive();
 
   gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
   texCoords = vec2(texRect[0].x, texRect[0].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
 
   gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y, gl_in[0].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[0].x, texRect[1].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
 
   gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[1].x, texRect[1].y);
+  tintColor = tintColorGeo[0];
   EmitVertex();
   
   EndPrimitive();
@@ -74,15 +85,16 @@ void main() {
   fragmentCode = """
 #version 330 core
 in vec2 texCoords;
+in vec4 tintColor;
+
 out vec4 color;
 
 uniform sampler2D text;
-uniform vec3 tintColor;
 
 void main()
 {    
     vec4 sampled = vec4(1.0, 1.0, 1.0, texture(text, texCoords).r);
-    color = vec4(tintColor, 1.0) * sampled;
+    color = tintColor * sampled;
 }
 """
 var

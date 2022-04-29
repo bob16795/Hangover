@@ -13,6 +13,9 @@ import glm
 import math
 import os
 
+export glClearColor
+export glFlush
+
 from loop import GraphicsContext
 
 proc resizeBuffer*(data: pointer) =

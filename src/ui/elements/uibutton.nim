@@ -82,7 +82,7 @@ method draw*(b: UIButton, parentRect: Rect) =
     return
   var bounds = b.bounds.toRect(parentRect)
   var sprite = b.normalUI
-  var textColor = newColor(128, 128, 128, 255)
+  var textColor = newColor(0, 0, 0, 255)
   if b.isDisabled != nil:
     if (b.isDisabled()):
       if b.disabledUI.texture.isDefined():

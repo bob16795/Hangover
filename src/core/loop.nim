@@ -20,7 +20,7 @@ type
 
     dt*: float64
     currentTime: float64
-    nextTime: float64
+    nextTime*: float64
 
     frames: int
     updates: int

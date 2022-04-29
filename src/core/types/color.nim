@@ -21,7 +21,15 @@ proc mix*(a, b: Color, ratio: float = 0.5): Color =
   result.b = (a.b.float * afactor + b.b.float * bfactor).uint8
   result.a = (a.a.float * afactor + b.a.float * bfactor).uint8
 
-proc rf*(c: Color): float32 = c.r.float32 / 255.0
-proc gf*(c: Color): float32 = c.g.float32 / 255.0
-proc bf*(c: Color): float32 = c.b.float32 / 255.0
-proc af*(c: Color): float32 = c.a.float32 / 255.0
+proc rf*(c: Color): float32 =
+  if c.r == 1: 1.0
+  else: c.r.float32 / 255.0
+proc gf*(c: Color): float32 =
+  if c.g == 1: 1.0
+  else: c.g.float32 / 255.0
+proc bf*(c: Color): float32 =
+  if c.b == 1: 1.0
+  else: c.b.float32 / 255.0
+proc af*(c: Color): float32 =
+  if c.a == 1: 1.0
+  else: c.a.float32 / 255.0

@@ -12,13 +12,14 @@ template Game*(body: untyped) =
     var
       pc: float
       loadStatus: string
+      ui: bool
       data = Setup()
       ctx = initGraphics(data)
       loop = newLoop(144)
 
     template setPercent(perc: float): untyped =
       pc = perc
-      drawLoading(pc, loadStatus)
+      drawLoading(pc, loadStatus, ctx)
       glfw.pollEvents()
       if glfw.shouldClose(ctx.window):
         quit()
@@ -34,9 +35,9 @@ template Game*(body: untyped) =
         quit()
       finishDraw()
       finishRender(ctx)
+    template noUI() = ui = false
 
     body
-
 
     initAudio()
     initUIManager(data.size)
@@ -47,6 +48,7 @@ template Game*(body: untyped) =
     Initialize(ctx)
 
     deinitFT()
+
     createListener(EVENT_RESIZE, (p: pointer) => loop.forceDraw(ctx))
 
     loop.updateProc =
@@ -58,12 +60,16 @@ template Game*(body: untyped) =
         return Update(dt)
 
     loop.drawProc = proc (ctx: var GraphicsContext) =
+      ui = true
       Draw(ctx)
-      drawUI()
+      if ui:
+        drawUI()
       finishRender(ctx)
 
+    loop.nextTime = glfw.getTime()
     while not loop.done:
       loop.update(ctx)
-    close()
+
+    gameClose()
 
   main()
