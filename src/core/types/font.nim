@@ -10,13 +10,16 @@ import rect
 type
   Font* = object
     face: FT_Face
+    texture: GLuint
     size*: int
-    characters: seq[Character]
+    characters: array[0..128, Character]
   Character* = object
-    id: GLuint
-    size: Point
+    tx: GLfloat
+    tw: GLfloat
+    th: GLfloat
     bearing: Point
     advance: int
+    size: Point
 
 const
   vertexCode = """
@@ -38,7 +41,7 @@ void main()
   geoCode = """
 #version 330 core
 layout (lines) in;
-layout (triangle_strip, max_vertices = 6) out;
+layout (triangle_strip, max_vertices = 4) out;
 
 in vec2 texRect[2];
 in vec4 tintColorGeo[2];
@@ -47,35 +50,23 @@ out vec2 texCoords;
 out vec4 tintColor;
 
 void main() {
-  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
-  texCoords = vec2(texRect[0].x, texRect[0].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
-  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y, gl_in[1].gl_Position.z, gl_in[0].gl_Position.w);
-  texCoords = vec2(texRect[1].x, texRect[0].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
-  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
-  texCoords = vec2(texRect[1].x, texRect[1].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-  
-  EndPrimitive();
-
-  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
-  texCoords = vec2(texRect[0].x, texRect[0].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
   gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y, gl_in[0].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[0].x, texRect[1].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
 
+  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
+  texCoords = vec2(texRect[0].x, texRect[0].y);
+  tintColor = tintColorGeo[0];
+  EmitVertex();
+
   gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[1].x, texRect[1].y);
+  tintColor = tintColorGeo[0];
+  EmitVertex();
+
+  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y, gl_in[1].gl_Position.z, gl_in[0].gl_Position.w);
+  texCoords = vec2(texRect[1].x, texRect[0].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
   
@@ -126,43 +117,52 @@ proc deinitFT*() =
 proc newFont*(face: string, size: int): Font =
   if FT_New_Face(ft, face, 0, result.face).int != 0:
     quit "failed to load font"
-  result.size = size
   discard FT_Set_Pixel_Sizes(result.face, 0, size.cuint)
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 
+  template g: untyped = result.face.glyph
+
+  result.size = size
+
+  var atlasSize = newPoint(0, 0)
   for c in 0..<128:
     if FT_Load_Char(result.face, c.culong, FT_LOAD_RENDER).int != 0:
       echo "failed to load glyph '" & c.char & "'"
       continue
-    var texture: GLuint
-    glGenTextures(1, addr texture)
-    glBindTexture(GL_TEXTURE_2D, texture)
-    glTexImage2D(
-      GL_TEXTURE_2D,
-      0,
-      GL_RED.GLint,
-      result.face.glyph.bitmap.width.GLSizei,
-      result.face.glyph.bitmap.rows.GLSizei,
-      0,
-      GL_RED,
-      GL_UNSIGNED_BYTE,
-      result.face.glyph.bitmap.buffer
-    )
+    atlasSize.x += g.bitmap.width.cint
+    atlasSize.y = max(atlasSize.y, g.bitmap.rows.cint)
 
-    # set texture options
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE.GLint)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE.GLint)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST.GLint)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+  glActiveTexture(GL_TEXTURE0)
+  glGenTextures(1, addr result.texture)
+  glBindTexture(GL_TEXTURE_2D, result.texture)
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
 
-    result.characters &= Character(
-      id: texture,
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED.GLint, atlasSize.x.GLsizei,
+      atlasSize.y.GLsizei, 0, GL_RED, GL_UNSIGNED_BYTE, cast[pointer](0))
+
+  var x: cuint
+
+  for c in 0..<128:
+    if FT_Load_Char(result.face, c.culong, FT_LOAD_RENDER).int != 0:
+      continue
+
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x.GLint, 0, g.bitmap.width.GLsizei,
+        g.bitmap.rows.GLsizei, GL_RED, GL_UNSIGNED_BYTE, g.bitmap.buffer)
+
+    result.characters[c.int] = Character(
       size: newPoint(result.face.glyph.bitmap.width.cint,
           result.face.glyph.bitmap.rows.cint),
       bearing: newPoint(result.face.glyph.bitmap_left,
           result.face.glyph.bitmap_top),
-      advance: result.face.glyph.advance.x
+      advance: result.face.glyph.advance.x,
+      tx: x.float32 / atlasSize.x.float32,
+      tw: g.bitmap.width.float32 / atlasSize.x.float32,
+      th: g.bitmap.rows.float32 / atlasSize.y.float32,
     )
+    x += g.bitmap.width
   glBindTexture(GL_TEXTURE_2D, 0)
   discard FT_Done_Face(result.face)
 
@@ -179,9 +179,12 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
       xpos = pos.x + ch.bearing.x
       ypos = pos.y + ch.bearing.y - (ch.size.y + ch.bearing.y) + (
           font.size.float32 * 0.75).int
+    srect.x = ch.tx
+    srect.width = ch.tw
+    srect.height = ch.th
 
     # render texture
-    var tex = Texture(tex: ch.id)
+    var tex = Texture(tex: font.texture)
     tex.draw(srect, newRect(xpos.float32, ypos.float32, w.float32,
         h.float32), fontProgram, color)
     pos.x += (ch.advance shr 6).cint

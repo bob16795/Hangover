@@ -31,7 +31,7 @@ void main()
   geoCode = """
 #version 330 core
 layout (lines) in;
-layout (triangle_strip, max_vertices = 6) out;
+layout (triangle_strip, max_vertices = 4) out;
 
 in vec2 texRect[2];
 in vec4 tintColorGeo[2];
@@ -40,35 +40,23 @@ out vec2 texCoords;
 out vec4 tintColor;
 
 void main() {
-  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
-  texCoords = vec2(texRect[0].x, texRect[0].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
-  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y, gl_in[1].gl_Position.z, gl_in[0].gl_Position.w);
-  texCoords = vec2(texRect[1].x, texRect[0].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
-  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
-  texCoords = vec2(texRect[1].x, texRect[1].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-  
-  EndPrimitive();
-
-  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
-  texCoords = vec2(texRect[0].x, texRect[0].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
   gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y, gl_in[0].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[0].x, texRect[1].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
 
+  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
+  texCoords = vec2(texRect[0].x, texRect[0].y);
+  tintColor = tintColorGeo[0];
+  EmitVertex();
+
   gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
   texCoords = vec2(texRect[1].x, texRect[1].y);
+  tintColor = tintColorGeo[0];
+  EmitVertex();
+
+  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y, gl_in[1].gl_Position.z, gl_in[0].gl_Position.w);
+  texCoords = vec2(texRect[1].x, texRect[0].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
   
@@ -132,7 +120,6 @@ proc setupTexture*() =
 proc newTexture*(image: string): Texture =
   glGenTextures(1, addr result.tex)
 
-  glEnable(GL_TEXTURE_2D)
   glBindTexture(GL_TEXTURE_2D, result.tex)
 
   # set the texture wrapping/filtering options
@@ -151,8 +138,6 @@ proc newTexture*(image: string): Texture =
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
       0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, data)
   glGenerateMipmap(GL_TEXTURE_2D)
-  glBindTexture(GL_TEXTURE_2D, 0)
-  glDisable(GL_TEXTURE_2D)
   stbi_image_free(data)
 
   result.size = newVector2(width, height)
@@ -173,7 +158,7 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, program = textureProgram,
   if queue == @[]:
     queue &= (u: true, p: program, t: texture, vs: vertices)
     return
-  if texture == queue[^1].t:
+  if texture == queue[^1].t and program == queue[^1].p:
     queue[^1].vs &= vertices
   else:
     queue &= (u: true, p: program, t: texture, vs: vertices)
