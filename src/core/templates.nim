@@ -15,7 +15,7 @@ template Game*(body: untyped) =
       ui: bool
       data = Setup()
       ctx = initGraphics(data)
-      loop = newLoop(144)
+      loop = newLoop(30)
 
     template setPercent(perc: float): untyped =
       pc = perc
@@ -52,12 +52,12 @@ template Game*(body: untyped) =
     createListener(EVENT_RESIZE, (p: pointer) => loop.forceDraw(ctx))
 
     loop.updateProc =
-      proc (dt: float): bool =
+      proc (dt: float, delayed: bool): bool =
         glfw.pollEvents()
         if glfw.shouldClose(ctx.window):
           return true
         updateUI(dt)
-        return Update(dt)
+        return Update(dt, delayed)
 
     loop.drawProc = proc (ctx: var GraphicsContext) =
       ui = true

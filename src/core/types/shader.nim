@@ -13,11 +13,12 @@ type
     SPKInt3,
     SPKInt4,
     SPKProj4,
+    SPKBool,
   ShaderParam* = object
     name: string
     kind: ShaderParamKind
   Shader* = object
-    id: GLuint
+    id*: GLuint
     params*: Table[ShaderParam, bool]
 
 proc newShader*(vCode, gCode, fCode: string): Shader =
@@ -145,7 +146,18 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
       of SPKFloat4: glUniform4fv(loc, 1, cast[ptr GLfloat](value))
       of SPKProj4: glUniformMatrix4fv(loc, 1, GL_FALSE.GLboolean, cast[
           ptr GLfloat](value))
-      else: discard
+      of SPKFloat3:
+        glUniform3f(loc, cast[ptr array[0..2, GLfloat]](value)[][0], cast[
+            ptr array[0..2, GLfloat]](value)[][1], cast[ptr array[0..2,
+                GLfloat]](value)[][2])
+      of SPKFloat1:
+        glUniform1f(loc, cast[ptr GLfloat](value)[])
+      of SPKInt1:
+        glUniform1i(loc, cast[ptr GLint](value)[])
+      of SPKBool:
+        glUniform1i(loc, cast[ptr GLint](value)[])
+      else:
+        echo ":("
       s.params[sp] = true
       return
   echo "unknown shader param: " & p

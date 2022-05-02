@@ -37,3 +37,12 @@ proc setupEventCallbacks*(ctx: GraphicsContext) =
   ctx.window.windowSizeCb = resizeCB
   ctx.window.cursorPositionCb = mouseMoveCb
   ctx.window.mouseButtonCb = mouseButtonCb
+  ctx.window.charCb = charCb
+  createListener(EVENT_START_LINE_ENTER,
+    proc(d: pointer) =
+    lineInput = true
+    lineText = "")
+  createListener(EVENT_STOP_LINE_ENTER,
+    proc(d: pointer) =
+    lineInput = true
+    lineText = "")

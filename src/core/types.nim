@@ -7,6 +7,7 @@ import types/rect
 import types/font
 import types/sound
 import types/song
+import types/shader
 
 export appData
 export texture
@@ -17,3 +18,4 @@ export rect
 export font
 export sound
 export song
+export shader

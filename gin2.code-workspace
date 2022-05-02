@@ -14,6 +14,12 @@
     },
     {
       "path": "../chess"
+    },
+    {
+      "path": "../pxl"
+    },
+    {
+      "path": "../3dTest"
     }
   ],
   "settings": {}

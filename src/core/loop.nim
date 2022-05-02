@@ -27,7 +27,7 @@ type
 
     done*: bool
 
-    updateProc*: (dt: float) -> bool
+    updateProc*: (dt: float, delayed: bool) -> bool
     drawProc*: (ctx: var GraphicsContext) -> void
 
 
@@ -49,14 +49,17 @@ proc update*(loop: var Loop, ctx: var GraphicsContext) =
     return
   loop.lastTime = loop.currentTime
   loop.currentTime = glfw.getTime()
+  var delayed: bool
   if (loop.nextTime > loop.currentTime):
+    delayed = true
     sleep(((loop.nextTime - loop.currentTime) * 1000).int)
   else:
+    delayed = false
     loop.nextTime = loop.currentTime
   loop.dt = loop.currentTime - loop.lastTime
   loop.nextTime += loop.targetFPS
 
-  if loop.updateProc(loop.dt):
+  if loop.updateProc(loop.dt, delayed):
     loop.done = true
   loop.updates += 1
   loop.dt = 0

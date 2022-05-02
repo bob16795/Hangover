@@ -13,8 +13,7 @@ import glm
 import math
 import os
 
-export glClearColor
-export glFlush
+export gl
 
 from loop import GraphicsContext
 
