@@ -6,14 +6,14 @@ import types/color
 import types/font
 
 import events
-import lib/gl
+import opengl
 import glfw
 import glm
 
 import math
 import os
 
-export gl
+export opengl
 
 from loop import GraphicsContext
 
@@ -26,7 +26,9 @@ proc resizeBuffer*(data: pointer) =
   textureProgram.setParam("projection", projection.caddr)
   resizeCull(data)
 
+
 proc initGraphics*(data: AppData): GraphicsContext =
+  glfw.swapInterval(1)
   glfw.initialize()
 
   var c = DefaultOpenglWindowConfig
@@ -36,8 +38,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
 
   result.window = newWindow(c)
 
-  if not gladLoadGL(getProcAddress):
-    quit "Error initialising OpenGL"
+  loadExtensions()
 
   setupTexture()
   initFT()

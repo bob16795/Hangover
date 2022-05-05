@@ -2,6 +2,7 @@ import ui/elements/uielement
 import ui/elements/uibutton
 import ui/elements/uipanel
 import ui/elements/uigroup
+import ui/elements/uiinput
 import ui/elements/uitext
 import ui/types/uirectangle
 import core/events
@@ -10,6 +11,7 @@ import core/types/point
 import core/types/vector2
 
 export uitext
+export uiinput
 export uipanel
 export uigroup
 export uibutton

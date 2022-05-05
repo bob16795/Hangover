@@ -83,6 +83,10 @@ proc rotated*(p: Vector2, phi: float32): Vector2 =
 proc rotate*(p: var Vector2, phi: float32) =
   p = p.rotated(phi)
 
-proc toPoint*(p: var Vector2): Point =
+proc toPoint*(p: Vector2): Point =
   result.x = p.x.cint
   result.y = p.y.cint
+
+proc toVector2*(p: Point): Vector2 =
+  result.x = p.x.float32
+  result.y = p.y.float32

@@ -1,5 +1,6 @@
-import ../lib/gl
+import opengl
 
+import point
 import tables
 
 type
@@ -78,7 +79,38 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glDeleteShader(fragment)
 
 
+proc newComputeShader*(cCode: string): Shader =
+  var
+    cShaderCode = [cCode.cstring]
+    compute: GLuint
+    success: GLint
+    infoLog: cstring = cast[cstring](alloc0(512))
+
+  # fragment Shader
+  compute = glCreateShader(GL_COMPUTE_SHADER)
+  glShaderSource(compute, 1, cast[cstringArray](addr cShaderCode), nil)
+  glCompileShader(compute)
+  # print compile errors if any
+  glGetShaderiv(compute, GL_COMPILE_STATUS, addr success)
+  if success == 0:
+    glGetShaderInfoLog(compute, 512, nil, infoLog)
+    quit $infoLog
+
+  # create program
+  result.id = glCreateProgram()
+  glAttachShader(result.id, compute)
+  glLinkProgram(result.id)
+  # print link errors if any
+  glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
+  if success == 0:
+    glGetProgramInfoLog(result.id, 512, nil, infoLog)
+    quit $infoLog
+
+  # delete the shaders as they're linked into our program now and no longer necessary
+  glDeleteShader(compute)
+
 proc newShader*(vCode, fCode: string): Shader =
+  result = Shader()
   var
     vShaderCode = [vCode.cstring]
     fShaderCode = [fCode.cstring]
@@ -92,7 +124,7 @@ proc newShader*(vCode, fCode: string): Shader =
   glCompileShader(vertex)
   # print compile errors if any
   glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
-  if success == 0:
+  if success <= 0:
     glGetShaderInfoLog(vertex, 512, nil, infoLog)
     quit $infoLog
 
@@ -102,7 +134,7 @@ proc newShader*(vCode, fCode: string): Shader =
   glCompileShader(fragment)
   # print compile errors if any
   glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
-  if success == 0:
+  if success <= 0:
     glGetShaderInfoLog(fragment, 512, nil, infoLog)
     quit $infoLog
 
@@ -161,3 +193,8 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
       s.params[sp] = true
       return
   echo "unknown shader param: " & p
+
+
+proc runCompute*(compute: Shader, size: Point) =
+  compute.use()
+  glDispatchCompute(size.x.GLuint, size.y.GLuint, 1)

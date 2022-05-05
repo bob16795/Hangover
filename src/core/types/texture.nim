@@ -1,4 +1,4 @@
-import ../lib/gl
+import opengl
 import ../lib/stbi
 
 import rect

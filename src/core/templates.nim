@@ -15,11 +15,18 @@ template Game*(body: untyped) =
       ui: bool
       data = Setup()
       ctx = initGraphics(data)
-      loop = newLoop(30)
+      loop = newLoop(60)
+      size = data.size
+
+    proc UpdateSize(data: pointer) =
+      var res = cast[ptr tuple[w, h: int32]](data)[]
+      size = newPoint(res.w.cint, res.h.cint)
+
+    createListener(EVENT_RESIZE, UpdateSize)
 
     template setPercent(perc: float): untyped =
       pc = perc
-      drawLoading(pc, loadStatus, ctx)
+      drawLoading(pc, loadStatus, ctx, size)
       glfw.pollEvents()
       if glfw.shouldClose(ctx.window):
         quit()
@@ -29,7 +36,7 @@ template Game*(body: untyped) =
         echo "loaded " & $(pc * 100).int & "% - " & loadStatus
     template setStatus(status: string): untyped =
       loadStatus = status
-      drawLoading(pc, loadStatus, ctx)
+      drawLoading(pc, loadStatus, ctx, size)
       glfw.pollEvents()
       if glfw.shouldClose(ctx.window):
         quit()

@@ -1,5 +1,5 @@
 import freetype/freetype
-import ../lib/gl
+import opengl
 import point
 import color
 import shader

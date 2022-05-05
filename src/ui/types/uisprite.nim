@@ -62,7 +62,12 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
   if sprite.center.width == 0 or sprite.center.height == 0:
     return
   var tmp: Rect
-  var rrtmp = renderRect
+  var rrtmp = newRect(
+    renderRect.x.cint.float32,
+    renderRect.y.cint.float32,
+    renderRect.width.cint.float32,
+    renderRect.height.cint.float32,
+  )
 
   var corners: Vector2
   corners.x = (sprite.renderSecs[0][0].size + sprite.renderSecs[2][2].size).x * sprite.scale.x

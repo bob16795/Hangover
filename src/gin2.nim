@@ -1,3 +1,4 @@
+# core
 import core/types
 import core/audio
 import core/storage
@@ -14,6 +15,14 @@ export templates
 export events
 export loop
 
+# ui
 import ui/uimanager
 
 export uimanager
+
+# rendering
+import rendering/animation
+import rendering/sprite
+
+export animation
+export sprite
