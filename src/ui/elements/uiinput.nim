@@ -54,6 +54,7 @@ method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2): bool =
     return true
 
 method click*(e: UIInput, button: int) =
+  if not e.focused: return
   if not e.active:
     sendEvent(EVENT_START_LINE_ENTER, nil)
     sendEvent(EVENT_SET_LINE_TEXT, addr e.text)
@@ -89,6 +90,9 @@ method draw*(e: UIInput, parentRect: Rect) =
 method update*(b: var UIInput, parentRect: Rect, mousePos: Vector2,
     dt: float32): bool =
   if not b.isActive:
+    if b.active:
+      sendEvent(EVENT_STOP_LINE_ENTER, nil)
+      b.active = false
     return false
   var bounds = b.bounds.toRect(parentRect)
 

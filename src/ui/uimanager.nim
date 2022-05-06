@@ -35,6 +35,7 @@ proc mouseMove*(data: pointer) =
 
 proc mouseClick*(data: pointer) =
   var btn = cast[ptr int](data)[]
+  sendEvent(EVENT_STOP_LINE_ENTER, nil)
   for e in um.elements:
     if e.focused:
       e.click(btn)

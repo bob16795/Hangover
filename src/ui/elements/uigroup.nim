@@ -51,7 +51,7 @@ method draw*(g: UIGroup, parentRect: Rect) =
 method update*(g: var UIGroup, parentRect: Rect, mousePos: Vector2,
     dt: float32): bool =
   if not g.isActive:
-    return false
+    return
   var bounds = g.bounds.toRect(parentRect)
   for i in 0..<g.groupElements.len:
     discard g.groupElements[i].update(bounds, mousePos, dt)
