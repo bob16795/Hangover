@@ -13,17 +13,17 @@ type
   UIInput* = ref object of UIElement
     text*: string
     update*: (string) -> string
-    hint: string
-    font: ptr Font
-    active: bool
+    hint*: string
+    font*: ptr Font
+    active*: bool
 
-method onKey*(e: ptr UIInput, data: pointer) =
+var tmpText = ""
+
+proc onKey*(data: pointer) =
   var c = cast[ptr string](data)[]
-  if e.active:
-    if e.update != nil:
-      e.text = e.update(c)
-    else:
-      e.text = c
+  tmpText = c
+
+createListener(EVENT_LINE_ENTER, onKey)
 
 proc newUIInput*(font: var Font, bounds: UIRectangle, hint = "",
     disable: () -> bool = nil): UIInput =
@@ -35,7 +35,7 @@ proc newUIInput*(font: var Font, bounds: UIRectangle, hint = "",
   r.bounds = bounds
   r.hint = hint
   r.isDisabled = disable
-  createListener(EVENT_LINE_ENTER, (d: pointer) => onKey(addr r, d))
+
   return r
 
 method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2): bool =
@@ -95,5 +95,12 @@ method update*(b: var UIInput, parentRect: Rect, mousePos: Vector2,
       b.active = false
     return false
   var bounds = b.bounds.toRect(parentRect)
+
+  if b.active and tmpText != "":
+    if b.update != nil:
+      b.text = b.update(tmpText)
+    else:
+      b.text = tmpText
+    tmpText = ""
 
   return false

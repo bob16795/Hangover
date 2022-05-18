@@ -39,6 +39,9 @@ method update*(e: var UIElement, parentRect: Rect, mousePos: Vector2,
 method click*(e: UIElement, button: int) {.base.} =
   discard
 
+method drag*(e: UIElement, button: int) {.base.} =
+  discard
+
 method draw*(e: UIElement, parentRect: Rect) {.base.} =
   if not e.isActive:
     return

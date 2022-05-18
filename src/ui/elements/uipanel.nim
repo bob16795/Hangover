@@ -8,13 +8,13 @@ import ui/types/uisprite
 
 type
   UIPanel* = ref object of UIElement
-    panelTexture: UISprite
-    popup: bool
+    texture*: UISprite
+    popup*: bool
 
 proc newUIPanel*(sprite: UISprite, bounds: UIRectangle,
     popup: bool): UIPanel =
   result = UIPanel()
-  result.panelTexture = sprite
+  result.texture = sprite
   result.isActive = true
   result.bounds = bounds
   result.popup = popup
@@ -30,8 +30,8 @@ method draw*(p: UIPanel, parentRect: Rect) =
   # if p.popup:
   #   drawFill(initRectangle(initPoint(0, 0), getWindowSize()), initColor(0,
   #       0, 0, 128))
-  if p.panelTexture.texture.isDefined():
-    p.panelTexture.draw(bounds)
+  if p.texture.texture.isDefined():
+    p.texture.draw(bounds)
 
 method update*(p: var UIPanel, parentRect: Rect, mousePos: Vector2,
     dt: float32): bool =

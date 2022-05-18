@@ -9,6 +9,7 @@ type
   AppData* = object
     name*: string
     size*: Point
+    aa*: int
 
 const
   tmp = getTempDir() & "/gin2"
@@ -32,3 +33,4 @@ static:
 proc newAppData*(): AppData =
   result.name = ginAppName
   result.size = newPoint(640, 480)
+  result.aa = 0

@@ -43,3 +43,7 @@ proc offset*(r: Rect, offset: Vector2): Rect =
 
 proc center*(r: Rect): Vector2 =
   return newVector2(r.x + (r.width / 2).float32, r.y + (r.height / 2).float32)
+
+proc clamp*(v: Vector2, r: Rect): Vector2 =
+  result.x = v.x.clamp(r.x, r.x + r.width)
+  result.y = v.y.clamp(r.y, r.y + r.height)

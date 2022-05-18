@@ -8,7 +8,7 @@ import ui/types/uisprite
 
 type
   UIButton* = ref object of UIElement
-    font: ptr Font
+    font*: ptr Font
     action*: UIAction
     text*: string
     textUpdate*: UIUpdate

@@ -8,7 +8,7 @@ import ui/types/uisprite
 
 type
   UIGroup* = ref object of UIElement
-    groupElements: seq[UIElement]
+    elements*: seq[UIElement]
     hasPopupAbove*: bool
 
 proc newUIGroup*(bounds: UIRectangle): UIGroup =
@@ -17,10 +17,10 @@ proc newUIGroup*(bounds: UIRectangle): UIGroup =
   result.bounds = bounds
 
 proc add*(g: var UIGroup, e: UIElement) =
-  g.groupElements.add(e)
+  g.elements.add(e)
 
 proc clear*(g: var UIGroup) =
-  g.groupElements = @[]
+  g.elements = @[]
 
 method checkHover*(g: UIGroup, parentRect: Rect, mousePos: Vector2): bool =
   g.focused = false
@@ -30,14 +30,14 @@ method checkHover*(g: UIGroup, parentRect: Rect, mousePos: Vector2): bool =
     return false
 
   var bounds = g.bounds.toRect(parentRect)
-  for i in 0..<g.groupElements.len:
-    if g.groupElements[i].checkHover(bounds, mousePos):
+  for i in 0..<g.elements.len:
+    if g.elements[i].checkHover(bounds, mousePos):
       g.focused = true
 
 method click*(g: UIGroup, button: int) =
-  for i in 0..<g.groupElements.len:
-    if g.groupElements[i].focused:
-      g.groupElements[i].click(button)
+  for i in 0..<g.elements.len:
+    if g.elements[i].focused:
+      g.elements[i].click(button)
 
 
 
@@ -45,14 +45,14 @@ method draw*(g: UIGroup, parentRect: Rect) =
   if not g.isActive:
     return
   var bounds = g.bounds.toRect(parentRect)
-  for i in 0..<g.groupElements.len:
-    g.groupElements[i].draw(bounds)
+  for i in 0..<g.elements.len:
+    g.elements[i].draw(bounds)
 
 method update*(g: var UIGroup, parentRect: Rect, mousePos: Vector2,
     dt: float32): bool =
   if not g.isActive:
     return
   var bounds = g.bounds.toRect(parentRect)
-  for i in 0..<g.groupElements.len:
-    discard g.groupElements[i].update(bounds, mousePos, dt)
+  for i in 0..<g.elements.len:
+    discard g.elements[i].update(bounds, mousePos, dt)
   return false

@@ -28,13 +28,14 @@ proc resizeBuffer*(data: pointer) =
 
 
 proc initGraphics*(data: AppData): GraphicsContext =
-  glfw.swapInterval(1)
+  # glfw.swapInterval(1)
   glfw.initialize()
 
   var c = DefaultOpenglWindowConfig
   c.title = data.name
   c.size = (w: data.size.x, h: data.size.y)
   c.resizable = true
+  c.nMultiSamples = data.aa.int32
 
   result.window = newWindow(c)
 
@@ -47,6 +48,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
 
   var res = (w: data.size.x.int32, h: data.size.y.int32)
   resizeBuffer(addr res)
+  echo "init"
 
 proc deinitGraphics*(ctx: GraphicsContext) =
   ctx.window.destroy()
@@ -56,6 +58,7 @@ proc finishRender*(ctx: GraphicsContext) =
   finishDraw()
   glFlush()
   glfw.swapBuffers(ctx.window)
+  glFinish()
 
 proc clearBuffer*(ctx: GraphicsContext, color: Color) =
   glClearColor(color.rf, color.gf, color.bf, color.af)

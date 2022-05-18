@@ -176,12 +176,16 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
       var loc = s.id.glGetUniformLocation(sp.name.cstring)
       case sp.kind:
       of SPKFloat4: glUniform4fv(loc, 1, cast[ptr GLfloat](value))
-      of SPKProj4: glUniformMatrix4fv(loc, 1, GL_FALSE.GLboolean, cast[
+      of SPKProj4:
+        glUniformMatrix4fv(loc, 1, GL_FALSE.GLboolean, cast[
           ptr GLfloat](value))
       of SPKFloat3:
         glUniform3f(loc, cast[ptr array[0..2, GLfloat]](value)[][0], cast[
             ptr array[0..2, GLfloat]](value)[][1], cast[ptr array[0..2,
                 GLfloat]](value)[][2])
+      of SPKFloat2:
+        glUniform2f(loc, cast[ptr array[0..1, GLfloat]](value)[][0], cast[
+            ptr array[0..1, GLfloat]](value)[][1])
       of SPKFloat1:
         glUniform1f(loc, cast[ptr GLfloat](value)[])
       of SPKInt1:
@@ -192,7 +196,7 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
         echo ":("
       s.params[sp] = true
       return
-  echo "unknown shader param: " & p
+  #echo "unknown shader param: " & p
 
 
 proc runCompute*(compute: Shader, size: Point) =

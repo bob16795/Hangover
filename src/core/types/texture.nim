@@ -17,13 +17,12 @@ const
 layout (location = 0) in vec4 vertex;
 layout (location = 1) in vec4 tintColorIn;
 
-uniform mat4 projection;
 out vec2 texRect;
 out vec4 tintColorGeo;
 
 void main()
 {
-    gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
+    gl_Position = vec4(vertex.xy, 0.0, 1.0);
     texRect = vertex.zw;
     tintColorGeo = tintColorIn;
 }
@@ -38,24 +37,46 @@ in vec4 tintColorGeo[2];
 
 out vec2 texCoords;
 out vec4 tintColor;
+uniform float rotation;
+uniform mat4 projection;
+
+vec2 rotate(vec2 pos, vec2 origin) {
+  vec2 p = pos - origin;
+  vec2 result;
+  float s = sin(rotation);
+  float c = cos(rotation);
+  result.x = p.x * c - p.y * s + origin.x;
+  result.y = p.x * s + p.y * c + origin.y;
+  return result;
+}
+
 
 void main() {
-  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y, gl_in[0].gl_Position.z, gl_in[1].gl_Position.w);
+  vec2 origin = (gl_in[0].gl_Position.xy + gl_in[1].gl_Position.xy) / 2;
+  vec2 pos1, pos2;
+  pos1 = rotate(vec2(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y), origin);
+  pos2 = vec2(0, 1);
+  gl_Position = projection * vec4(pos1, pos2);
   texCoords = vec2(texRect[0].x, texRect[1].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
 
-  gl_Position = vec4(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y, gl_in[0].gl_Position.z, gl_in[0].gl_Position.w);
+  pos1 = rotate(vec2(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y), origin);
+  pos2 = vec2(0, 1);
+  gl_Position = projection * vec4(pos1, pos2);
   texCoords = vec2(texRect[0].x, texRect[0].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
 
-  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y, gl_in[1].gl_Position.z, gl_in[1].gl_Position.w);
+
+  pos1 = rotate(vec2(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y), origin);
+  gl_Position = projection * vec4(pos1, pos2);
   texCoords = vec2(texRect[1].x, texRect[1].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
 
-  gl_Position = vec4(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y, gl_in[1].gl_Position.z, gl_in[0].gl_Position.w);
+  pos1 = rotate(vec2(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y), origin);
+  gl_Position = projection * vec4(pos1, pos2);
   texCoords = vec2(texRect[1].x, texRect[0].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
@@ -82,7 +103,7 @@ var
   VAO, VBO: GLUint
   textureProgram*: Shader
   queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
-      GLFloat]]]]
+      GLFloat]], rotation: GLfloat]]
   buffers: seq[GLUint]
   cullSize: Vector2
 
@@ -116,6 +137,7 @@ proc setupTexture*() =
   textureProgram = newShader(vertexCode, geoCode, fragmentCode)
   textureProgram.registerParam("tintColor", SPKFloat4)
   textureProgram.registerParam("projection", SPKProj4)
+  textureProgram.registerParam("rotation", SPKFloat1)
 
 proc newTexture*(image: string): Texture =
   glGenTextures(1, addr result.tex)
@@ -151,17 +173,17 @@ proc aabb*(a, b: Rect): bool =
 
 
 proc draw*(texture: Texture, srcRect, dstRect: Rect, program = textureProgram,
-    color = newColor(255, 255, 255, 255)) =
+    color = newColor(255, 255, 255, 255), rotation: float = 0) =
   if (not dstRect.aabb(newRect(newVector2(0, 0), cullSize))): return
   var vertices = verts(dstRect.location, dstRect.location + dstRect.size,
       srcRect.location, srcRect.location + srcRect.size, color)
   if queue == @[]:
-    queue &= (u: true, p: program, t: texture, vs: vertices)
+    queue &= (u: true, p: program, t: texture, vs: vertices, rotation: rotation.GLfloat)
     return
-  if texture == queue[^1].t and program == queue[^1].p:
+  if texture == queue[^1].t and program == queue[^1].p and rotation == queue[^1].rotation.GLfloat:
     queue[^1].vs &= vertices
   else:
-    queue &= (u: true, p: program, t: texture, vs: vertices)
+    queue &= (u: true, p: program, t: texture, vs: vertices, rotation: rotation.GLfloat)
 
 proc finishDraw*() =
   if queue != @[]:
@@ -179,6 +201,7 @@ proc finishDraw*() =
   for i in 0..<len(queue):
     var q = queue[i]
     q.p.use()
+    q.p.setParam("rotation", addr q.rotation)
     var last = len(q.vs)
     var vertices = q.vs
 

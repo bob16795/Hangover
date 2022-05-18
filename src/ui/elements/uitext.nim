@@ -13,7 +13,7 @@ type
     ALeft,
     ARight
   UIText* = ref object of UIElement
-    font: ptr Font
+    font*: ptr Font
     text*: string
     inactive*: bool
     update*: UIUpdate
@@ -44,6 +44,7 @@ method draw*(t: UIText, parentRect: Rect) =
   for text in t.text.split("\n"):
     h += t.font[].size.float32
   var posy: float32 = bounds.y + (bounds.height - h) / 2
+  posy = max(posy, bounds.y)
   for text in t.text.split("\n"):
     var posx: float32 = bounds.x
     case t.align:

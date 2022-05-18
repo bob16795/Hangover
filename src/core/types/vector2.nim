@@ -74,7 +74,7 @@ proc `angle=`*(p: var Vector2, radians: float32) =
   p.y = sin(radians).float32
 
 proc angle*(p: Vector2): float32 =
-  return arctan2(p.x.float32, p.y.float32)
+  return arctan2(p.y.float32, p.x.float32)
 
 proc rotated*(p: Vector2, phi: float32): Vector2 =
   result.angle = phi + p.angle

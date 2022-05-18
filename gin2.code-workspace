@@ -20,6 +20,9 @@
     },
     {
       "path": "../3dTest"
+    },
+    {
+      "path": "../bsp"
     }
   ],
   "settings": {}

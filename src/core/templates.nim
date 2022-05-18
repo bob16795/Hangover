@@ -49,7 +49,6 @@ template Game*(body: untyped) =
     initAudio()
     initUIManager(data.size)
 
-
     setupEventCallbacks(ctx)
 
     Initialize(ctx)
