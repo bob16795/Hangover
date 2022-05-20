@@ -28,7 +28,6 @@ proc resizeBuffer*(data: pointer) =
 
 
 proc initGraphics*(data: AppData): GraphicsContext =
-  # glfw.swapInterval(1)
   glfw.initialize()
 
   var c = DefaultOpenglWindowConfig
@@ -48,6 +47,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
 
   var res = (w: data.size.x.int32, h: data.size.y.int32)
   resizeBuffer(addr res)
+  glfw.swapInterval(1)
   echo "init"
 
 proc deinitGraphics*(ctx: GraphicsContext) =

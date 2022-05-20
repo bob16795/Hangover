@@ -53,6 +53,7 @@ method draw*(t: UIText, parentRect: Rect) =
       of ARight:
         posx = bounds.x + bounds.width - sizeText(t.font[], text).x
       else: discard
+    posx = max(posx, bounds.x)
     t.font[].draw(text, newPoint(posx.cint, posy.cint), color)
     posy += t.font[].size.float32
 

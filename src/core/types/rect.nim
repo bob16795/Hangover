@@ -19,6 +19,15 @@ proc newRect*(position, size: Vector2): Rect =
   result.width = size.x
   result.height = size.y
 
+proc fix*(r: Rect): Rect =
+  result = r
+  if result.width < 0:
+    result.width *= -1
+    result.x -= result.width
+  if result.height < 0:
+    result.height *= -1
+    result.y -= result.height
+
 proc size*(r: Rect): Vector2 =
   result.x = r.width
   result.y = r.height

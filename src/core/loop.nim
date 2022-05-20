@@ -50,23 +50,23 @@ proc update*(loop: var Loop, ctx: var GraphicsContext) =
   loop.lastTime = loop.currentTime
   loop.currentTime = glfw.getTime()
   var delayed: bool
-  if (loop.nextTime > loop.currentTime):
-    delayed = true
-    sleep(((loop.nextTime - loop.currentTime) * 1000).int)
-  else:
-    delayed = false
-    loop.nextTime = loop.currentTime
+  # if (loop.nextTime > loop.currentTime):
+  #   delayed = true
+  #   # sleep(((loop.nextTime - loop.currentTime) * 1000).int)
+  # else:
+  #   delayed = false
+  #   loop.nextTime = loop.currentTime
   loop.dt = loop.currentTime - loop.lastTime
-  loop.nextTime += loop.targetFPS
+  # loop.nextTime += loop.targetFPS
 
   if loop.updateProc(loop.dt, delayed):
     loop.done = true
-  loop.updates += 1
+  # loop.updates += 1
   loop.dt = 0
 
   loop.drawProc(ctx)
-  loop.frames += 1
-  if (glfw.getTime() - loop.timer > 1.0):
-    loop.timer += 1
-    # echo "FPS: " & $loop.frames
-    loop.frames = 0
+  # loop.frames += 1
+  # if (glfw.getTime() - loop.timer > 1.0):
+  #   loop.timer += 1
+  #   # echo "FPS: " & $loop.frames
+  #   loop.frames = 0

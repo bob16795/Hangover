@@ -3,6 +3,7 @@ import ui/elements/uibutton
 import ui/elements/uislider
 import ui/elements/uipanel
 import ui/elements/uigroup
+import ui/elements/uiimage
 import ui/elements/uiinput
 import ui/elements/uitext
 import ui/types/uirectangle
@@ -17,6 +18,7 @@ export uitext
 export uiinput
 export uipanel
 export uigroup
+export uiimage
 export uislider
 export uibutton
 export uielement

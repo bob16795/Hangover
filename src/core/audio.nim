@@ -2,6 +2,7 @@ import types/sound
 import types/song
 
 import openal
+import random
 
 const
   SOURCES = 30
@@ -37,6 +38,15 @@ proc play*(song: Song) =
 
 proc play*(sound: Sound) =
   # play sound
+  alSourcef(soundSources[nextSoundSource], AL_PITCH, 1.0.float32)
+  alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
+  alSourcePlay(soundSources[nextSoundSource])
+  nextSoundSource += 1
+  if nextSoundSource == SOURCES:
+    nextSoundSource = 0
+
+proc playRand*(sound: Sound, rs, re: float32) =
+  alSourcef(soundSources[nextSoundSource], AL_PITCH, rand(rs..re).float32)
   alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
   alSourcePlay(soundSources[nextSoundSource])
   nextSoundSource += 1
