@@ -13,3 +13,4 @@ tests/*
 *.dll
 
 !src/assets/libs/*
+gin2.deps
