@@ -16,10 +16,10 @@ BEGIN
     BLOCK "080904E4"
     BEGIN
       VALUE "CompanyName", "None"
-      VALUE "FileDescription", "$$2$$"
-      VALUE "FileVersion", "$$1$$"
-      VALUE "InternalName", "$$2$$"
-      VALUE "OriginalFilename", "$$2$$.exe"
+      VALUE "FileDescription", "%%2%%"
+      VALUE "FileVersion", "%%1%%"
+      VALUE "InternalName", "%%2%%"
+      VALUE "OriginalFilename", "%%2%%.exe"
     END
   END
   BLOCK "VarFileInfo"
@@ -31,6 +31,6 @@ EOF
 }
 
 ver=$(echo $1 | sed -s 's/-/./')
-contents $1 $3 | sed "s/\$\$1\$\$/$ver/g" | sed "s/\$\$2\$\$/$2/g" > $4
+contents $1 $3 | sed "s/%%1%%/$ver/g" | sed "s/%%2%%/$2/g" > $4
 
 echo $3
