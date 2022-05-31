@@ -2,6 +2,7 @@ import glfw
 import sugar
 from loop import GraphicsContext
 export glfw.Key
+import tables
 
 type
   EventId = int
@@ -12,7 +13,7 @@ type
 
 var
   lastEventId: EventId
-  listeners: seq[tuple[id: EventId, call: EventListener]]
+  listeners: Table[EventId, seq[EventListener]]
 
 template createEvent*(name: untyped): untyped =
   var name = lastEventId
@@ -20,12 +21,16 @@ template createEvent*(name: untyped): untyped =
   lastEventId = cast[EventId](cast[int](lastEventId) + 1)
 
 proc sendEvent*(event: EventId, data: pointer) =
-  for e in listeners:
-    if e.id == event:
-      e.call(data)
+  if event in listeners:
+    for call in listeners[event]:
+      call(data)
 
 proc createListener*(event: EventId, call: EventListener) =
-  listeners &= (id: event, call: call)
+  if event in listeners:
+    listeners[event] &= call
+  else:
+    listeners[event] = @[call]
+
 
 include events/keyboard
 include events/mouse
