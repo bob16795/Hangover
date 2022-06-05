@@ -1,0 +1,11 @@
+Rect	core/types/rect.html#Rect	rect: Rect	
+newRect	core/types/rect.html#newRect,float32,float32,float32,float32	rect: newRect(x, y: float32; width, height: float32): Rect	
+newRect	core/types/rect.html#newRect,Vector2,Vector2	rect: newRect(position, size: Vector2): Rect	
+fix	core/types/rect.html#fix,Rect	rect: fix(r: Rect): Rect	
+size	core/types/rect.html#size,Rect	rect: size(r: Rect): Vector2	
+size=	core/types/rect.html#size=,Rect,Vector2	rect: size=(r: var Rect; size: Vector2)	
+location	core/types/rect.html#location,Rect	rect: location(r: Rect): Vector2	
+location=	core/types/rect.html#location=,Rect,Vector2	rect: location=(r: var Rect; p: Vector2)	
+offset	core/types/rect.html#offset,Rect,Vector2	rect: offset(r: Rect; offset: Vector2): Rect	
+center	core/types/rect.html#center,Rect	rect: center(r: Rect): Vector2	
+clamp	core/types/rect.html#clamp,Vector2,Rect	rect: clamp(v: Vector2; r: Rect): Vector2	

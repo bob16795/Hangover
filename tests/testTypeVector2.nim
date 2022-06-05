@@ -48,3 +48,15 @@ suite "Vector2":
     var b = newVector2(0, 3)
 
     assert distance(a, b) == 3
+
+  test "createFromPoint":
+    var a: Vector2 = newPoint(0, 0).toVector2()
+
+    assert a.x == 0
+    assert a.y == 0
+    
+  test "convertToPoint":
+    var a: Point = newVector2(0, 0).toPoint()
+
+    assert a.x == 0
+    assert a.y == 0

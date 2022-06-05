@@ -1,0 +1,4 @@
+GraphicsContext	core/loop.html#GraphicsContext	loop: GraphicsContext	
+newLoop	core/loop.html#newLoop,float64	loop: newLoop(fps: float64): Loop	
+forceDraw	core/loop.html#forceDraw,Loop,GraphicsContext	loop: forceDraw(loop: var Loop; ctx: var GraphicsContext)	
+update	core/loop.html#update,Loop,GraphicsContext	loop: update(loop: var Loop; ctx: var GraphicsContext)	

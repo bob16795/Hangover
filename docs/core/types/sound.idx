@@ -1,0 +1,3 @@
+Sound	core/types/sound.html#Sound	sound: Sound	
+newSoundMem	core/types/sound.html#newSoundMem,Stream	sound: newSoundMem(s: Stream): Sound	
+newSound	core/types/sound.html#newSound,string	sound: newSound(file: string): Sound	

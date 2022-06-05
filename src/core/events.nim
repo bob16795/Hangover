@@ -5,27 +5,32 @@ export glfw.Key
 import tables
 
 type
-  EventId = int
-  EventListener = proc(data: pointer)
+  EventId* = distinct uint8
+  EventListener* = proc(data: pointer)
+    ## a proc that can be attached to an event
 
-# template `+`(v: EventId): EventId =
-#   cast[EventId](cast[int](v) + 1)
+proc `+`*(a, b: EventId): EventId {.borrow.}
+proc `==`*(a, b: EventId): bool {.borrow.}
 
 var
-  lastEventId: EventId
+  lastEventId* {.compileTime.}: EventId
   listeners: Table[EventId, seq[EventListener]]
 
 template createEvent*(name: untyped): untyped =
-  var name = lastEventId
+  ## creates an event
+  var name = static: lastEventId
   export name
-  lastEventId = cast[EventId](cast[int](lastEventId) + 1)
+  static:
+    lastEventId = lastEventId + 1.EventId
 
 proc sendEvent*(event: EventId, data: pointer) =
+  ## sends an event to the manager
   if event in listeners:
     for call in listeners[event]:
       call(data)
 
 proc createListener*(event: EventId, call: EventListener) =
+  ## attaches a listener to an event
   if event in listeners:
     listeners[event] &= call
   else:
@@ -37,6 +42,7 @@ include events/mouse
 include events/resize
 
 proc setupEventCallbacks*(ctx: GraphicsContext) =
+  ## sets the default callbacks
   ctx.window.keyCb = keyCb
   ctx.window.framebufferSizeCb = sizeCB
   ctx.window.windowSizeCb = resizeCB

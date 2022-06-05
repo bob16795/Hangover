@@ -1,0 +1,5 @@
+UIImage	ui/elements/uiimage.html#UIImage	uiimage: UIImage	
+checkHover	ui/elements/uiimage.html#checkHover.e,UIImage,Rect,Vector2	uiimage: checkHover(b: UIImage; parentRect: Rect; mousePos: Vector2): bool	
+click	ui/elements/uiimage.html#click.e,UIImage,int	uiimage: click(b: UIImage; button: int)	
+draw	ui/elements/uiimage.html#draw.e,UIImage,Rect	uiimage: draw(b: UIImage; parentRect: Rect)	
+update	ui/elements/uiimage.html#update.e,UIImage,Rect,Vector2,float32	uiimage: update(b: var UIImage; parentRect: Rect; mousePos: Vector2; dt: float32): bool	

@@ -1,0 +1,8 @@
+ACenter	ui/elements/uitext.html#ACenter	UITextAlign.ACenter	
+ALeft	ui/elements/uitext.html#ALeft	UITextAlign.ALeft	
+ARight	ui/elements/uitext.html#ARight	UITextAlign.ARight	
+UITextAlign	ui/elements/uitext.html#UITextAlign	uitext: UITextAlign	
+UIText	ui/elements/uitext.html#UIText	uitext: UIText	
+newUIText	ui/elements/uitext.html#newUIText,Font,UIRectangle,UIUpdate,bool,bool	uitext: newUIText(font: var Font; bounds: UIRectangle; update: UIUpdate;\n          align = ACenter; ina: bool = false; ul: bool = false;\n          color = newColor(0, 0, 0, 255)): UIText	
+draw	ui/elements/uitext.html#draw.e,UIText,Rect	uitext: draw(t: UIText; parentRect: Rect)	
+update	ui/elements/uitext.html#update.e,UIText,Rect,Vector2,float32	uitext: update(t: var UIText; parentRect: Rect; mousePos: Vector2; dt: float32): bool	

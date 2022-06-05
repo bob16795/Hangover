@@ -1,0 +1,7 @@
+Color	core/types/color.html#Color	color: Color	
+newColor	core/types/color.html#newColor,uint8,uint8,uint8,uint8	color: newColor(r, g, b: uint8; a: uint8 = 255): Color	
+mix	core/types/color.html#mix,Color,Color,float	color: mix(a, b: Color; ratio: float = 0.5): Color	
+rf	core/types/color.html#rf,Color	color: rf(c: Color): float32	
+gf	core/types/color.html#gf,Color	color: gf(c: Color): float32	
+bf	core/types/color.html#bf,Color	color: bf(c: Color): float32	
+af	core/types/color.html#af,Color	color: af(c: Color): float32	

@@ -1,0 +1,10 @@
+Font	core/types/font.html#Font	font: Font	
+Character	core/types/font.html#Character	font: Character	
+fontProgram	core/types/font.html#fontProgram	font: fontProgram	
+initFT	core/types/font.html#initFT	font: initFT()	
+deinitFT	core/types/font.html#deinitFT	font: deinitFT()	
+finFont	core/types/font.html#finFont,Font,int	font: finFont(f: Font; size: int): Font	
+newFontMem	core/types/font.html#newFontMem,cstring,int64,int	font: newFontMem(data: cstring; dataSize: int64; size: int): Font	
+newFont	core/types/font.html#newFont,string,int	font: newFont(face: string; size: int): Font	
+draw	core/types/font.html#draw,Font,string,Point,Color,float32	font: draw(font: Font; text: string; position: Point; color: Color; scale: float32 = 1)	
+sizeText	core/types/font.html#sizeText,Font,string	font: sizeText(font: Font; text: string): Vector2	

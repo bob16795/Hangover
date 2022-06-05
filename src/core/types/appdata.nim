@@ -7,6 +7,7 @@ import system
 
 type
   AppData* = object
+    ## stores data for an app
     name*: string
     size*: Point
     aa*: int
@@ -22,15 +23,16 @@ const
 
 static:
   discard staticExec(&"mkdir {tmp}")
-  echo staticExec(&"/bin/bash {rcGen} 0-0-0-0 '{ginAppName}' '{ginIcon}' {tmpRc}")
+  discard staticExec(&"/bin/bash {rcGen} 0-0-0-0 '{ginAppName}' '{ginIcon}' {tmpRc}")
   when system.hostCPU == "i386":
-    echo staticExec(&"i686-w64-mingw32-windres {tmpRc} -O coff {tmpRes32}")
+    discard staticExec(&"i686-w64-mingw32-windres {tmpRc} -O coff {tmpRes32}")
     {.passl: tmpRes32.}
   when system.hostCPU == "amd64":
-    echo staticExec(&"x86_64-w64-mingw32-windres {tmpRc} -O coff {tmpRes64}")
+    discard staticExec(&"x86_64-w64-mingw32-windres {tmpRc} -O coff {tmpRes64}")
     {.passl: tmpRes64.}
 
 proc newAppData*(): AppData =
+  ## creates a new app data for game setup
   result.name = ginAppName
   result.size = newPoint(640, 480)
   result.aa = 0

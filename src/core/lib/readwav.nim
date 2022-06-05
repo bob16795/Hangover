@@ -1,16 +1,16 @@
 import streams
 
 type WavFile* = object
+  ## stores PCM data
   data*: pointer
   size*: int
   freq*: int
   channels*: int
 
 proc readWav*(
-  path: string,
+  f: Stream,
   ): WavFile =
-  # load PCM data from wav file
-  var f = newFileStream(open(path))
+  ## load PCM data from wav file
   let
     chunkID = f.readStr(4)
     chunkSize = f.readUint32()

@@ -1,5 +1,6 @@
 import types/sound
 import types/song
+import types/vector2
 
 import openal
 import random
@@ -16,38 +17,71 @@ var
   soundSources: array[0..(SOURCES - 1), ALuint]
 
   nextSoundSource: int = 0
+  loopBuffer: ALuint
 
 proc initAudio*() =
+  ## sets up the audio system
   device = alcOpenDevice(nil)
   if device == nil: quit "OpenAL: failed to get default device"
   audioCtx = device.alcCreateContext(nil)
   if audioCtx == nil: quit "OpenAL: failed to create context"
   if not alcMakeContextCurrent(audioCtx): quit "OpenAL: failed to make context current"
 
+
   # generate song source
   alGenSources(ALsizei 1, addr musicSource)
-  alSourcei(musicSource, AL_LOOPING, 1)
 
   # geenrate sound sources
   alGenSources(ALsizei SOURCES, addr soundSources[0])
 
-proc play*(song: Song) =
-  # play sound
-  alSourcei(musicSource, AL_BUFFER, Alint song.buffer)
-  alSourcePlay(musicSource)
+proc updateAudio*() =
+  ## updates audio
+  ## checks if music should loop
+  ## checks for openAL errors
+  var sourceState: ALint
+  alGetSourcei(musicSource, AL_SOURCE_STATE, addr sourceState)
+  if (sourceState != AL_PLAYING and loopBuffer != 0):
+    alSourcei(musicSource, AL_BUFFER, Alint loopBuffer)
+    alSourcei(musicSource, AL_LOOPING, 1)
+    alSourcePlay(musicSource)
+  let e = alGetError()
+  if e != AL_NO_ERROR:
+    echo "openAl error: " & $e
 
-proc play*(sound: Sound) =
-  # play sound
-  alSourcef(soundSources[nextSoundSource], AL_PITCH, 1.0.float32)
-  alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
-  alSourcePlay(soundSources[nextSoundSource])
+
+proc play*(song: Song) =
+  ## plays a song
+  if song.loopBuffer == loopBuffer: return
+  alSourcef(musicSource, AL_PITCH, 1.0.float32)
+  if song.hasIntro:
+    alSourceStop(musicSource)
+    alSourcei(musicSource, AL_BUFFER, Alint song.introbuffer)
+    alSourcei(musicSource, AL_LOOPING, 0)
+    alSourcePlay(musicSource)
+  else:
+    alSourceStop(musicSource)
+    discard
+  loopBuffer = song.loopBuffer
+
+proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0)) =
+  ## plays a sound, pos is for spacial sound
+  var sourceState: ALint
+  alGetSourcei(soundSources[nextSoundSource], AL_SOURCE_STATE, addr sourceState)
+  if sourceState != AL_PLAYING:
+    alSourcef(soundSources[nextSoundSource], AL_PITCH, 1.0.float32)
+    alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
+    alSource3f(soundSources[nextSoundSource], AL_POSITION, pos.x, pos.y, 0)
+    alSourcePlay(soundSources[nextSoundSource])
   nextSoundSource += 1
   if nextSoundSource == SOURCES:
     nextSoundSource = 0
 
-proc playRand*(sound: Sound, rs, re: float32) =
+proc playRand*(sound: Sound, rs, re: float32, pos: Vector2 = newVector2(0, 0)) =
+  ## plays a sound at a random pitch
   alSourcef(soundSources[nextSoundSource], AL_PITCH, rand(rs..re).float32)
   alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
+  alSource3f(soundSources[nextSoundSource], AL_POSITION, pos.x, pos.y, 0)
+
   alSourcePlay(soundSources[nextSoundSource])
   nextSoundSource += 1
   if nextSoundSource == SOURCES:

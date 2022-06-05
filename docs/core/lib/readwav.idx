@@ -1,0 +1,2 @@
+WavFile	core/lib/readwav.html#WavFile	readwav: WavFile	
+readWav	core/lib/readwav.html#readWav,Stream	readwav: readWav(f: Stream): WavFile	

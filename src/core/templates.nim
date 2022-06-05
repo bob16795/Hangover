@@ -5,6 +5,8 @@ import events
 import audio
 
 template Game*(body: untyped) =
+  ## the main loop of a game
+  ## make sure to set `Setup`, `Initialize`, `Update`, `Draw` and `gameClose`
 
   proc main() =
     proc Setup(): AppData
@@ -43,6 +45,9 @@ template Game*(body: untyped) =
       finishDraw()
       finishRender(ctx)
     template noUI() = ui = false
+    template drawUIEarly() =
+      drawUI()
+      ui = false
 
     body
 
@@ -63,6 +68,7 @@ template Game*(body: untyped) =
         if glfw.shouldClose(ctx.window):
           return true
         updateUI(dt)
+        updateAudio()
         return Update(dt, delayed)
 
     loop.drawProc = proc (ctx: var GraphicsContext) =

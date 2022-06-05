@@ -26,6 +26,7 @@ export uirectangle
 
 type
   UIManager* {.acyclic.} = object
+    ## a ui manager, stores ui elements
     elements: seq[UIElement]
     size: Vector2
     mousePos: Vector2
@@ -35,7 +36,7 @@ var
   drag*: UIElement
   last: int
 
-proc mouseMove*(data: pointer) =
+proc mouseMove(data: pointer) =
   var pos = cast[ptr tuple[x, y: float64]](data)[]
   um.mousePos = newVector2(pos.x, pos.y)
   for e in um.elements:
@@ -43,7 +44,7 @@ proc mouseMove*(data: pointer) =
   if drag != nil:
     drag.drag(last)
 
-proc mouseClick*(data: pointer) =
+proc mouseClick(data: pointer) =
   var btn = cast[ptr int](data)[]
   last = btn
   sendEvent(EVENT_STOP_LINE_ENTER, nil)
@@ -55,11 +56,12 @@ proc mouseClick*(data: pointer) =
 proc mouseRel(data: pointer) =
   drag = nil
 
-proc resizeUI*(data: pointer) =
+proc resizeUI(data: pointer) =
   var size = cast[ptr tuple[x, y: int32]](data)[]
   um.size = newVector2(size.x.float32, size.y.float32)
 
 proc initUIManager*(size: Point) =
+  ## creates a new UIManager
   um.size = newVector2(size.x.float32, size.y.float32)
   createListener(EVENT_MOUSE_MOVE, mouseMove)
   createListener(EVENT_MOUSE_CLICK, mouseClick)
@@ -67,21 +69,26 @@ proc initUIManager*(size: Point) =
   createListener(EVENT_RESIZE, resizeUI)
 
 proc addUIElement*(e: UIElement) =
+  ## adds a single ui element to the ui
   um.elements.add(e)
 
 proc addUIElements*(elems: seq[UIElement]) =
+  ## adds ui elements to the ui
   um.elements.add(elems)
 
 proc drawUI*() =
+  ## draws the ui
   for e in um.elements:
     e.draw(newRect(newVector2(0, 0), um.size))
 
 proc updateUI*(dt: float32) =
+  ## processes a ui tick
   for i in 0..<len um.elements:
     discard um.elements[i].update(newRect(newVector2(0, 0), um.size),
         um.mousePos, dt)
 
 proc setUIActive*(i: int, value: bool) =
+  ## sets the ui element at index i to active
   um.elements[i].isActive = value
 
 proc isDashNode(n: NimNode): bool =
@@ -125,21 +132,6 @@ proc uiAux(outName, body: NimNode): NimNode =
     result &= newCall(newDotExpr(outName, ident("add")), ident(tmpName))
 
 macro createUIElems*(name: untyped, body: untyped): untyped =
+  ## creates a ui system stores the result into a seq[UIElement] in name
   uiAux(name, body)
 
-when isMainModule:
-  expandMacros:
-    createUIElems root:
-      - UIGroup:
-        bounds = newUIRectangle(0, 0, 0, 0, 0, 0, 1, 1)
-        elements:
-          - UIPanel:
-            bounds = newUIRectangle(0, 0, 0, 0, 0, 0, 1, 1)
-        tmpElements:
-          - UIPanel:
-            bounds = newUIRectangle(0, 0, 0, 0, 0, 0, 1, 1)
-
-          - UIText:
-            bounds = newUIRectangle(0, 0, 0, 0, 0, 0, 1, 1)
-
-            update = ()=>"Check Mate"

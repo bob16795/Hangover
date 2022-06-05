@@ -1,4 +1,5 @@
 import freetype/freetype
+import freetype/fttypes
 import opengl
 import point
 import color
@@ -19,6 +20,7 @@ type
     th: GLfloat
     bearing: Point
     advance: int
+    ay: int
     size: Point
 
 const
@@ -114,14 +116,14 @@ proc initFT*() =
 proc deinitFT*() =
   discard FT_Done_FreeType(ft)
 
-proc newFont*(face: string, size: int): Font =
-  if FT_New_Face(ft, face, 0, result.face).int != 0:
-    quit "failed to load font"
+
+
+proc finFont*(f: Font, size: int): Font =
+  result = f
   discard FT_Set_Pixel_Sizes(result.face, 0, size.cuint)
 
   template g: untyped = result.face.glyph
 
-  result.size = size
 
   var atlasSize = newPoint(0, 0)
   for c in 0..<128:
@@ -143,6 +145,8 @@ proc newFont*(face: string, size: int): Font =
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RED.GLint, atlasSize.x.GLsizei,
       atlasSize.y.GLsizei, 0, GL_RED, GL_UNSIGNED_BYTE, cast[pointer](0))
 
+  result.size = atlasSize.y
+
   var x: cuint
 
   for c in 0..<128:
@@ -158,6 +162,7 @@ proc newFont*(face: string, size: int): Font =
       bearing: newPoint(result.face.glyph.bitmap_left,
           result.face.glyph.bitmap_top),
       advance: result.face.glyph.advance.x,
+      ay: result.face.glyph.advance.y,
       tx: x.float32 / atlasSize.x.float32,
       tw: g.bitmap.width.float32 / atlasSize.x.float32,
       th: g.bitmap.rows.float32 / atlasSize.y.float32,
@@ -166,7 +171,17 @@ proc newFont*(face: string, size: int): Font =
   glBindTexture(GL_TEXTURE_2D, 0)
   discard FT_Done_Face(result.face)
 
-proc draw*(font: Font, text: string, position: Point, color: Color) =
+proc newFontMem*(data: cstring, dataSize: int64, size: int): Font =
+  if FT_New_Memory_Face(ft, data, cast[FT_Long](dataSize), 0, result.face).int != 0:
+    quit "failed to load font"
+  result = finFont(result, size)
+
+proc newFont*(face: string, size: int): Font =
+  if FT_New_Face(ft, face, 0, result.face).int != 0:
+    quit "failed to load font"
+  result = finFont(result, size)
+
+proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1) =
   var pos = position
 
   var srect = newRect(0, 0, 1, 1)
@@ -174,11 +189,10 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
     if not font.characters.len > c.int: continue
     var
       ch = font.characters[c.int]
-      w = ch.size.x
-      h = ch.size.y
-      xpos = pos.x + ch.bearing.x
-      ypos = pos.y + ch.bearing.y - (ch.size.y + ch.bearing.y) + (
-          font.size.float32 * 0.75).int
+      w = (ch.size.x.float32 * scale).cint
+      h = (ch.size.y.float32 * scale).cint
+      xpos = pos.x + ((ch.bearing.x).float32 * scale).cint
+      ypos = pos.y - ((ch.bearing.y).float32 * scale).cint + (font.size.float32 * scale).cint
     srect.x = ch.tx
     srect.width = ch.tw
     srect.height = ch.th
@@ -187,7 +201,7 @@ proc draw*(font: Font, text: string, position: Point, color: Color) =
     var tex = Texture(tex: font.texture)
     tex.draw(srect, newRect(xpos.float32, ypos.float32, w.float32,
         h.float32), fontProgram, color)
-    pos.x += (ch.advance shr 6).cint
+    pos.x += ((ch.advance shr 6).float32 * scale).cint
 
 proc sizeText*(font: Font, text: string): Vector2 =
   for c in text:

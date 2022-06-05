@@ -8,6 +8,7 @@ import os
 
 type
   GraphicsContext* = object
+    ## stores some random graphics data for a loop
     window*: Window
     size*: Vector2
     pos*: Vector2
@@ -15,12 +16,9 @@ type
   Loop = object
     targetFPS: float64
 
-    lastTime: float64
-    timer: float64
-
     dt*: float64
-    currentTime: float64
-    nextTime*: float64
+
+    lastTime, currentTime: float32
 
     frames: int
     updates: int
@@ -32,41 +30,29 @@ type
 
 
 proc newLoop*(fps: float64): Loop =
+  ## creates a new loop running at fps
   result.targetFPS = 1.0 / fps
-  result.timer = glfw.getTime()
-  result.nextTime = result.timer + result.targetFPS
   result.dt = 0
-  result.currentTime = 0
   result.frames = 0
   result.updates = 0
 
 proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
+  ## forces the loop to draw the window
   loop.drawProc(ctx)
   loop.frames += 1
 
 proc update*(loop: var Loop, ctx: var GraphicsContext) =
+  ## processes one frame of a loop
   if loop.done:
     return
   loop.lastTime = loop.currentTime
   loop.currentTime = glfw.getTime()
   var delayed: bool
-  # if (loop.nextTime > loop.currentTime):
-  #   delayed = true
-  #   # sleep(((loop.nextTime - loop.currentTime) * 1000).int)
-  # else:
-  #   delayed = false
-  #   loop.nextTime = loop.currentTime
-  loop.dt = loop.currentTime - loop.lastTime
-  # loop.nextTime += loop.targetFPS
+  if loop.lastTime != 0:
+    loop.dt = loop.currentTime - loop.lastTime
 
   if loop.updateProc(loop.dt, delayed):
     loop.done = true
-  # loop.updates += 1
   loop.dt = 0
 
   loop.drawProc(ctx)
-  # loop.frames += 1
-  # if (glfw.getTime() - loop.timer > 1.0):
-  #   loop.timer += 1
-  #   # echo "FPS: " & $loop.frames
-  #   loop.frames = 0

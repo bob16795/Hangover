@@ -23,8 +23,8 @@ type
 
 proc newUIButton*(texture: Texture, font: var Font, bounds: UIRectangle,
         action: UIAction = nil, text = "", disableProc: proc(): bool = nil,
-            sprite: Sprite = Sprite(), toggleSprite: Sprite = Sprite(),
-                toggle: bool = false): UIButton =
+        sprite: Sprite = Sprite(), toggleSprite: Sprite = Sprite(),
+        toggle: bool = false): UIButton =
   result = UIButton()
 
   result.font = addr font
@@ -60,8 +60,6 @@ method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2): bool =
   if b.isDisabled != nil and b.isDisabled():
     return false
 
-  if b.textUpdate != nil:
-    b.text = b.textUpdate()
   var bounds = b.bounds.toRect(parentRect)
   if (bounds.x < mousePos.x and bounds.x +
           bounds.width > mousePos.x) and
@@ -85,11 +83,9 @@ method draw*(b: UIButton, parentRect: Rect) =
   var textColor = newColor(0, 0, 0, 255)
   if b.isDisabled != nil:
     if (b.isDisabled()):
+      textColor = newColor(128, 0, 0, 255)
       if b.disabledUI.texture.isDefined():
         sprite = b.disabledUI
-        textColor = newColor(128, 0, 0, 255)
-      else:
-        return
     else:
       if b.focused:
         sprite = b.focusedUI
@@ -134,4 +130,6 @@ method update*(b: var UIButton, parentRect: Rect, mousePos: Vector2,
     return false
   var bounds = b.bounds.toRect(parentRect)
 
+  if b.textUpdate != nil:
+    b.text = b.textUpdate()
   return false

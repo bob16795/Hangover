@@ -1,0 +1,19 @@
+Vector2	core/types/vector2.html#Vector2	vector2: Vector2	
+newVector2	core/types/vector2.html#newVector2,float32,float32	vector2: newVector2(x, y: float32): Vector2	
+newVector2	core/types/vector2.html#newVector2,int,int	vector2: newVector2(x, y: int): Vector2	
+`*`	core/types/vector2.html#*,Vector2,float32	vector2: `*`(p: Vector2; i: float32): Vector2	
+`*`	core/types/vector2.html#*,float32,Vector2	vector2: `*`(i: float32; p: Vector2): Vector2	
+`+`	core/types/vector2.html#+,Vector2,Vector2	vector2: `+`(p: Vector2; a: Vector2): Vector2	
+`-`	core/types/vector2.html#-,Vector2,Vector2	vector2: `-`(p: Vector2; a: Vector2): Vector2	
+`/`	core/types/vector2.html#/,Vector2,float32	vector2: `/`(p: Vector2; i: float32): Vector2	
+`*=`	core/types/vector2.html#*=,Vector2,float32	vector2: `*=`(p: var Vector2; i: float32)	
+`/=`	core/types/vector2.html#/=,Vector2,float32	vector2: `/=`(p: var Vector2; i: float32)	
+`+=`	core/types/vector2.html#+=,Vector2,Vector2	vector2: `+=`(p: var Vector2; a: Vector2)	
+`-=`	core/types/vector2.html#-=,Vector2,Vector2	vector2: `-=`(p: var Vector2; a: Vector2)	
+distance	core/types/vector2.html#distance,Vector2,Vector2	vector2: distance(a, b: Vector2): float	
+angle=	core/types/vector2.html#angle=,Vector2,float32	vector2: angle=(p: var Vector2; radians: float32)	
+angle	core/types/vector2.html#angle,Vector2	vector2: angle(p: Vector2): float32	
+rotated	core/types/vector2.html#rotated,Vector2,float32	vector2: rotated(p: Vector2; phi: float32): Vector2	
+rotate	core/types/vector2.html#rotate,Vector2,float32	vector2: rotate(p: var Vector2; phi: float32)	
+toPoint	core/types/vector2.html#toPoint,Vector2	vector2: toPoint(p: Vector2): Point	
+toVector2	core/types/vector2.html#toVector2,Point	vector2: toVector2(p: Point): Vector2	

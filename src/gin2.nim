@@ -22,7 +22,10 @@ export uimanager
 
 # rendering
 import rendering/animation
+import rendering/particles
 import rendering/sprite
 
 export animation
+export particles
 export sprite
+

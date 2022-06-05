@@ -1,0 +1,3 @@
+stbi_load	core/lib/stbi.html#stbi_load,cstring,cint,cint,cint,cint	stbi: stbi_load(filename: cstring; x, y, channels_in_file: var cint;\n          desired_channels: cint): pointer	
+stbi_load_from_memory	core/lib/stbi.html#stbi_load_from_memory,ptr.cuchar,cint,cint,cint,cint,cint	stbi: stbi_load_from_memory(buffer: ptr cuchar; len: cint;\n                      x, y, channels_in_file: var cint; desired_channels: cint): pointer	
+stbi_image_free	core/lib/stbi.html#stbi_image_free,pointer	stbi: stbi_image_free(retval_from_stbi_load: pointer)	

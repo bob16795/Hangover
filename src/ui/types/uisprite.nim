@@ -11,6 +11,7 @@ type
     FM_STRETCH
     FM_NONE
   UISprite* = object of Sprite
+    ## a ui sprite, renders in 8 elements
     renderSecs: array[0..2, array[0..2, Rect]]
     center: Rect
     fillMode: UIFillMode
@@ -50,15 +51,20 @@ proc range(start, stop, step: int): seq[int] =
     i += step
 
 proc scale*(sprite: UISprite, scale: Vector2): UISprite =
+  ## sets the scale of the UISprite
   result = sprite
   result.scale = scale
 
 proc drawSec*(sprite: var UISprite, src: Point, dest: var Rect, c: Color) =
   var lol = sprite.renderSecs[src.x][src.y]
-  sprite.texture.draw(lol, dest, color = c)
+  var d = dest.offset(newVector2(-1, -1))
+  d.width += 2
+  d.height += 2
+  sprite.texture.draw(lol, d, color = c)
 
 proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
     255, 255)) =
+  ## draws the UISprite
   if sprite.center.width == 0 or sprite.center.height == 0:
     return
   var tmp: Rect

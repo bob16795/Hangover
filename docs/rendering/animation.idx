@@ -1,0 +1,7 @@
+AnimationState	rendering/animation.html#AnimationState	animation: AnimationState	
+Animation	rendering/animation.html#Animation	animation: Animation	
+addState	rendering/animation.html#addState,Animation,string,float32,seq[Sprite]	animation: addState(a: var Animation; name: string; speed: float32; sprites: seq[Sprite])	
+setState	rendering/animation.html#setState,Animation,string,proc)	animation: setState(a: var Animation; name: string; callback: proc () = nil)	
+getStateFrame	rendering/animation.html#getStateFrame,Animation	animation: getStateFrame(a: Animation): Sprite	
+update	rendering/animation.html#update,Animation,float32	animation: update(a: var Animation; dt: float32)	
+draw	rendering/animation.html#draw,Animation,Rect,float32	animation: draw(a: Animation; r: Rect; rotation: float32 = 0)	

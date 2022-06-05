@@ -139,6 +139,31 @@ proc setupTexture*() =
   textureProgram.registerParam("projection", SPKProj4)
   textureProgram.registerParam("rotation", SPKFloat1)
 
+proc newTextureMem*(image: pointer, imageSize: cint): Texture =
+  glGenTextures(1, addr result.tex)
+
+  glBindTexture(GL_TEXTURE_2D, result.tex)
+
+  # set the texture wrapping/filtering options
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+      GL_NEAREST.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+
+  # load the texture
+  var
+    width, height, channels: cint
+    data: pointer = stbi_load_from_memory(cast[ptr cuchar](image), imageSize, width, height, channels, 4)
+  if data == nil:
+    quit "failed to load image"
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
+      0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, data)
+  glGenerateMipmap(GL_TEXTURE_2D)
+  stbi_image_free(data)
+
+  result.size = newVector2(width, height)
+
 proc newTexture*(image: string): Texture =
   glGenTextures(1, addr result.tex)
 
@@ -174,7 +199,7 @@ proc aabb*(a, b: Rect): bool =
 
 proc draw*(texture: Texture, srcRect, dstRect: Rect, program = textureProgram,
     color = newColor(255, 255, 255, 255), rotation: float = 0) =
-  if (not dstRect.aabb(newRect(newVector2(0, 0), cullSize))): return
+  # if (not dstRect.aabb(newRect(newVector2(0, 0), cullSize))): return
   var vertices = verts(dstRect.location, dstRect.location + dstRect.size,
       srcRect.location, srcRect.location + srcRect.size, color)
   if queue == @[]:

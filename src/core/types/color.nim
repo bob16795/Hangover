@@ -1,18 +1,21 @@
 
 type
   Color* = object
+    ## represents a color in rgba format
     r*: uint8
     g*: uint8
     b*: uint8
     a*: uint8
 
 proc newColor*(r, g, b: uint8, a: uint8 = 255): Color =
+  ## creates a new color
   result.r = r
   result.g = g
   result.b = b
   result.a = a
 
 proc mix*(a, b: Color, ratio: float = 0.5): Color =
+  ## mixes 2 colors
   var
     afactor = ratio
     bfactor = 1 - ratio
@@ -24,12 +27,15 @@ proc mix*(a, b: Color, ratio: float = 0.5): Color =
 proc rf*(c: Color): float32 =
   if c.r == 1: 1.0
   else: c.r.float32 / 255.0
+
 proc gf*(c: Color): float32 =
   if c.g == 1: 1.0
   else: c.g.float32 / 255.0
+
 proc bf*(c: Color): float32 =
   if c.b == 1: 1.0
   else: c.b.float32 / 255.0
+
 proc af*(c: Color): float32 =
   if c.a == 1: 1.0
   else: c.a.float32 / 255.0

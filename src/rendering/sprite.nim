@@ -11,17 +11,25 @@ type
     sourceBounds*: Rect
 
 proc newSprite*(texture: Texture, x, y, w, h: float32): Sprite =
+  ## creates a new sprite from a texture
+  ## bounds are uv coords
   result.texture = texture
   result.sourceBounds = newRect(x, y, w, h)
 
 proc newSprite*(texture: Texture, bounds: Rect): Sprite =
+  ## creates a new sprite from a texture
+  ## bounds are uv coords
   result.texture = texture
   result.sourceBounds = bounds
 
-proc draw*(sprite: Sprite, position: Vector2, rotation: float32,
-    size: Vector2 = newVector2(0, 0), c: Color = newColor(255, 255, 255, 255)) =
-  var trgSize = size
-  if size == newVector2(0, 0):
+proc draw*(sprite: Sprite, target: Rect, rotation: float32 = 0, color: Color = newColor(255, 255, 255)) =
+  ## draws a sprite at `target`
+  var trgSize = target.size
+  if target.size == newVector2(0, 0):
     trgSize = sprite.sourceBounds.size
-  sprite.texture.draw(sprite.sourceBounds, newRect(position,
-                        trgSize), color = c, rotation = rotation)
+  sprite.texture.draw(sprite.sourceBounds, newRect(target.location,
+                        trgSize), color = color, rotation = rotation)
+
+proc draw*(sprite: Sprite, position: Vector2, rotation: float32,
+    size: Vector2 = newVector2(0, 0), c: Color = newColor(255, 255, 255, 255)) {.deprecated: "Use targetRect instead".} =
+  draw(sprite, newRect(position, size), rotation, c)

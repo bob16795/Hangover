@@ -1,0 +1,3 @@
+APPNAME	core/storage.html#APPNAME	storage: APPNAME	
+getContentDir	core/storage.html#getContentDir	storage: getContentDir(): string	
+getFullFilePath	core/storage.html#getFullFilePath,string	storage: getFullFilePath(file: string): string	

@@ -19,9 +19,10 @@ type
     update*: UIUpdate
     align*: UITextAlign
     underline*: bool
+    color*: Color
 
 proc newUIText*(font: var Font, bounds: UIRectangle, update: UIUpdate,
-    align = ACenter, ina: bool = false, ul: bool = false): UIText =
+    align = ACenter, ina: bool = false, ul: bool = false, color = newColor(0, 0, 0, 255)): UIText =
   result = UIText()
 
   result.isActive = true
@@ -31,15 +32,13 @@ proc newUIText*(font: var Font, bounds: UIRectangle, update: UIUpdate,
   result.align = align
   result.inactive = ina
   result.underline = ul
+  result.color = color
 
 method draw*(t: UIText, parentRect: Rect) =
   if not t.isActive:
     return
   if (t.text == ""): return
   var bounds = t.bounds.toRect(parentRect)
-  var color = newColor(0, 0, 0, 255)
-  if t.inactive:
-    color = newColor(0, 0, 0, 255)
   var h: float32 = 0
   for text in t.text.split("\n"):
     h += t.font[].size.float32
@@ -54,7 +53,7 @@ method draw*(t: UIText, parentRect: Rect) =
         posx = bounds.x + bounds.width - sizeText(t.font[], text).x
       else: discard
     posx = max(posx, bounds.x)
-    t.font[].draw(text, newPoint(posx.cint, posy.cint), color)
+    t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color)
     posy += t.font[].size.float32
 
 method update*(t: var UIText, parentRect: Rect, mousePos: Vector2,

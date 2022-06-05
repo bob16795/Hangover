@@ -1,4 +1,3 @@
-
 when defined(windows) and defined(vcc):
   {.pragma: stbcall, stdcall.}
 else:
@@ -13,6 +12,7 @@ proc stbi_load*(
   desired_channels: cint
 ): pointer
   {.importc: "stbi_load", stbcall.}
+  ## loads a image with stbi
 
 proc stbi_load_from_memory*(
   buffer: ptr cuchar;
@@ -21,6 +21,8 @@ proc stbi_load_from_memory*(
   desired_channels: cint
 ): pointer
   {.importc: "stbi_load_from_memory", stbcall.}
+  ## loads a image with stbi from memory
 
 proc stbi_image_free*(retval_from_stbi_load: pointer)
   {.importc: "stbi_image_free", stbcall.}
+  ## clears a image with stbi

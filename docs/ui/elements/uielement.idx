@@ -1,0 +1,8 @@
+UIAction	ui/elements/uielement.html#UIAction	uielement: UIAction	
+UIUpdate	ui/elements/uielement.html#UIUpdate	uielement: UIUpdate	
+UIElement	ui/elements/uielement.html#UIElement	uielement: UIElement	
+checkHover	ui/elements/uielement.html#checkHover.e,UIElement,Rect,Vector2	uielement: checkHover(e: UIElement; parentRect: Rect; mousePos: Vector2): bool	
+update	ui/elements/uielement.html#update.e,UIElement,Rect,Vector2,float32	uielement: update(e: var UIElement; parentRect: Rect; mousePos: Vector2; dt: float32): bool	
+click	ui/elements/uielement.html#click.e,UIElement,int	uielement: click(e: UIElement; button: int)	
+drag	ui/elements/uielement.html#drag.e,UIElement,int	uielement: drag(e: UIElement; button: int)	
+draw	ui/elements/uielement.html#draw.e,UIElement,Rect	uielement: draw(e: UIElement; parentRect: Rect)	

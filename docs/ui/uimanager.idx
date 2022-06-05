@@ -1,0 +1,10 @@
+UIManager	ui/uimanager.html#UIManager	uimanager: UIManager	
+um	ui/uimanager.html#um	uimanager: um	
+drag	ui/uimanager.html#drag	uimanager: drag	
+initUIManager	ui/uimanager.html#initUIManager,Point	uimanager: initUIManager(size: Point)	
+addUIElement	ui/uimanager.html#addUIElement,UIElement	uimanager: addUIElement(e: UIElement)	
+addUIElements	ui/uimanager.html#addUIElements,seq[UIElement]	uimanager: addUIElements(elems: seq[UIElement])	
+drawUI	ui/uimanager.html#drawUI	uimanager: drawUI()	
+updateUI	ui/uimanager.html#updateUI,float32	uimanager: updateUI(dt: float32)	
+setUIActive	ui/uimanager.html#setUIActive,int,bool	uimanager: setUIActive(i: int; value: bool)	
+createUIElems	ui/uimanager.html#createUIElems.m,untyped,untyped	uimanager: createUIElems(name: untyped; body: untyped): untyped	
