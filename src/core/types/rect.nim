@@ -7,11 +7,23 @@ type
     width*: float32
     height*: float32
 
-proc newRect*(x, y: float32, width, height: float32): Rect =
-  result.x = x
-  result.y = y
-  result.width = width
-  result.height = height
+proc newRect*(x, y, width, height: int | float | float32 | float64): Rect =
+  result.x = x.float32
+  result.y = y.float32
+  result.width = width.float32
+  result.height = height.float32
+
+proc newRect*(x, y: int | float | float32 | float64, size: Vector2): Rect =
+  result.x = x.float32
+  result.y = y.float32
+  result.width = size.x
+  result.height = size.y
+
+proc newRect*(position: Vector2, width, height: int | float | float32 | float64): Rect =
+  result.x = position.x
+  result.y = position.y
+  result.width = width.float32
+  result.height = height.float32
 
 proc newRect*(position, size: Vector2): Rect =
   result.x = position.x

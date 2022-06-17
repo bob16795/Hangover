@@ -19,7 +19,7 @@ type
 
 var tmpText = ""
 
-proc onKey*(data: pointer) =
+proc onKey*(data: pointer): bool =
   var c = cast[ptr string](data)[]
   tmpText = c
 

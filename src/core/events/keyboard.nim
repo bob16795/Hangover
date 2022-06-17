@@ -33,5 +33,5 @@ proc charCb*(win: Window, r: Rune) =
   lineText &= $r
   sendEvent(EVENT_LINE_ENTER, addr lineText)
 
-proc setLineText*(data: pointer) =
+proc setLineText*(data: pointer): bool =
   lineText = cast[ptr string](data)[]

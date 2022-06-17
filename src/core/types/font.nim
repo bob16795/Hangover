@@ -11,9 +11,10 @@ import rect
 type
   Font* = object
     face: FT_Face
-    texture: GLuint
+    texture*: GLuint
     size*: int
     characters: array[0..128, Character]
+    spacing: int
   Character* = object
     tx: GLfloat
     tw: GLfloat
@@ -171,15 +172,17 @@ proc finFont*(f: Font, size: int): Font =
   glBindTexture(GL_TEXTURE_2D, 0)
   discard FT_Done_Face(result.face)
 
-proc newFontMem*(data: cstring, dataSize: int64, size: int): Font =
+proc newFontMem*(data: cstring, dataSize: int64, size: int, spacing: int = 0): Font =
   if FT_New_Memory_Face(ft, data, cast[FT_Long](dataSize), 0, result.face).int != 0:
     quit "failed to load font"
   result = finFont(result, size)
+  result.spacing = spacing
 
-proc newFont*(face: string, size: int): Font =
+proc newFont*(face: string, size: int, spacing: int = 0): Font =
   if FT_New_Face(ft, face, 0, result.face).int != 0:
     quit "failed to load font"
   result = finFont(result, size)
+  result.spacing = spacing
 
 proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1) =
   var pos = position
@@ -200,13 +203,14 @@ proc draw*(font: Font, text: string, position: Point, color: Color, scale: float
     # render texture
     var tex = Texture(tex: font.texture)
     tex.draw(srect, newRect(xpos.float32, ypos.float32, w.float32,
-        h.float32), fontProgram, color)
+        h.float32), addr fontProgram, color)
     pos.x += ((ch.advance shr 6).float32 * scale).cint
+    pos.x += font.spacing
 
-proc sizeText*(font: Font, text: string): Vector2 =
+proc sizeText*(font: Font, text: string, scale: float32 = 1): Vector2 =
   for c in text:
     if not font.characters.len > c.int: continue
     var
       ch = font.characters[c.int]
-    result.x += (ch.advance shr 6).float32
+    result.x += ((ch.advance shr 6).float32 * scale)
   result.y = font.size.float32

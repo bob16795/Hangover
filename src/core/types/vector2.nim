@@ -8,25 +8,21 @@ type
 
 # const
 
-proc newVector2*(x, y: float32): Vector2 =
-  result.x = x
-  result.y = y
-
-proc newVector2*(x, y: int): Vector2 =
+proc newVector2*(x, y: int | float | float32 | float64): Vector2 =
   result.x = x.float32
   result.y = y.float32
 
 # operators
 
-proc `*`*(p: Vector2, i: float32): Vector2 =
+proc `*`*(p: Vector2, i: int | float | float32 | float64): Vector2 =
   result = p
-  result.x *= i
-  result.y *= i
+  result.x *= i.float32
+  result.y *= i.float32
 
-proc `*`*(i: float32, p: Vector2): Vector2 =
+proc `*`*(i: int | float | float32 | float64, p: Vector2): Vector2 =
   result = p
-  result.x *= i
-  result.y *= i
+  result.x *= i.float32
+  result.y *= i.float32
 
 proc `+`*(p: Vector2, a: Vector2): Vector2 =
   result = p
@@ -38,20 +34,23 @@ proc `-`*(p: Vector2, a: Vector2): Vector2 =
   result.x -= a.x
   result.y -= a.y
 
-proc `/`*(p: Vector2, i: float32): Vector2 =
+proc `/`*(p: Vector2, i: int | float | float32 | float64): Vector2 =
   result = p
-  result.x = (result.x / i).float32
-  result.y = (result.y / i).float32
+  result.x /= i.float32
+  result.y /= i.float32
+
+proc `-`*(p: Vector2): Vector2 =
+  result = result * -1
 
 # equals operators
 
-proc `*=`*(p: var Vector2, i: float32) =
-  p.x *= i
-  p.y *= i
+proc `*=`*(p: var Vector2, i: int | float | float32 | float64) =
+  p.x *= i.float32
+  p.y *= i.float32
 
-proc `/=`*(p: var Vector2, i: float32) =
-  p.x = (p.x / i).float32
-  p.y = (p.y / i).float32
+proc `/=`*(p: var Vector2, i: int | float | float32 | float64) =
+  p.x = (p.x / i.float32)
+  p.y = (p.y / i.float32)
 
 proc `+=`*(p: var Vector2, a: Vector2) =
   p.x += a.x
@@ -64,23 +63,30 @@ proc `-=`*(p: var Vector2, a: Vector2) =
 # utils
 
 proc distance*(a, b: Vector2): float =
-  var cx, cy: float32
-  cx = (a.x - b.x).float32
-  cy = (a.y - b.y).float32
+  let
+    cx = (a.x - b.x).float32
+    cy = (a.y - b.y).float32
   return sqrt(cx * cx + cy * cy)
 
-proc `angle=`*(p: var Vector2, radians: float32) =
+proc distanceSq*(a, b: Vector2): float =
+  let
+    cx = (a.x - b.x).float32
+    cy = (a.y - b.y).float32
+  return cx * cx + cy * cy
+
+proc `angle=`*(p: var Vector2, radians: int | float | float32 | float64) =
+  let mag = p.distance(newVector2(0, 0)).float32
   p.x = cos(radians).float32
   p.y = sin(radians).float32
+  p *= mag
 
-proc angle*(p: Vector2): float32 =
+proc angle*(p: Vector2): int | float | float32 | float64 =
   return arctan2(p.y.float32, p.x.float32)
 
-proc rotated*(p: Vector2, phi: float32): Vector2 =
-  result.angle = phi + p.angle
-  result = result * p.distance(newVector2(0, 0)).float32
+proc rotated*(p: Vector2, phi: int | float | float32 | float64): Vector2 =
+  result.angle = phi.float32 + p.angle
 
-proc rotate*(p: var Vector2, phi: float32) =
+proc rotate*(p: var Vector2, phi: int | float | float32 | float64) =
   p = p.rotated(phi)
 
 proc toPoint*(p: Vector2): Point =

@@ -1,6 +1,7 @@
 import sugar
 
 import types/vector2
+import types/color
 
 import glfw
 
@@ -12,6 +13,7 @@ type
     window*: Window
     size*: Vector2
     pos*: Vector2
+    color*: Color
 
   Loop = object
     targetFPS: float64
@@ -38,8 +40,16 @@ proc newLoop*(fps: float64): Loop =
 
 proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
   ## forces the loop to draw the window
+  loop.lastTime = loop.currentTime
+  loop.currentTime = glfw.getTime()
+  var delayed: bool
+  if loop.lastTime != 0:
+    loop.dt = loop.currentTime - loop.lastTime
+
+  if loop.updateproc(loop.dt, delayed):
+    loop.done = true
+
   loop.drawProc(ctx)
-  loop.frames += 1
 
 proc update*(loop: var Loop, ctx: var GraphicsContext) =
   ## processes one frame of a loop
@@ -51,7 +61,7 @@ proc update*(loop: var Loop, ctx: var GraphicsContext) =
   if loop.lastTime != 0:
     loop.dt = loop.currentTime - loop.lastTime
 
-  if loop.updateProc(loop.dt, delayed):
+  if loop.updateproc(loop.dt, delayed):
     loop.done = true
   loop.dt = 0
 

@@ -4,6 +4,8 @@ createEvent(EVENT_MOUSE_RELEASE)
 
 proc mouseMoveCb*(win: Window, res: tuple[x, y: float64]) =
   var pos = res
+  pos.x += textureOffset.x
+  pos.y += textureOffset.y
   sendEvent(EVENT_MOUSE_MOVE, addr pos)
 
 proc mouseButtonCb*(win: Window, button: MouseButton, action: bool, mods: set[ModifierKey]) =

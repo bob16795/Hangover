@@ -36,7 +36,7 @@ var
   drag*: UIElement
   last: int
 
-proc mouseMove(data: pointer) =
+proc mouseMove(data: pointer): bool =
   var pos = cast[ptr tuple[x, y: float64]](data)[]
   um.mousePos = newVector2(pos.x, pos.y)
   for e in um.elements:
@@ -44,7 +44,7 @@ proc mouseMove(data: pointer) =
   if drag != nil:
     drag.drag(last)
 
-proc mouseClick(data: pointer) =
+proc mouseClick(data: pointer): bool =
   var btn = cast[ptr int](data)[]
   last = btn
   sendEvent(EVENT_STOP_LINE_ENTER, nil)
@@ -53,10 +53,10 @@ proc mouseClick(data: pointer) =
       e.click(btn)
       drag = e
 
-proc mouseRel(data: pointer) =
+proc mouseRel(data: pointer): bool =
   drag = nil
 
-proc resizeUI(data: pointer) =
+proc resizeUI(data: pointer): bool =
   var size = cast[ptr tuple[x, y: int32]](data)[]
   um.size = newVector2(size.x.float32, size.y.float32)
 

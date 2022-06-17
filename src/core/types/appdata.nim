@@ -1,4 +1,5 @@
 import point
+import color
 
 import os
 
@@ -11,6 +12,7 @@ type
     name*: string
     size*: Point
     aa*: int
+    color*: Color
 
 const
   tmp = getTempDir() & "/gin2"

@@ -17,16 +17,19 @@ export opengl
 
 from loop import GraphicsContext
 
-proc resizeBuffer(data: pointer) =
+var cameraPos: Vector2
+var cameraSize: Vector2
+
+proc resizeBuffer(data: pointer): bool =
   ## called when window is resized
   var res = cast[ptr tuple[w, h: int32]](data)[]
   glViewport(0, 0, GLsizei(res.w), GLsizei(res.h))
-  var projection = ortho(0f, res.w.float, res.h.float, 0, 1, -1)
+  cameraSize = newVector2(res.w.float32, res.h.float32)
+  var projection = ortho(cameraPos.x, cameraPos.x + res.w.float, cameraPos.y + res.h.float, cameraPos.y, 501, -501)
 
   fontProgram.setParam("projection", projection.caddr)
   textureProgram.setParam("projection", projection.caddr)
   resizeCull(data)
-
 
 proc initGraphics*(data: AppData): GraphicsContext =
   ## setup graphics
@@ -48,14 +51,21 @@ proc initGraphics*(data: AppData): GraphicsContext =
   createListener(EVENT_RESIZE, resizeBuffer)
 
   var res = (w: data.size.x.int32, h: data.size.y.int32)
-  resizeBuffer(addr res)
+  discard resizeBuffer(addr res)
   glfw.swapInterval(1)
   echo "init"
+  glEnable(GL_MULTISAMPLE) 
+  result.color = data.color
 
 proc deinitGraphics*(ctx: GraphicsContext) =
   ## closes the graphics
   ctx.window.destroy()
   glfw.terminate()
+
+proc clearBuffer*(ctx: GraphicsContext, color: Color) =
+  ## clears the buffer with color
+  glClearColor(color.rf, color.gf, color.bf, color.af)
+  glClear(GL_COLOR_BUFFER_BIT)
 
 proc finishRender*(ctx: GraphicsContext) =
   ## finishes a draw
@@ -63,11 +73,7 @@ proc finishRender*(ctx: GraphicsContext) =
   glFlush()
   glfw.swapBuffers(ctx.window)
   glFinish()
-
-proc clearBuffer*(ctx: GraphicsContext, color: Color) =
-  ## clears the buffer with color
-  glClearColor(color.rf, color.gf, color.bf, color.af)
-  glClear(GL_COLOR_BUFFER_BIT)
+  clearBuffer(ctx, ctx.color)
 
 proc isFullscreen*(ctx: GraphicsContext): bool =
   ## returns true if fullscreen

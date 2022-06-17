@@ -3,6 +3,13 @@ import glfw
 import types/font
 import events
 import audio
+import ecs/types
+import sugar
+
+createEvent(EVENT_UPDATE)
+createEvent(EVENT_DRAW)
+createEvent(EVENT_INIT)
+createEvent(EVENT_CLOSE)
 
 template Game*(body: untyped) =
   ## the main loop of a game
@@ -20,7 +27,7 @@ template Game*(body: untyped) =
       loop = newLoop(60)
       size = data.size
 
-    proc UpdateSize(data: pointer) =
+    proc UpdateSize(data: pointer): bool =
       var res = cast[ptr tuple[w, h: int32]](data)[]
       size = newPoint(res.w.cint, res.h.cint)
 
@@ -57,10 +64,17 @@ template Game*(body: untyped) =
     setupEventCallbacks(ctx)
 
     Initialize(ctx)
+    
+    var tmpSize: tuple[w, h: int32]
+    tmpSize.w = size.x.int32
+    tmpSize.h = size.y.int32
+    sendEvent(EVENT_RESIZE, addr tmpSize)
 
     deinitFT()
 
-    createListener(EVENT_RESIZE, (p: pointer) => loop.forceDraw(ctx))
+    createListener(EVENT_RESIZE, proc(p: pointer): bool = loop.forceDraw(ctx))
+    createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = loop.forceDraw(ctx))
+    
 
     loop.updateProc =
       proc (dt: float, delayed: bool): bool =
@@ -78,10 +92,28 @@ template Game*(body: untyped) =
         drawUI()
       finishRender(ctx)
 
-    loop.nextTime = glfw.getTime()
     while not loop.done:
       loop.update(ctx)
 
     gameClose()
 
   main()
+
+template GameECS*(name: string, body: untyped) =
+  Game:
+    body
+
+    proc Initialize(ctx: GraphicsContext) = 
+      var tmpCtx = ctx
+      sendEvent(EVENT_INIT, addr tmpCtx)
+
+    proc Update(dt: float32, delayed: bool): bool =
+      var tmpDt = dt
+      sendEvent(EVENT_UPDATE, addr tmpDt)
+
+    proc Draw(ctx: GraphicsContext) =
+      var tmpCtx = ctx
+      sendEvent(EVENT_DRAW, addr tmpCtx)
+    
+    proc gameClose() =
+      sendEvent(EVENT_CLOSE, nil)

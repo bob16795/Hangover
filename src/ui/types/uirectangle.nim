@@ -20,6 +20,7 @@ proc toRect*(rect: UIRectangle, parent: Rect): Rect =
   result.y = rect.YMin + aymin
   result.width = rect.XMax + axmax - rect.Xmin - axmin
   result.height = rect.YMax + aymax - rect.Ymin - aymin
+  result = result.fix()
 
 proc newUIRectangle*(XMin, YMin: float32, XMax, YMax: float32, anchorXMin,
     anchorYMin: float32, anchorXMax, anchorYMax: float32): UIRectangle =

@@ -11,6 +11,9 @@ type
     tex*: GLuint
     size*: Vector2
 
+var
+  textureOffset*: Vector2
+
 const
   vertexCode = """
 #version 330 core
@@ -39,6 +42,7 @@ out vec2 texCoords;
 out vec4 tintColor;
 uniform float rotation;
 uniform mat4 projection;
+uniform float layer;
 
 vec2 rotate(vec2 pos, vec2 origin) {
   vec2 p = pos - origin;
@@ -55,19 +59,17 @@ void main() {
   vec2 origin = (gl_in[0].gl_Position.xy + gl_in[1].gl_Position.xy) / 2;
   vec2 pos1, pos2;
   pos1 = rotate(vec2(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y), origin);
-  pos2 = vec2(0, 1);
+  pos2 = vec2(layer, 1);
   gl_Position = projection * vec4(pos1, pos2);
   texCoords = vec2(texRect[0].x, texRect[1].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
 
   pos1 = rotate(vec2(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y), origin);
-  pos2 = vec2(0, 1);
   gl_Position = projection * vec4(pos1, pos2);
   texCoords = vec2(texRect[0].x, texRect[0].y);
   tintColor = tintColorGeo[0];
   EmitVertex();
-
 
   pos1 = rotate(vec2(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y), origin);
   gl_Position = projection * vec4(pos1, pos2);
@@ -103,7 +105,7 @@ var
   VAO, VBO: GLUint
   textureProgram*: Shader
   queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
-      GLFloat]], rotation: GLfloat]]
+                           GLFloat]], rotation: GLfloat, layer: range[0..500]]]
   buffers: seq[GLUint]
   cullSize: Vector2
 
@@ -115,7 +117,7 @@ template verts(ds, de: Vector2, ss, se: Vector2, c: Color): untyped =
 
 proc resizeCull*(data: pointer) =
   var size = cast[ptr tuple[w, h: int32]](data)[]
-  cullSize = newVector2(size.w, size.h)
+  cullSize = newVector2(size.w.float32, size.h.float32)
 
 proc addVBO*() =
   buffers &= 0.GLuint
@@ -138,6 +140,7 @@ proc setupTexture*() =
   textureProgram.registerParam("tintColor", SPKFloat4)
   textureProgram.registerParam("projection", SPKProj4)
   textureProgram.registerParam("rotation", SPKFloat1)
+  textureProgram.registerParam("layer", SPKFloat1)
 
 proc newTextureMem*(image: pointer, imageSize: cint): Texture =
   glGenTextures(1, addr result.tex)
@@ -162,7 +165,7 @@ proc newTextureMem*(image: pointer, imageSize: cint): Texture =
   glGenerateMipmap(GL_TEXTURE_2D)
   stbi_image_free(data)
 
-  result.size = newVector2(width, height)
+  result.size = newVector2(width.float32, height.float32)
 
 proc newTexture*(image: string): Texture =
   glGenTextures(1, addr result.tex)
@@ -187,7 +190,7 @@ proc newTexture*(image: string): Texture =
   glGenerateMipmap(GL_TEXTURE_2D)
   stbi_image_free(data)
 
-  result.size = newVector2(width, height)
+  result.size = newVector2(width.float32, height.float32)
 
 proc aabb*(a, b: Rect): bool =
   if a.x < b.x + b.width and
@@ -197,18 +200,21 @@ proc aabb*(a, b: Rect): bool =
     return true
 
 
-proc draw*(texture: Texture, srcRect, dstRect: Rect, program = textureProgram,
-    color = newColor(255, 255, 255, 255), rotation: float = 0) =
-  # if (not dstRect.aabb(newRect(newVector2(0, 0), cullSize))): return
-  var vertices = verts(dstRect.location, dstRect.location + dstRect.size,
+proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
+           color = newColor(255, 255, 255, 255), rotation: float = 0, layer: range[0..500] = 0) =
+  var program = shader
+  if program == nil:
+    program = addr textureProgram
+  var dst = dstRect.offset(-1 * textureOffset)
+  if (not dst.aabb(newRect(newVector2(0, 0), cullSize))): return
+  var vertices = verts(dst.location, dst.location + dst.size,
       srcRect.location, srcRect.location + srcRect.size, color)
   if queue == @[]:
-    queue &= (u: true, p: program, t: texture, vs: vertices, rotation: rotation.GLfloat)
-    return
-  if texture == queue[^1].t and program == queue[^1].p and rotation == queue[^1].rotation.GLfloat:
+    queue &= (u: true, p: program[], t: texture, vs: vertices, rotation: rotation.GLfloat, layer: layer)
+  elif layer == queue[^1].layer and texture == queue[^1].t and program[].id == queue[^1].p.id and rotation == queue[^1].rotation.GLfloat:
     queue[^1].vs &= vertices
   else:
-    queue &= (u: true, p: program, t: texture, vs: vertices, rotation: rotation.GLfloat)
+    queue &= (u: true, p: program[], t: texture, vs: vertices, rotation: rotation.GLfloat, layer: layer)
 
 proc finishDraw*() =
   if queue != @[]:
@@ -227,6 +233,8 @@ proc finishDraw*() =
     var q = queue[i]
     q.p.use()
     q.p.setParam("rotation", addr q.rotation)
+    var layer: float32 = q.layer.float32
+    q.p.setParam("layer", addr layer)
     var last = len(q.vs)
     var vertices = q.vs
 

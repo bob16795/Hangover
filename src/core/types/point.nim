@@ -2,27 +2,23 @@ import math
 
 type
   Point* = object
-    x*: cint
-    y*: cint
+    x*: int
+    y*: int
 
 # const
 
-proc newPoint*(x, y: cint): Point =
+proc newPoint*(x, y: int | cint): Point =
   result.x = x
   result.y = y
 
-proc newPoint*(x, y: int): Point =
-  result.x = x.cint
-  result.y = y.cint
-
 # operators
 
-proc `*`*(p: Point, i: cint): Point =
+proc `*`*(p: Point, i: int): Point =
   result = p
   result.x *= i
   result.y *= i
 
-proc `*`*(i: cint, p: Point): Point =
+proc `*`*(i: int, p: Point): Point =
   result = p
   result.x *= i
   result.y *= i
@@ -37,20 +33,20 @@ proc `-`*(p: Point, a: Point): Point =
   result.x -= a.x
   result.y -= a.y
 
-proc `/`*(p: Point, i: cint): Point =
+proc `/`*(p: Point, i: int): Point =
   result = p
-  result.x = (result.x / i).cint
-  result.y = (result.y / i).cint
+  result.x = (result.x / i).int
+  result.y = (result.y / i).int
 
 # equals operators
 
-proc `*=`*(p: var Point, i: cint) =
+proc `*=`*(p: var Point, i: int) =
   p.x *= i
   p.y *= i
 
-proc `/=`*(p: var Point, i: cint) =
-  p.x = (p.x / i).cint
-  p.y = (p.y / i).cint
+proc `/=`*(p: var Point, i: int) =
+  p.x = (p.x / i).int
+  p.y = (p.y / i).int
 
 proc `+=`*(p: var Point, a: Point) =
   p.x += a.x
@@ -69,15 +65,15 @@ proc distance*(a, b: Point): float =
   return sqrt(cx * cx + cy * cy)
 
 proc `angle=`*(p: var Point, radians: float32) =
-  p.x = cos(radians).cint
-  p.y = sin(radians).cint
+  p.x = cos(radians).int
+  p.y = sin(radians).int
 
 proc angle*(p: Point): float32 =
   return arctan2(p.x.float32, p.y.float32)
 
 proc rotated*(p: Point, phi: float32): Point =
   result.angle = phi + p.angle
-  result = result * p.distance(newPoint(0, 0)).cint
+  result = result * p.distance(newPoint(0, 0)).int
 
 proc rotate*(p: var Point, phi: float32) =
   p = p.rotated(phi)

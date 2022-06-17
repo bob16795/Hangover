@@ -16,6 +16,7 @@ type
     center: Rect
     fillMode: UIFillMode
     scale: Vector2
+    layer: range[0..500]
 
 proc setCenter(sprite: var UISprite, center: Rect) =
   sprite.center = center
@@ -55,18 +56,28 @@ proc scale*(sprite: UISprite, scale: Vector2): UISprite =
   result = sprite
   result.scale = scale
 
-proc drawSec*(sprite: var UISprite, src: Point, dest: var Rect, c: Color) =
+proc drawSec*(sprite: var UISprite, src: Point, dest: var Rect, c: Color, layer: range[0..500]) =
   var lol = sprite.renderSecs[src.x][src.y]
   var d = dest.offset(newVector2(-1, -1))
   d.width += 2
   d.height += 2
-  sprite.texture.draw(lol, d, color = c)
+  sprite.texture.draw(lol, d, color = c, layer = layer)
 
 proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
-    255, 255)) =
+           255, 255), layer: range[0..500] = 0) =
   ## draws the UISprite
-  if sprite.center.width == 0 or sprite.center.height == 0:
-    return
+
+  # too small to draw
+  var minSize = (sprite.sourceBounds.size - sprite.center.size)
+  minSize.x *= sprite.scale.x
+  minSize.y *= sprite.scale.y
+  if renderRect.width <= minSize.x or renderRect.height <= minSize.y:
+    sprite.draw(renderRect, 0, color = c, layer = layer)
+    return 
+  
+  # no center defined
+  if sprite.center.width == 0 or sprite.center.height == 0: return
+
   var tmp: Rect
   var rrtmp = newRect(
     renderRect.x.cint.float32,
@@ -86,53 +97,53 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
   tmp.location = newVector2(rrtmp.x, rrtmp.y)
   tmp.width *= sprite.scale.x
   tmp.height *= sprite.scale.y
-  sprite.drawSec(newPoint(0, 0), tmp, c)
+  sprite.drawSec(newPoint(0, 0), tmp, c, layer)
 
   tmp = sprite.renderSecs[1][0]
   tmp.location = newVector2(rrtmp.x + corner.x, rrtmp.y)
   tmp.width = rrtmp.width - corners.x
   tmp.height *= sprite.scale.y
-  sprite.drawSec(newPoint(1, 0), tmp, c)
+  sprite.drawSec(newPoint(1, 0), tmp, c, layer)
 
   tmp = sprite.renderSecs[2][0]
   tmp.location = newVector2((rrtmp.x + rrtmp.width) - sprite.renderSecs[2][
           0].width * sprite.scale.x, rrtmp.y)
   tmp.width *= sprite.scale.x
   tmp.height *= sprite.scale.y
-  sprite.drawSec(newPoint(2, 0), tmp, c)
+  sprite.drawSec(newPoint(2, 0), tmp, c, layer)
 
   tmp = sprite.renderSecs[0][1]
   tmp.location = newVector2(rrtmp.x, rrtmp.y + corner.y)
   tmp.width *= sprite.scale.x
   tmp.height = rrtmp.height - corners.y
-  sprite.drawSec(newPoint(0, 1), tmp, c)
+  sprite.drawSec(newPoint(0, 1), tmp, c, layer)
 
   tmp = sprite.renderSecs[1][1]
   tmp.location = newVector2(rrtmp.x + corner.x, rrtmp.y + corner.y)
   tmp.width = rrtmp.width - corners.x
   tmp.height = rrtmp.height - corners.y
-  sprite.drawSec(newPoint(1, 1), tmp, c)
+  sprite.drawSec(newPoint(1, 1), tmp, c, layer)
 
   tmp = sprite.renderSecs[2][1]
   tmp.location = newVector2((rrtmp.x + rrtmp.width) - sprite.renderSecs[2][
           0].width * sprite.scale.x, rrtmp.y + corner.y)
   tmp.width *= sprite.scale.x
   tmp.height = rrtmp.height - corners.y
-  sprite.drawSec(newPoint(2, 1), tmp, c)
+  sprite.drawSec(newPoint(2, 1), tmp, c, layer)
 
   tmp = sprite.renderSecs[0][2]
   tmp.location = newVector2(rrtmp.x, (rrtmp.y + rrtmp.height) - sprite.renderSecs[0][
           2].height * sprite.scale.y)
   tmp.width *= sprite.scale.x
   tmp.height *= sprite.scale.y
-  sprite.drawSec(newPoint(0, 2), tmp, c)
+  sprite.drawSec(newPoint(0, 2), tmp, c, layer)
 
   tmp = sprite.renderSecs[1][2]
   tmp.location = newVector2(rrtmp.x + corner.x, (rrtmp.y + rrtmp.height) - sprite.renderSecs[0][
           2].height * sprite.scale.y)
   tmp.width = rrtmp.width - corners.x
   tmp.height *= sprite.scale.y
-  sprite.drawSec(newPoint(1, 2), tmp, c)
+  sprite.drawSec(newPoint(1, 2), tmp, c, layer)
 
   tmp = sprite.renderSecs[2][2]
   tmp.location = newVector2((rrtmp.x + rrtmp.width) - sprite.renderSecs[2][
@@ -141,4 +152,4 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
           2].height * sprite.scale.y)
   tmp.width *= sprite.scale.x
   tmp.height *= sprite.scale.y
-  sprite.drawSec(newPoint(2, 2), tmp, c)
+  sprite.drawSec(newPoint(2, 2), tmp, c, layer)
