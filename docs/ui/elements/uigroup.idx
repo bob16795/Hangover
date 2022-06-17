@@ -1,8 +1,0 @@
-UIGroup	ui/elements/uigroup.html#UIGroup	uigroup: UIGroup	
-newUIGroup	ui/elements/uigroup.html#newUIGroup,UIRectangle	uigroup: newUIGroup(bounds: UIRectangle): UIGroup	
-add	ui/elements/uigroup.html#add,UIGroup,UIElement	uigroup: add(g: var UIGroup; e: UIElement)	
-clear	ui/elements/uigroup.html#clear,UIGroup	uigroup: clear(g: var UIGroup)	
-checkHover	ui/elements/uigroup.html#checkHover.e,UIGroup,Rect,Vector2	uigroup: checkHover(g: UIGroup; parentRect: Rect; mousePos: Vector2): bool	
-click	ui/elements/uigroup.html#click.e,UIGroup,int	uigroup: click(g: UIGroup; button: int)	
-draw	ui/elements/uigroup.html#draw.e,UIGroup,Rect	uigroup: draw(g: UIGroup; parentRect: Rect)	
-update	ui/elements/uigroup.html#update.e,UIGroup,Rect,Vector2,float32	uigroup: update(g: var UIGroup; parentRect: Rect; mousePos: Vector2; dt: float32): bool	

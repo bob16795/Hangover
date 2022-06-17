@@ -1,6 +1,0 @@
-UIButton	ui/elements/uibutton.html#UIButton	uibutton: UIButton	
-newUIButton	ui/elements/uibutton.html#newUIButton,Texture,Font,UIRectangle,UIAction,string,proc),Sprite,Sprite,bool	uibutton: newUIButton(texture: Texture; font: var Font; bounds: UIRectangle;\n            action: UIAction = nil; text = &quot;&quot;; disableProc: proc (): bool = nil;\n            sprite: Sprite = Sprite(); toggleSprite: Sprite = Sprite();\n            toggle: bool = false): UIButton	
-checkHover	ui/elements/uibutton.html#checkHover.e,UIButton,Rect,Vector2	uibutton: checkHover(b: UIButton; parentRect: Rect; mousePos: Vector2): bool	
-click	ui/elements/uibutton.html#click.e,UIButton,int	uibutton: click(b: UIButton; button: int)	
-draw	ui/elements/uibutton.html#draw.e,UIButton,Rect	uibutton: draw(b: UIButton; parentRect: Rect)	
-update	ui/elements/uibutton.html#update.e,UIButton,Rect,Vector2,float32	uibutton: update(b: var UIButton; parentRect: Rect; mousePos: Vector2; dt: float32): bool	

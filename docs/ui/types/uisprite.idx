@@ -1,9 +1,0 @@
-FM_TILE	ui/types/uisprite.html#FM_TILE	UIFillMode.FM_TILE	
-FM_STRETCH	ui/types/uisprite.html#FM_STRETCH	UIFillMode.FM_STRETCH	
-FM_NONE	ui/types/uisprite.html#FM_NONE	UIFillMode.FM_NONE	
-UIFillMode	ui/types/uisprite.html#UIFillMode	uisprite: UIFillMode	
-UISprite	ui/types/uisprite.html#UISprite	uisprite: UISprite	
-newUISprite	ui/types/uisprite.html#newUISprite,Texture,Rect,Rect	uisprite: newUISprite(texture: Texture; sourceBounds, center: Rect): UISprite	
-scale	ui/types/uisprite.html#scale,UISprite,Vector2	uisprite: scale(sprite: UISprite; scale: Vector2): UISprite	
-drawSec	ui/types/uisprite.html#drawSec,UISprite,Point,Rect,Color	uisprite: drawSec(sprite: var UISprite; src: Point; dest: var Rect; c: Color)	
-draw	ui/types/uisprite.html#draw,UISprite,Rect,Color	uisprite: draw(sprite: var UISprite; renderRect: Rect;\n     c: Color = newColor(255, 255, 255, 255))	

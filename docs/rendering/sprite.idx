@@ -1,5 +1,0 @@
-Sprite	rendering/sprite.html#Sprite	sprite: Sprite	
-newSprite	rendering/sprite.html#newSprite,Texture,float32,float32,float32,float32	sprite: newSprite(texture: Texture; x, y, w, h: float32): Sprite	
-newSprite	rendering/sprite.html#newSprite,Texture,Rect	sprite: newSprite(texture: Texture; bounds: Rect): Sprite	
-draw	rendering/sprite.html#draw,Sprite,Rect,float32,Color	sprite: draw(sprite: Sprite; target: Rect; rotation: float32 = 0;\n     color: Color = newColor(255, 255, 255))	
-draw	rendering/sprite.html#draw,Sprite,Vector2,float32,Vector2,Color	sprite: draw(sprite: Sprite; position: Vector2; rotation: float32;\n     size: Vector2 = newVector2(0, 0); c: Color = newColor(255, 255, 255, 255))	

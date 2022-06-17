@@ -1,3 +1,0 @@
-UIRectangle	ui/types/uirectangle.html#UIRectangle	uirectangle: UIRectangle	
-toRect	ui/types/uirectangle.html#toRect,UIRectangle,Rect	uirectangle: toRect(rect: UIRectangle; parent: Rect): Rect	
-newUIRectangle	ui/types/uirectangle.html#newUIRectangle,float32,float32,float32,float32,float32,float32,float32,float32	uirectangle: newUIRectangle(XMin, YMin: float32; XMax, YMax: float32;\n               anchorXMin, anchorYMin: float32; anchorXMax, anchorYMax: float32): UIRectangle	

@@ -1,5 +1,0 @@
-initAudio	core/audio.html#initAudio	audio: initAudio()	
-updateAudio	core/audio.html#updateAudio	audio: updateAudio()	
-play	core/audio.html#play,Song	audio: play(song: Song)	
-play	core/audio.html#play,Sound,Vector2	audio: play(sound: Sound; pos: Vector2 = newVector2(0, 0))	
-playRand	core/audio.html#playRand,Sound,float32,float32,Vector2	audio: playRand(sound: Sound; rs, re: float32; pos: Vector2 = newVector2(0, 0))	

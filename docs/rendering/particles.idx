@@ -1,7 +1,0 @@
-ifor	rendering/particles.html#ifor.t,untyped,untyped,untyped	particles: ifor(variable: untyped; list: untyped; body: untyped): untyped	
-ParticleProps	rendering/particles.html#ParticleProps	particles: ParticleProps	
-ParticleSystem	rendering/particles.html#ParticleSystem	particles: ParticleSystem	
-update	rendering/particles.html#update,ParticleSystem,float32	particles: update(ps: var ParticleSystem; dt: float32)	
-draw	rendering/particles.html#draw,ParticleSystem,Vector2	particles: draw(ps: ParticleSystem; offset: Vector2)	
-emit	rendering/particles.html#emit,ParticleSystem,ParticleProps	particles: emit(ps: var ParticleSystem; props: ParticleProps)	
-tryEmit	rendering/particles.html#tryEmit,ParticleSystem,ParticleProps	particles: tryEmit(ps: var ParticleSystem; props: ParticleProps)	

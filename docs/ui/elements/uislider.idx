@@ -1,6 +1,0 @@
-UISlider	ui/elements/uislider.html#UISlider	uislider: UISlider	
-checkHover	ui/elements/uislider.html#checkHover.e,UISlider,Rect,Vector2	uislider: checkHover(s: UISlider; parentRect: Rect; mousePos: Vector2): bool	
-click	ui/elements/uislider.html#click.e,UISlider,int	uislider: click(s: UISlider; button: int)	
-drag	ui/elements/uislider.html#drag.e,UISlider,int	uislider: drag(s: UISlider; button: int)	
-draw	ui/elements/uislider.html#draw.e,UISlider,Rect	uislider: draw(s: UISlider; parentRect: Rect)	
-update	ui/elements/uislider.html#update.e,UISlider,Rect,Vector2,float32	uislider: update(s: var UISlider; parentRect: Rect; mousePos: Vector2; dt: float32): bool	

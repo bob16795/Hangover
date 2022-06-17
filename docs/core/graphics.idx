@@ -1,6 +1,0 @@
-initGraphics	core/graphics.html#initGraphics,AppData	graphics: initGraphics(data: AppData): GraphicsContext	
-deinitGraphics	core/graphics.html#deinitGraphics,GraphicsContext	graphics: deinitGraphics(ctx: GraphicsContext)	
-finishRender	core/graphics.html#finishRender,GraphicsContext	graphics: finishRender(ctx: GraphicsContext)	
-clearBuffer	core/graphics.html#clearBuffer,GraphicsContext,Color	graphics: clearBuffer(ctx: GraphicsContext; color: Color)	
-isFullscreen	core/graphics.html#isFullscreen,GraphicsContext	graphics: isFullscreen(ctx: GraphicsContext): bool	
-setFullscreen	core/graphics.html#setFullscreen,GraphicsContext,bool	graphics: setFullscreen(ctx: var GraphicsContext; fs: bool)	

@@ -1,5 +1,0 @@
-UIPanel	ui/elements/uipanel.html#UIPanel	uipanel: UIPanel	
-newUIPanel	ui/elements/uipanel.html#newUIPanel,UISprite,UIRectangle,bool	uipanel: newUIPanel(sprite: UISprite; bounds: UIRectangle; popup: bool): UIPanel	
-checkHover	ui/elements/uipanel.html#checkHover.e,UIPanel,Rect,Vector2	uipanel: checkHover(p: UIPanel; parentRect: Rect; mousePos: Vector2): bool	
-draw	ui/elements/uipanel.html#draw.e,UIPanel,Rect	uipanel: draw(p: UIPanel; parentRect: Rect)	
-update	ui/elements/uipanel.html#update.e,UIPanel,Rect,Vector2,float32	uipanel: update(p: var UIPanel; parentRect: Rect; mousePos: Vector2; dt: float32): bool	

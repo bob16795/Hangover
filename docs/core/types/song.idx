@@ -1,3 +1,0 @@
-Song	core/types/song.html#Song	song: Song	
-newSongMem	core/types/song.html#newSongMem,Stream,float32	song: newSongMem(s: Stream; loopPoint: float32 = 0): Song	
-newSong	core/types/song.html#newSong,string,float32	song: newSong(file: string; loopPoint: float32 = 0): Song	

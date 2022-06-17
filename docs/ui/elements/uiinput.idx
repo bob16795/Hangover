@@ -1,7 +1,0 @@
-UIInput	ui/elements/uiinput.html#UIInput	uiinput: UIInput	
-onKey	ui/elements/uiinput.html#onKey,pointer	uiinput: onKey(data: pointer)	
-newUIInput	ui/elements/uiinput.html#newUIInput,Font,UIRectangle,string,typeof(nil)	uiinput: newUIInput(font: var Font; bounds: UIRectangle; hint = &quot;&quot;;\n           disable: () -&gt; bool = nil): UIInput	
-checkHover	ui/elements/uiinput.html#checkHover.e,UIInput,Rect,Vector2	uiinput: checkHover(e: UIInput; parentRect: Rect; mousePos: Vector2): bool	
-click	ui/elements/uiinput.html#click.e,UIInput,int	uiinput: click(e: UIInput; button: int)	
-draw	ui/elements/uiinput.html#draw.e,UIInput,Rect	uiinput: draw(e: UIInput; parentRect: Rect)	
-update	ui/elements/uiinput.html#update.e,UIInput,Rect,Vector2,float32	uiinput: update(b: var UIInput; parentRect: Rect; mousePos: Vector2; dt: float32): bool	
