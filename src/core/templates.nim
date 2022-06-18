@@ -8,6 +8,7 @@ import sugar
 
 createEvent(EVENT_UPDATE)
 createEvent(EVENT_DRAW)
+createEvent(EVENT_DRAW_UI)
 createEvent(EVENT_INIT)
 createEvent(EVENT_CLOSE)
 
@@ -114,6 +115,7 @@ template GameECS*(name: string, body: untyped) =
     proc Draw(ctx: GraphicsContext) =
       var tmpCtx = ctx
       sendEvent(EVENT_DRAW, addr tmpCtx)
+      sendEvent(EVENT_DRAW_UI, addr tmpCtx)
     
     proc gameClose() =
       sendEvent(EVENT_CLOSE, nil)

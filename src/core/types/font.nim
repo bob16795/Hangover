@@ -184,7 +184,7 @@ proc newFont*(face: string, size: int, spacing: int = 0): Font =
   result = finFont(result, size)
   result.spacing = spacing
 
-proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1) =
+proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1, layer: range[0..500] = 0) =
   var pos = position
 
   var srect = newRect(0, 0, 1, 1)
@@ -203,7 +203,7 @@ proc draw*(font: Font, text: string, position: Point, color: Color, scale: float
     # render texture
     var tex = Texture(tex: font.texture)
     tex.draw(srect, newRect(xpos.float32, ypos.float32, w.float32,
-        h.float32), addr fontProgram, color)
+        h.float32), addr fontProgram, color, layer = layer)
     pos.x += ((ch.advance shr 6).float32 * scale).cint
     pos.x += font.spacing
 

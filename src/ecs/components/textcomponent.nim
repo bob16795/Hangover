@@ -30,7 +30,7 @@ proc drawTextComponent*(parent: ptr Entity, data: pointer): bool =
       var
         size = this.font[].sizeText(text)
       pos.x = (rect.position + (rect.size - size) / 2).x
-      this.font[].draw(text, pos.toPoint, this.color, this.scale)
+      this.font[].draw(text, pos.toPoint, this.color, this.scale, layer = 5)
       pos.y += this.font[].size.float32 * this.scale
 
 proc newTextComponent*(text: string, font: ptr Font, color: Color, scale: float32 = 1): Component =
@@ -38,7 +38,7 @@ proc newTextComponent*(text: string, font: ptr Font, color: Color, scale: float3
     dataType: "TextComponentData",
     targetLinks:
     @[
-      ComponentLink(event: EVENT_DRAW, p: drawTextComponent),
+      ComponentLink(event: EVENT_DRAW_UI, p: drawTextComponent),
       ComponentLink(event: EVENT_INIT, p: proc(parent: ptr Entity, data: pointer): bool =
         parent[TextComponentData] = TextComponentData()
         parent[TextComponentData].text = text
