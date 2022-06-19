@@ -39,7 +39,8 @@ proc initGraphics*(data: AppData): GraphicsContext =
   c.title = data.name
   c.size = (w: data.size.x, h: data.size.y)
   c.resizable = true
-  c.nMultiSamples = data.aa.int32
+  if data.aa != 0:
+    c.nMultiSamples = data.aa.int32
 
   result.window = newWindow(c)
 
@@ -54,7 +55,8 @@ proc initGraphics*(data: AppData): GraphicsContext =
   discard resizeBuffer(addr res)
   glfw.swapInterval(1)
   echo "init"
-  glEnable(GL_MULTISAMPLE) 
+  if data.aa != 0:
+    glEnable(GL_MULTISAMPLE) 
   result.color = data.color
 
 proc deinitGraphics*(ctx: GraphicsContext) =

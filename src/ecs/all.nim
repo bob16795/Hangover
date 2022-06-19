@@ -1,7 +1,9 @@
 import ecs/component
 import ecs/entity
 import ecs/types as ecstypes
+import ecs/genmacros
 
+export genmacros
 export component
 export entity
 export ecstypes

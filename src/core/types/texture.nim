@@ -5,6 +5,7 @@ import rect
 import vector2
 import color
 import shader
+import algorithm
 
 type
   Texture* = object
@@ -217,6 +218,9 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
     queue &= (u: true, p: program[], t: texture, vs: vertices, rotation: rotation.GLfloat, layer: layer)
 
 proc finishDraw*() =
+  queue.sort(proc(a, b: tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
+                        GLFloat]], rotation: GLfloat, layer: range[0..500]]): int = cmp(a.layer, b.layer))
+
   if queue != @[]:
     for i in 0..<len(queue):
       if pqueue.len() > i and queue[i] == pqueue[i]: queue[i].u = false

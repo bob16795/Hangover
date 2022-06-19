@@ -5,21 +5,15 @@ import rectcomponent
 import ecs/types
 import ecs/component
 import core/templates
+import ecs/genmacros
 
-type
-  PhysicsComponentData* = ref object of ComponentData
-    velocity*: Vector2
+component PhysicsComponent:
+  var
+    velocity: Vector2
 
-proc updatePhysicsComponent*(parent: ptr Entity, data: pointer): bool =
-  var pedata = parent[PhysicsComponentData]
-  var perect = parent[RectComponentData]
-  perect.position += pedata.velocity
+  proc updateEvent(dt: float32): bool =
+    var rect = parent[RectComponentData]
+    rect.position += this.velocity
 
-proc newPhysicsComponent*(): Component =
-  Component(
-    dataType: "PhysicsComponentData",
-    targetLinks:
-    @[
-      ComponentLink(event: EVENT_UPDATE, p: updatePhysicsComponent),
-    ]
-  )
+  proc construct() =
+    discard
