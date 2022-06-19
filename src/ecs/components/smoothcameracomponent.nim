@@ -3,34 +3,23 @@ import ecs/types
 import core/templates
 import core/types/vector2
 import core/types/texture
+import ecs/genmacros
 
-type
-  SmoothCameraComponentData* = ref object of ComponentData
+component SmoothCameraComponent:
+  var
     pos: Vector2
     target: Vector2
     speed: float32
 
-method setGoal*(this: SmoothCameraComponentData, goal: Vector2) =
-  this.target = goal
+  proc setCamGoal(goal: Vector2) =
+    this.target = goal
+  
+  proc getCamPos(): Vector2 =
+    return this.pos
 
-method getPos*(this: SmoothCameraComponentData): Vector2 =
-  return this.pos
+  proc eventUpdate(dt: float32): bool =
+    this.pos -= (this.pos - this.target) / this.speed * dt
+    textureOffset = this.pos
 
-proc updateSmoothCameraComponent(parent: ptr Entity, data: pointer): bool =
-  let this = parent[SmoothCameraComponentData]
-  let dt = cast[ptr float32](data)[]
-  this.pos -= (this.pos - this.target) / this.speed * dt
-  textureOffset = this.pos
-
-proc newSmoothCameraComponent*(speed: float32): Component = 
-  Component(
-    dataType: "SmoothCameraComponentData",
-    targetLinks:
-    @[
-      ComponentLink(event: EVENT_UPDATE, p: updateSmoothCameraComponent),
-      ComponentLink(event: EVENT_INIT, p: proc(parent: ptr Entity, data: pointer): bool =
-        parent[SmoothCameraComponentData] = SmoothCameraComponentData()
-        parent[SmoothCameraComponentData].speed = speed
-      ),
-    ]
-  )
+  proc construct(speed: float32) = 
+    this.speed = speed

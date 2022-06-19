@@ -4,20 +4,13 @@ import ecs/types
 import ecs/component
 import core/templates
 import sugar
+import ecs/genmacros
 
-type
-  RectComponentData* = ref object of ComponentData
-    size*, position*: Vector2
+component RectComponent:
+  var
+    size: Vector2
+    position: Vector2
 
-proc newRectComponent*(dest: Rect): Component =
-  Component(
-    dataType: "RectComponentData",
-    targetLinks:
-    @[
-      ComponentLink(event: EVENT_INIT, p: proc(parent: ptr Entity, data: pointer): bool =
-        parent[RectComponentData] = RectComponentData()
-        parent[RectComponentData].size = dest.size
-        parent[RectComponentData].position = dest.location
-      ),
-    ]
-  )
+  proc construct(dest: Rect) =
+    this.size = dest.size
+    this.position = dest.location

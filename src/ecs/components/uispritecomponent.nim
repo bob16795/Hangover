@@ -7,30 +7,24 @@ import rectcomponent
 import ecs/types
 import ecs/component
 import core/templates
+import ecs/genmacros
 
-type
-  UISpriteComponentData* = ref object of ComponentData
-    sprite*: UISprite
-    layer*: range[0..500]
-    color*: Color
+{.experimental: "codeReordering".}
 
-proc drawUISpriteComponent(parent: ptr Entity, data: pointer): bool =
-  var rect = parent[RectComponentData]
-  var sedata = parent[UISpriteComponentData]
-  
-  if rect != nil and sedata != nil:
-    sedata.sprite.draw(newRect(rect.position, rect.size), c = sedata.color)
+component UISpriteComponent:
+  var
+    sprite: UISprite
+    layer: range[0..500]
+    color: Color
 
-proc newUISpriteComponent*(tex: Texture, source, center: Rect, scale: Vector2, color = newColor(255, 255, 255)): Component =
-  Component(
-    dataType: "UISpriteComponentData",
-    targetLinks:
-    @[
-      ComponentLink(event: EVENT_DRAW, p: drawUISpriteComponent),
-      ComponentLink(event: EVENT_INIT, p: proc(parent: ptr Entity, data: pointer): bool =
-        parent[UISpriteComponentData] = UISpriteComponentData()
-        parent[UISpriteComponentData].sprite = newUISprite(tex, source, center).scale(scale)
-        parent[UISpriteComponentData].color = color
-      ),
-    ]
-  )
+  proc eventDraw(data: void): bool =
+    var rect = parent[RectComponentData]
+
+    this.sprite.draw(newRect(rect.position, rect.size), c = this.color)
+
+  proc construct(tex: Texture,
+                 source, center: Rect,
+                 scale: Vector2,
+                 color = newColor(255, 255, 255)) =
+     this.sprite = newUISprite(tex, source, center).scale(scale)
+     this.color = color
