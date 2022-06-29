@@ -31,7 +31,7 @@ component SmoothBarComponent:
     else:
       let diff = this.value - (this.goal / this.max)
       this.value -= diff / this.speed * dt
-    
+
     if this.click != 0: rect.rect.anchorXMax = clamp(this.value - (this.value mod (this.click / this.max)), 0, 1)
     else: rect.rect.anchorXMax = clamp(this.value, 0, 1)
     updateRectComponent(parent)
@@ -39,3 +39,6 @@ component SmoothBarComponent:
   proc construct(speed: float32 = 0.1, click: float32 = 0) = 
     this.click = click
     this.speed = speed
+    this.max = 1
+    this.goal = 0
+    this.value = 0

@@ -3,6 +3,7 @@ import tables
 import core/events
 import strutils
 import types
+import sugar
 
 type
   ComponentMethod = object
@@ -416,90 +417,167 @@ macro component*(head, body: untyped): untyped =
         procSection[^1] &= p
     result &= procSection
 
-when isMainModule:
-  import components/uirectcomponent
-  import component as componentClass
-  import entity
-  import math
-  import core/templates
+proc isPlusNode(node: NimNode): bool =
+  node.kind == nnkIdent and $node == "entity"
 
-  const
-    BAR_SPEED = 10
+proc isDashNode(node: NimNode): bool = 
+  node.kind == nnkPrefix and $node[0] == "-"
 
-  expandMacros:
-    component SmoothBarComponent:
-      var
-        goal: float32
-        max: float32
-        value: float32
-        id: int
-        click: float32
+proc prefabAux(outName, args, body: NimNode): NimNode =
+  var nodes: seq[NimNode]
+  var tmpName = "tmp" & outName.strVal
+  result = newNimNode(nnkStmtList)
+  result &= newNimNode(nnkVarSection).add(
+    newIdentDefs(ident(tmpName), ident("Component")),
+  )
+  var idx = -1
+  var add = newIntLitNode(0)
+  var added: seq[int]
+  for c in body:
+    if c.isDashNode():
+      nodes &= c
+    elif c.kind == nnkPrefix and $c[0] == ">":
+      add = c[1]
+      added = @[]
+    elif c.kind == nnkPrefix and $c[0] == "<":
+      idx += c[1].intVal.int
+    elif c.kind == nnkPrefix and $c[0] == "++":
+      idx += 1
+      var output = nnkBracketExpr.newTree(ident("output"), nnkCall.newTree(newIdentNode("+"), newIntLitNode(idx), add))
+      if not(idx in added):
+        added &= idx
+        result &= newAssignment(output, newCall(ident("newEntity")))
+        when defined(hangui):
+          result &= nnkCall.newTree(
+            newIdentNode("setName"),
+            output,
+            newLit(outName.strVal & $idx),
+          )
+      for n in nodes:
+        var name = $n[1]
+        result &= newAssignment(ident(tmpName), newCall(ident("new" & name)))
+        if n.len() > 2:
+          for a in n[2]:
+            case a.kind:
+            of nnkAsgn:
+              var assignName = newDotExpr(newDotExpr(ident(tmpName), ident(name)),
+                  ident($a[0]))
+              var assignValue = a[1]
+              result[^1][^1] &= assignValue
+            else:
+              assert false, "Invalid ast"
 
-      proc setGoal(value: float32, instant: bool) =
-        this.goal = value
-        if instant:
-          this.value = value
+        result &= nnkCall.newTree(
+          newIdentNode("attachComponent"),
+          output,
+          newIdentNode(tmpName),
+        )
+      nodes = @[]
+      idx += c[1].intVal.int
+    elif c.isPlusNode():
+      if nodes == @[]:
+        continue
+      idx += 1
+      var output = nnkBracketExpr.newTree(ident("output"), nnkCall.newTree(newIdentNode("+"), newIntLitNode(idx), add))
+      if not(idx in added):
+        added &= idx
+        result &= newAssignment(output, newCall(ident("newEntity")))
+        when defined(hangui):
+          result &= nnkCall.newTree(
+            newIdentNode("setName"),
+            output,
+            newLit(outName.strVal & $idx),
+          )
+      for n in nodes:
+        var name = $n[1]
+        result &= newAssignment(ident(tmpName), newCall(ident("new" & name)))
+        if n.len() > 2:
+          for a in n[2]:
+            case a.kind:
+            of nnkAsgn:
+              var assignName = newDotExpr(newDotExpr(ident(tmpName), ident(name)),
+                  ident($a[0]))
+              var assignValue = a[1]
+              result[^1][^1] &= assignValue
+            else:
+              assert false, "Invalid ast"
 
-      proc setMax(value: float32) =
-        this.value = value
-
-      proc eventUpdate(dt: float32): bool =
-        var rect = parent[UIRectComponentData]
-      
-        if dt >= BAR_SPEED:
-          this.value = this.goal / this.max
-        else:
-          let diff = this.value - (this.goal / this.max)
-          this.value -= diff / BAR_SPEED * dt
-       
-        if this.click != 0: rect.rect.anchorXMax = clamp(this.value - (this.value mod (this.click / this.max)), 0, 1)
-        else: rect.rect.anchorXMax = clamp(this.value, 0, 1)
-        updateRectComponent(parent)
-
-      proc construct(click: float32) =
-        this.click = click
-
-  dumpAstGen:    
-    type
-      SmoothBarComponentData* = ref object of ComponentData
-        goal: float32
-        max: float32
-        value: float32
-        id: int
-        click: float32
-    
-    method setGoal*(this: SmoothBarComponentData, value: float32, instant: bool) =
-      this.goal = value
-      if instant:
-        this.value = value
-    
-    method setMax*(this: SmoothBarComponentData, value: float32) =
-      this.max = value
-    
-    proc updateSmoothBarComponent*(parent: ptr Entity, data: pointer): bool =
-      var this = parent[SmoothBarComponentData]
-      let dt = cast[ptr float32](data)[]
-      var rect = parent[UIRectComponentData]
-    
-      if dt >= BAR_SPEED:
-        this.value = this.goal / this.max
-      else:
-        let diff = this.value - (this.goal / this.max)
-        this.value -= diff / BAR_SPEED * dt
-      
-      if this.click != 0: rect.rect.anchorXMax = clamp(this.value - (this.value mod (this.click / this.max)), 0, 1)
-      else: rect.rect.anchorXMax = clamp(this.value, 0, 1)
-      updateRectComponent(parent)
-    
-    proc newSmoothBarComponent*(click: float32 = 0): Component = 
-      Component(
-        dataType: "SmoothBarComponentData",
-        targetLinks:
-        @[
-          ComponentLink(event: EVENT_UPDATE, p: updateSmoothBarComponent),
-          ComponentLink(event: EVENT_INIT, p: proc(parent: ptr Entity, data: pointer): bool =
-            parent[SmoothBarComponentData] = SmoothBarComponentData()
-            parent[SmoothBarComponentData].click = click
-          ),
-        ]
+        result &= nnkCall.newTree(
+          newIdentNode("attachComponent"),
+          output,
+          newIdentNode(tmpName),
+        )
+      nodes = @[]
+  if nodes != @[]:
+    idx += 1
+    var output = nnkBracketExpr.newTree(ident("output"), nnkCall.newTree(newIdentNode("+"), newIntLitNode(idx), add))
+    if not(idx in added):
+      added &= idx
+      result &= newAssignment(output, newCall(ident("newEntity")))
+      when defined(hangui):
+        result &= nnkCall.newTree(
+          newIdentNode("setName"),
+          output,
+          newLit(outName.strVal & $idx),
+        )
+    for n in nodes:
+      var name = $n[1]
+      result &= newAssignment(ident(tmpName), newCall(ident("new" & name)))
+      if n.len() > 2:
+        for a in n[2]:
+          case a.kind:
+          of nnkAsgn:
+            var assignName = newDotExpr(newDotExpr(ident(tmpName), ident(name)),
+                ident($a[0]))
+            var assignValue = a[1]
+            result[^1][^1] &= assignValue
+          else:
+            assert false, "Invalid ast"
+      result &= nnkCall.newTree(
+        newIdentNode("attachComponent"),
+        output,
+        newIdentNode(tmpName),
       )
+  result = nnkTemplateDef.newTree(
+    nnkPostFix.newTree(
+      newIdentNode("*"),
+      newIdentNode("spawn" & $outName),
+    ),
+    newEmptyNode(),
+    newEmptyNode(),
+    nnkFormalParams.newTree(
+      newEmptyNode(),
+      nnkIdentDefs.newTree(
+        newIdentNode("output"),
+        newIdentNode("untyped"),
+        newEmptyNode(),
+      )
+    ),
+    newEmptyNode(),
+    newEmptyNode(),
+    result
+  )
+  for a in args:
+    result[3] &= nnkIdentDefs.newTree(
+      a[0],
+      a[1],
+      newEmptyNode()
+    )
+
+macro prefab*(head, args, body: untyped): untyped =
+  return prefabAux(head, args, body)
+
+when isMainModule:
+  import core/types/rect
+  import core/types/texture
+  import ecs/types
+  import ecs/component as lol
+  import ecs/entity
+  import ecs/components/spritecomponent
+  expandMacros:
+    prefab TestPrefab, (r: Rect):
+      - SpriteComponent:
+        tex = Texture()
+        source = r
+  var te: ref Entity
+  te.newTestPrefab(newRect(0, 0, 10, 10))

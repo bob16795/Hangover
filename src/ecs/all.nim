@@ -13,6 +13,7 @@ import ecs/components/spritecomponent
 import ecs/components/pointcomponent
 import ecs/components/rectcomponent
 import ecs/components/uirectcomponent
+import ecs/components/uicomponent
 import ecs/components/uispritecomponent
 import ecs/components/textcomponent
 import ecs/components/smoothbarcomponent
@@ -23,6 +24,7 @@ export spritecomponent
 export pointcomponent
 export rectcomponent
 export uirectcomponent
+export uicomponent
 export uispritecomponent
 export textcomponent
 export smoothbarcomponent
