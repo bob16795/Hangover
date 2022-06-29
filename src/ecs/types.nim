@@ -17,5 +17,6 @@ type
   Entity* = object
     id*: Oid
     components*: seq[Component]
+    parent*: ptr Entity
 
   ComponentData* = ref object of RootObj
