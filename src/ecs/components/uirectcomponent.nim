@@ -15,7 +15,7 @@ import ecs/genmacros
 component UIRectComponent:
   var
     rect: UIRectangle
-    children: seq[ptr Entity]
+    children: seq[Entity]
     bounds: Rect
     prect: Rect
     root: bool
@@ -33,12 +33,12 @@ component UIRectComponent:
       this.prect = newRect(0, 0, size.w.float32, size.h.float32)
       parent.updateRectComponent()
   
-  proc construct(parentPtr: ref Entity,
+  proc construct(parentRect: Entity,
                  rect: UIRectangle) =
     this.rect = rect
-    if parentPtr == nil:
+    if parentRect == nil:
       this.root = true
       return
-    addr(parentPtr[])[UIRectComponentData].children &= parent
-    this.prect = addr(parentPtr[])[UIRectComponentData].bounds
+    parentRect[UIRectComponentData].children &= parent
+    this.prect = parentRect[UIRectComponentData].bounds
     this.bounds = this.rect.toRect(this.prect)

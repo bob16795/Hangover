@@ -100,9 +100,7 @@ macro components*(multiBody: untyped): untyped =
           m.params[0],
           nnkIdentDefs.newTree(
             newIdentNode("parent"),
-            nnkPtrTy.newTree(
-              newIdentNode("Entity")
-            ),
+            newIdentNode("Entity"),
             newEmptyNode()
           )
         ),
@@ -296,9 +294,7 @@ macro component*(head, body: untyped): untyped =
         m.params[0],
         nnkIdentDefs.newTree(
           newIdentNode("parent"),
-          nnkPtrTy.newTree(
-            newIdentNode("Entity")
-          ),
+          newIdentNode("Entity"),
           newEmptyNode()
         )
       ),

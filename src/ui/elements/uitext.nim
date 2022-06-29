@@ -53,7 +53,7 @@ method draw*(t: UIText, parentRect: Rect) =
         posx = bounds.x + bounds.width - sizeText(t.font[], text).x
       else: discard
     posx = max(posx, bounds.x)
-    t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color)
+    t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color, layer = 500)
     posy += t.font[].size.float32
 
 method update*(t: var UIText, parentRect: Rect, mousePos: Vector2,
