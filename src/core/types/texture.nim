@@ -17,22 +17,22 @@ var
 
 const
   vertexCode = """
-#version 330 core
 layout (location = 0) in vec4 vertex;
 layout (location = 1) in vec4 tintColorIn;
+uniform float rotation;
+uniform mat4 projection;
 
-out vec2 texRect;
-out vec4 tintColorGeo;
+out vec2 texCoords;
+out vec4 tintColor;
 
 void main()
 {
-    gl_Position = vec4(vertex.xy, 0.0, 1.0);
-    texRect = vertex.zw;
-    tintColorGeo = tintColorIn;
+    gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
+    texCoords = vertex.zw;
+    tintColor = tintColorIn;
 }
 """
   geoCode = """
-#version 330 core
 layout (lines) in;
 layout (triangle_strip, max_vertices = 4) out;
 
@@ -41,8 +41,6 @@ in vec4 tintColorGeo[2];
 
 out vec2 texCoords;
 out vec4 tintColor;
-uniform float rotation;
-uniform mat4 projection;
 uniform float layer;
 
 vec2 rotate(vec2 pos, vec2 origin) {
@@ -88,7 +86,6 @@ void main() {
 }
 """
   fragmentCode = """
-#version 330 core
 in vec2 texCoords;
 in vec4 tintColor;
 
@@ -102,18 +99,23 @@ void main()
 }
 """
 
+type
+  Vert = array[0..15, GLfloat]
+
 var
-  VAO, VBO: GLUint
   textureProgram*: Shader
-  queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
-                           GLFloat]], rotation: GLfloat, layer: range[0..500]]]
+  queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[Vert], rotation: GLfloat, layer: range[0..500]]]
   buffers: seq[GLUint]
   cullSize: Vector2
 
 template verts(ds, de: Vector2, ss, se: Vector2, c: Color): untyped =
   @[
-    [ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af],
-    [de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af],
+    [ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
+    [de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
+    [de.x, ds.y, se.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
+    [ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
+    [de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
+    [ds.x, de.y, ss.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
   ]
 
 proc resizeCull*(data: pointer) =
@@ -125,7 +127,6 @@ proc addVBO*() =
   glGenBuffers(1, addr buffers[^1])
 
 proc setVBOS*(count: int) =
-  # echo $count
   if count < len(buffers):
     glDeleteBuffers((len(buffers) - count).GLsizei, addr buffers[count])
     buffers = buffers[0..<count]
@@ -134,10 +135,7 @@ proc setVBOS*(count: int) =
       addVBO()
 
 proc setupTexture*() =
-  glGenVertexArrays(1, addr VAO)
-  addVBO()
-  glBindVertexArray(VAO)
-  textureProgram = newShader(vertexCode, geoCode, fragmentCode)
+  textureProgram = newShader(vertexCode, fragmentCode)
   textureProgram.registerParam("tintColor", SPKFloat4)
   textureProgram.registerParam("projection", SPKProj4)
   textureProgram.registerParam("rotation", SPKFloat1)
@@ -160,7 +158,8 @@ proc newTextureMem*(image: pointer, imageSize: cint): Texture =
     width, height, channels: cint
     data: pointer = stbi_load_from_memory(cast[ptr cuchar](image), imageSize, width, height, channels, 4)
   if data == nil:
-    quit "failed to load image"
+    echo "failed to load image"
+    quit 1000
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
       0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, data)
   glGenerateMipmap(GL_TEXTURE_2D)
@@ -185,7 +184,8 @@ proc newTexture*(image: string): Texture =
     width, height, channels: cint
     data: pointer = stbi_load(image, width, height, channels, 4)
   if data == nil:
-    quit "failed to load image"
+    echo "failed to load image"
+    quit 1000
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
       0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, data)
   glGenerateMipmap(GL_TEXTURE_2D)
@@ -218,8 +218,11 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
     queue &= (u: true, p: program[], t: texture, vs: vertices, rotation: rotation.GLfloat, layer: layer)
 
 proc finishDraw*() =
-  queue.sort(proc(a, b: tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
-                        GLFloat]], rotation: GLfloat, layer: range[0..500]]): int = cmp(a.layer, b.layer))
+#  queue.sort(proc(a, b: tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
+#                        GLFloat]], rotation: GLfloat, layer: range[0..500]]): int = cmp(a.layer, b.layer))
+#
+  var startProg: GLint
+  glGetIntegerv(GL_CURRENT_PROGRAM, addr startProg)
 
   if queue != @[]:
     for i in 0..<len(queue):
@@ -229,9 +232,7 @@ proc finishDraw*() =
   glEnable(GL_BLEND)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-
   glActiveTexture(GL_TEXTURE0)
-  glBindVertexArray(VAO)
   setVBOS(len(queue))
   for i in 0..<len(queue):
     var q = queue[i]
@@ -250,21 +251,28 @@ proc finishDraw*() =
       glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(len(vertices) *
           sizeof(vertices[0])),
           addr(vertices[0]), GL_STREAM_DRAW)
-    glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 8 * sizeof(
+    glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(
         GLfloat), cast[pointer](0))
     glEnableVertexAttribArray(0)
-    glVertexAttribPointer(1, 4, cGL_FLOAT, GL_FALSE.GLboolean, 8 * sizeof(
+    glVertexAttribPointer(1, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(
         GLfloat), cast[pointer](4 * sizeof(GLfloat)))
     glEnableVertexAttribArray(1)
+    glVertexAttribPointer(2, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(
+        GLfloat), cast[pointer](8 * sizeof(GLfloat)))
+    glEnableVertexAttribArray(2)
+    glVertexAttribPointer(3, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(
+        GLfloat), cast[pointer](12 * sizeof(GLfloat)))
+    glEnableVertexAttribArray(3)
     glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     # render
-    glDrawArrays(GL_LINES, 0, (len(vertices)).GLsizei)
-  glBindVertexArray(0)
+    glDrawArrays(GL_TRIANGLES, 0, (len(vertices)).GLsizei)
   glBindTexture(GL_TEXTURE_2D, 0)
-  glDisable(GL_BLEND)
+  #glDisable(GL_BLEND)
   pqueue = queue
   queue = @[]
+  
+  glUseProgram(startProg.GLuint)
 
 proc isDefined*(texture: Texture): bool =
   return texture.tex != 0

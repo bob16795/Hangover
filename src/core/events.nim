@@ -1,7 +1,8 @@
-import glfw
+when not defined(ginGLFM):
+  import glfw
+  export glfw.Key
 import sugar
 from loop import GraphicsContext
-export glfw.Key
 import tables
 import oids
 import core/types/texture
@@ -29,6 +30,7 @@ template createEvent*(name: untyped): untyped =
 
 proc sendEvent*(event: EventId, data: pointer) =
   ## sends an event to the manager
+  #echo "send: " & $event.int
   if event in listeners:
     for call in listeners[event]:
       if call.p(data):
@@ -57,12 +59,13 @@ include events/joystick
 
 proc setupEventCallbacks*(ctx: GraphicsContext) =
   ## sets the default callbacks
-  ctx.window.keyCb = keyCb
-  ctx.window.framebufferSizeCb = sizeCB
-  ctx.window.windowSizeCb = resizeCB
-  ctx.window.cursorPositionCb = mouseMoveCb
-  ctx.window.mouseButtonCb = mouseButtonCb
-  ctx.window.charCb = charCb
+  when not defined(ginGLFM):
+    ctx.window.keyCb = keyCb
+    ctx.window.framebufferSizeCb = sizeCB
+    ctx.window.windowSizeCb = resizeCB
+    ctx.window.cursorPositionCb = mouseMoveCb
+    ctx.window.mouseButtonCb = mouseButtonCb
+    ctx.window.charCb = charCb
   createListener(EVENT_START_LINE_ENTER,
                  proc(d: pointer): bool =
                    lineInput = true

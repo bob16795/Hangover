@@ -15,7 +15,7 @@ when defined(hangui):
   var
     entityList*: seq[EntityEntry]
   
-proc newEntity*(): ref Entity =
+proc newEntity*(): Entity =
   new(result)
   result.id = genOid()
   GC_ref(result)
@@ -29,14 +29,14 @@ when defined(hangui):
       if le.id == e.id:
         le.name = name
 else:
-  proc setName*(e: ref Entity, name: string) {.inline.} =
+  proc setName*(e: Entity, name: string) {.inline.} =
     discard
 
 
-proc attachComponent*(e: ref Entity, c: Component) =
+proc attachComponent*(e: Entity, c: Component) =
   e[].components &= c
   GC_ref(e)
-  var comp = addr e[].components[^1]
+  var comp = e[].components[^1]
   comp.parent = e
   #GC_ref(comp[])
   #GC_ref(e[])

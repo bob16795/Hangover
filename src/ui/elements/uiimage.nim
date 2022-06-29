@@ -1,6 +1,7 @@
 import core/types/vector2
 import core/types/point
 import core/types/color
+import core/types/shader
 import core/types/rect
 import core/types/font
 import ui/elements/uielement
@@ -9,6 +10,7 @@ import ui/types/uisprite
 type
   UIImage* = ref object of UIElement
     sprite*: Sprite
+    color*: Color
 
 method checkHover*(b: UIImage, parentRect: Rect, mousePos: Vector2): bool =
   b.focused = false
@@ -29,7 +31,7 @@ method draw*(b: UIImage, parentRect: Rect) =
 
   var bounds = b.bounds.toRect(parentRect)
 
-  b.sprite.draw(bounds.location, 0, bounds.size)
+  b.sprite.draw(bounds.location, 0, bounds.size, c = b.color)
 
 method update*(b: var UIImage, parentRect: Rect, mousePos: Vector2,
     dt: float32): bool =

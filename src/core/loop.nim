@@ -2,20 +2,27 @@ import sugar
 
 import types/vector2
 import types/color
+import times
 
-import glfw
+when not defined(ginGLFM):
+  import glfw
+else:
+  import glfm
 
 import os
 
 type
   GraphicsContext* = object
     ## stores some random graphics data for a loop
-    window*: Window
+    when not defined(ginGLFM):
+      window*: Window
+    else:
+      window*: ptr GLFMDisplay
     size*: Vector2
     pos*: Vector2
     color*: Color
 
-  Loop = object
+  Loop* = object
     targetFPS: float64
 
     dt*: float64
@@ -41,7 +48,10 @@ proc newLoop*(fps: float64): Loop =
 proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
   ## forces the loop to draw the window
   loop.lastTime = loop.currentTime
-  loop.currentTime = glfw.getTime()
+  when not defined(ginGLFM):
+    loop.currentTime = glfw.getTime()
+  when defined(hangui) or defined(ginGLFM):
+    loop.currentTime = cpuTime()
   var delayed: bool
   if loop.lastTime != 0:
     loop.dt = loop.currentTime - loop.lastTime
@@ -54,9 +64,13 @@ proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
 proc update*(loop: var Loop, ctx: var GraphicsContext) =
   ## processes one frame of a loop
   if loop.done:
+    echo "loop done"
     return
   loop.lastTime = loop.currentTime
-  loop.currentTime = glfw.getTime()
+  when not defined(ginGLFM):
+    loop.currentTime = glfw.getTime()
+  when defined(hangui) or defined(ginGLFM):
+    loop.currentTime = cpuTime()
   var delayed: bool
   if loop.lastTime != 0:
     loop.dt = loop.currentTime - loop.lastTime

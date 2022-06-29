@@ -12,7 +12,7 @@ template `data=`*(c: var Component, data: untyped) =
 proc data*(c: Component): ComponentData =
   return c.dataPtr
 
-proc `[]`*(c: ptr Entity, d: typedesc): d =
+proc `[]`*(c: Entity, d: typedesc): d =
   template components: untyped = c.components
   for ci in 0..<len components:
     if components[ci].dataType == name(d):
@@ -20,7 +20,7 @@ proc `[]`*(c: ptr Entity, d: typedesc): d =
   echo name(d) & ":("
   return nil
 
-proc `[]=`*(c: ptr Entity, d: typedesc, data: ComponentData) =
+proc `[]=`*(c: Entity, d: typedesc, data: ComponentData) =
   if c != nil:
     template components: untyped = c.components
     for ci in 0..<len components:
@@ -30,13 +30,13 @@ proc `[]=`*(c: ptr Entity, d: typedesc, data: ComponentData) =
         return
   echo name(d) & ":("
 
-#proc `.()`*(c: ptr Entity) =
+#proc `.()`*(c: Entity) =
 #  discard
 
-proc attachMethod*(comp: ptr Component, event: EventId, meth: proc(c: ptr Entity, d: pointer): bool)=
+proc attachMethod*(comp: Component, event: EventId, meth: proc(c: Entity, d: pointer): bool)=
   var oid: Oid
   var tmpMeth = proc(data: pointer): bool =
-    var parent = addr(comp.parent[])
+    var parent = comp.parent
     return meth(parent, data)
   oid = createListener(event, tmpMeth)
   comp[].lids &= oid

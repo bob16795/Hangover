@@ -10,6 +10,7 @@ type
   UIPanel* = ref object of UIElement
     texture*: UISprite
     popup*: bool
+    color*: Color
 
 proc newUIPanel*(sprite: UISprite, bounds: UIRectangle,
     popup: bool): UIPanel =
@@ -31,7 +32,7 @@ method draw*(p: UIPanel, parentRect: Rect) =
   #   drawFill(initRectangle(initPoint(0, 0), getWindowSize()), initColor(0,
   #       0, 0, 128))
   if p.texture.texture.isDefined():
-    p.texture.draw(bounds)
+    p.texture.draw(bounds, c = p.color, layer = 499)
 
 method update*(p: var UIPanel, parentRect: Rect, mousePos: Vector2,
     dt: float32): bool =

@@ -22,11 +22,19 @@ type
     id*: GLuint
     params*: Table[ShaderParam, bool]
 
+when defined(ginGLFM):
+  const
+    SHADER_HEADER = "#version 300 es\nprecision highp float;"
+else:
+  const
+    SHADER_HEADER = "#version 330 core\n"
+
 proc newShader*(vCode, gCode, fCode: string): Shader =
+  echo vCode
   var
-    vShaderCode = [vCode.cstring]
-    gShaderCode = [gCode.cstring]
-    fShaderCode = [fCode.cstring]
+    vShaderCode = [(SHADER_HEADER & vCode).cstring]
+    gShaderCode = [(SHADER_HEADER & gCode).cstring]
+    fShaderCode = [(SHADER_HEADER & fCode).cstring]
     geometry, vertex, fragment: GLuint
     success: GLint
     infoLog: cstring = cast[cstring](alloc0(512))
@@ -39,7 +47,10 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
   if success == 0:
     glGetShaderInfoLog(vertex, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
+  
+  echo "vertex"
 
   # geometry Shader
   geometry = glCreateShader(GL_GEOMETRY_SHADER)
@@ -49,7 +60,10 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glGetShaderiv(geometry, GL_COMPILE_STATUS, addr success)
   if success == 0:
     glGetShaderInfoLog(geometry, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
+
+  echo "geo"
 
   # fragment Shader
   fragment = glCreateShader(GL_FRAGMENT_SHADER)
@@ -59,7 +73,8 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
   if success == 0:
     glGetShaderInfoLog(fragment, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
 
   # shader program
   result.id = glCreateProgram()
@@ -71,7 +86,10 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
   if success == 0:
     glGetProgramInfoLog(result.id, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
+  
+  echo "frag"
 
   # delete the shaders as they're linked into our program now and no longer necessary
   glDeleteShader(vertex)
@@ -94,7 +112,8 @@ proc newComputeShader*(cCode: string): Shader =
   glGetShaderiv(compute, GL_COMPILE_STATUS, addr success)
   if success == 0:
     glGetShaderInfoLog(compute, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
 
   # create program
   result.id = glCreateProgram()
@@ -104,7 +123,8 @@ proc newComputeShader*(cCode: string): Shader =
   glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
   if success == 0:
     glGetProgramInfoLog(result.id, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
 
   # delete the shaders as they're linked into our program now and no longer necessary
   glDeleteShader(compute)
@@ -112,8 +132,8 @@ proc newComputeShader*(cCode: string): Shader =
 proc newShader*(vCode, fCode: string): Shader =
   result = Shader()
   var
-    vShaderCode = [vCode.cstring]
-    fShaderCode = [fCode.cstring]
+    vShaderCode = [(SHADER_HEADER & vCode).cstring]
+    fShaderCode = [(SHADER_HEADER & fCode).cstring]
     vertex, fragment: GLuint
     success: GLint
     infoLog: cstring = cast[cstring](alloc0(512))
@@ -126,7 +146,8 @@ proc newShader*(vCode, fCode: string): Shader =
   glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
   if success <= 0:
     glGetShaderInfoLog(vertex, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
 
   # fragment Shader
   fragment = glCreateShader(GL_FRAGMENT_SHADER)
@@ -136,7 +157,8 @@ proc newShader*(vCode, fCode: string): Shader =
   glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
   if success <= 0:
     glGetShaderInfoLog(fragment, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
 
   # shader program
   result.id = glCreateProgram()
@@ -147,7 +169,8 @@ proc newShader*(vCode, fCode: string): Shader =
   glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
   if success == 0:
     glGetProgramInfoLog(result.id, 512, nil, infoLog)
-    quit $infoLog
+    echo $infoLog
+    quit 1000
 
   # delete the shaders as they're linked into our program now and no longer necessary
   glDeleteShader(vertex)
@@ -156,13 +179,16 @@ proc newShader*(vCode, fCode: string): Shader =
 proc registerParam*(s: var Shader, p: ShaderParam) =
   for sp in s.params.keys:
     if p.name == sp.name:
-      quit "duplicate shader param: " & p.name
+      echo "duplicate shader param: " & p.name
+      quit 1000
   s.params[p] = false
 
 proc registerParam*(s: var Shader, n: string, k: ShaderParamKind) =
   for sp in s.params.keys:
     if n == sp.name:
-      quit "duplicate shader param: " & n
+      echo "duplicate shader param: " & n
+      quit 1000
+
   var p = ShaderParam(name: n, kind: k)
   s.params[p] = false
 

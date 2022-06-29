@@ -20,6 +20,7 @@ type
     normalUI*, clickedUI*, disabledUI*, focusedUI*: UISprite
     toggle*: bool
     pressed*: bool
+    color*: Color
 
 proc newUIButton*(texture: Texture, font: var Font, bounds: UIRectangle,
         action: UIAction = nil, text = "", disableProc: proc(): bool = nil,
@@ -100,13 +101,13 @@ method draw*(b: UIButton, parentRect: Rect) =
     var posx = (bounds.x) + ((bounds.width - bounds.height) -
         sizeText(b.font[], b.text).x) / 2
     b.sprite.draw(newVector2(posx, bounds.y),
-        0, newVector2(bounds.height, bounds.height))
+        0, newVector2(bounds.height, bounds.height), c = b.color)
   if (b.hasToggleSprite):
     if b.pressed:
       var posx = (bounds.x) + ((bounds.width - bounds.height) -
           sizeText(b.font[], b.text).x) / 2
       b.toggleSprite.draw(newVector2(posx, bounds.y),
-          0, newVector2(bounds.height, bounds.height))
+          0, newVector2(bounds.height, bounds.height), c = b.color)
     if b.focused:
       var posx = (bounds.x) + ((bounds.width - bounds.height) -
           sizeText(b.font[], b.text).x) / 2
