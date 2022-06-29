@@ -68,3 +68,14 @@ proc center*(r: Rect): Vector2 =
 proc clamp*(v: Vector2, r: Rect): Vector2 =
   result.x = v.x.clamp(r.x, r.x + r.width)
   result.y = v.y.clamp(r.y, r.y + r.height)
+
+proc contains*(r: Rect, v: Vector2): bool =
+  return r.x < v.x and
+         r.y < v.y and
+         r.x + r.width > v.x and
+         r.y + r.height > v.y
+
+proc contains*(r: Rect, v: Rect): bool =
+  var halfSize = v.size / 2
+  var r2 = r
+  return r2.contains(v.center)
