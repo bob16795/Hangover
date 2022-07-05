@@ -181,13 +181,14 @@ template Game*(body: untyped) =
         app.ctx = initGraphics(app.data)
 
         echo "graphics init"
+        
+        initUIManager(app.size)
 
         app.loop = newLoop(60)
         app.ctx.window = display
         template drawUIEarly() =
           drawUI()
           app.ui = false
-        
         
         echo "body"
         body
@@ -197,6 +198,7 @@ template Game*(body: untyped) =
 
         app.loop.updateProc =
           proc (dt: float, delayed: bool): bool =
+            updateAudio()
             updateUI(dt)
             return Update(dt, delayed)
 
@@ -211,8 +213,10 @@ template Game*(body: untyped) =
         var tmpSize = (app.size.x.int32, app.size.y.int32)
         sendEvent(EVENT_RESIZE, addr tmpSize)
 
+        createListener(EVENT_CLOSE, proc(d: pointer): bool = gameClose())
+
       clearBuffer(app.ctx, app.ctx.color)
-      app.loop.update(app.ctx)
+      app.loop.update(app.ctx, frameTime)
 
     proc onResize*(display: ptr GLFMDisplay, w, h: cint) =
         var tmpResize = (w.int32, h.int32)
@@ -227,26 +231,29 @@ template Game*(body: untyped) =
         
     proc onTouch*(display: ptr GLFMDisplay; touch: cint; phase: GLFMTouchPhase; x: cdouble;
              y: cdouble): bool =
-      var data = (x.float64 + textureOffset.x.float64, y.float64 + textureOffset.y.float64)
+      var data = (x.float64 + textureOffset.x.float64, y.float64 + textureOffset.y.float64, touch)
+      echo data
       sendEvent(EVENT_MOUSE_MOVE, addr data)
       if phase == GLFMTouchPhaseBegan:
-        var btn = 0
-        sendEvent(EVENT_MOUSE_CLICK, addr btn)
+        sendEvent(EVENT_MOUSE_CLICK, addr touch)
       elif phase == GLFMTouchPhaseEnded:
-        var btn = 0
-        sendEvent(EVENT_MOUSE_RELEASE, addr btn)
+        sendEvent(EVENT_MOUSE_RELEASE, addr touch)
     
     proc onKey*(display: ptr GLFMDisplay; keyCode: Key; action: KeyAction;
            modifiers: cint): bool =
-      discard
+      case action:
+        of keyActionPressed:
+          sendEvent(EVENT_PRESS_KEY, addr keyCode)
+        of keyActionReleased:
+          sendEvent(EVENT_RELEASE_KEY, addr keyCode)
+        else:
+          discard
 
     proc onDestroy*(display: ptr GLFMDisplay) =
-      echo "quit"
+      sendEvent(EVENT_CLOSE, nil)
 
     proc glfmMain*(display: ptr GLFMDisplay) {.exportc, cdecl.} =
       NimMain()
-      if app.started: return
-      app.started = true
       app = GinApp()
       glfmSetDisplayConfig(display, GLFMRenderingAPIOpenGLES32,
                            GLFMColorFormatRGBA8888, GLFMDepthFormatNone,
@@ -260,6 +267,7 @@ template Game*(body: untyped) =
 
       glfmSetTouchFunc(display, onTouch)
       glfmSetKeyFunc(display, onKey)
+      glfmSetMultitouchEnabled(display, true)
 
     
 template GameECS*(name: string, body: untyped) =

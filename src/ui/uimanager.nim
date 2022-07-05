@@ -8,9 +8,11 @@ import ui/elements/uiinput
 import ui/elements/uitext
 import ui/types/uirectangle
 import core/events
+import core/graphics
 import core/types/rect
 import core/types/point
 import core/types/vector2
+import core/types/texture
 import macros
 import sugar
 
@@ -34,6 +36,7 @@ type
 var
   um*: UIManager
   drag*: UIElement
+  uiScaleMult*: float32 = 1
   last: int
 
 proc mouseMove(data: pointer): bool =
@@ -78,8 +81,15 @@ proc addUIElements*(elems: seq[UIElement]) =
 
 proc drawUI*() =
   ## draws the ui
+  if uiScaleMult != 1:
+    finishDraw()
+  scaleBuffer(uiScaleMult)
+  uiSpriteScaleMult = 1 / uiScaleMult
   for e in um.elements:
-    e.draw(newRect(newVector2(0, 0), um.size))
+    e.draw(newRect(newVector2(0, 0), um.size / uiScaleMult))
+  if uiScaleMult != 1:
+    finishDraw()
+  scaleBuffer(1)
 
 proc updateUI*(dt: float32) =
   ## processes a ui tick

@@ -5,6 +5,8 @@ import types/shader
 import types/color
 import types/font
 
+import sequtils
+
 import events
 when defined(ginGLFM):
   import glfm
@@ -23,6 +25,7 @@ from loop import GraphicsContext
 
 var cameraPos: Vector2
 var cameraSize: Vector2
+var ctx: GraphicsContext
 
 proc resizeBuffer*(data: pointer): bool =
   ## called when window is resized
@@ -36,7 +39,18 @@ proc resizeBuffer*(data: pointer): bool =
   textureProgram.setParam("projection", projection.caddr)
   resizeCull(data)
 
+proc scaleBuffer*(scale: float32) =
+  var projection = scale(ortho(cameraPos.x, cameraPos.x + cameraSize.x.float, cameraPos.y + cameraSize.y.float, cameraPos.y, 501, -501), scale)
+  
+  glViewport(0, 0, GLsizei(cameraSize.x), GLsizei(cameraSize.y))
+
+  fontProgram.setParam("projection", projection.caddr)
+  textureProgram.setParam("projection", projection.caddr)
+  var data = ((cameraSize.x / scale).int32, (cameraSize.y / scale).int32)
+  resizeCull(addr data)
+
 proc initGraphics*(data: AppData): GraphicsContext =
+  result = GraphicsContext()
   ## setup graphics
   when not defined(ginGLFM):
     loadExtensions()
@@ -65,6 +79,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
   if data.aa != 0:
     glEnable(GL_MULTISAMPLE) 
   result.color = data.color
+  ctx = result
 
 when defined(hangui):
   proc libSetFb*(id: GLuint, w, h: int32) {.exportc, cdecl, dynlib.} =
@@ -99,7 +114,6 @@ proc isFullscreen*(ctx: GraphicsContext): bool =
   else:
     false
 
-
 proc setFullscreen*(ctx: var GraphicsContext, fs: bool) =
   when not defined(ginGLFM):
     ## sets the window to fullscreen.
@@ -122,3 +136,32 @@ proc setFullscreen*(ctx: var GraphicsContext, fs: bool) =
       ctx.window.monitor = (monitor: NoMonitor, xpos: ctx.pos.x.int32,
           ypos: ctx.pos.y.int32, width: ctx.size.x.int32,
           height: ctx.size.y.int32, refreshRate: 0.int32)
+
+proc getBufferTexture*(): Texture =
+  finishDraw()
+  result = Texture()
+  var width, height: GLsizei
+  width = cameraSize.x.GLsizei
+  height = cameraSize.y.GLsizei
+
+  var nrChannels: GLsizei = 4
+  var stride: GLsizei = nrChannels * width
+  if (stride mod 4) != 0:
+    stride += (4 - stride mod 4)
+  var bufferSize: GLsizei = stride * height
+  var buffer: seq[uint8]
+  buffer = 0.uint8.repeat(bufferSize)
+  glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, addr buffer[0])
+  
+  glGenTextures(1, addr result.tex)
+  glBindTexture(GL_TEXTURE_2D, result.tex)
+
+  # set the texture wrapping/filtering options
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+      GL_NEAREST.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
+      0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, addr buffer[0])

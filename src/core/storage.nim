@@ -1,6 +1,8 @@
 import os
 import strutils
 import strformat
+when defined(ginGLFM):
+  import glfm
 
 var
   APPNAME*: string
@@ -8,6 +10,8 @@ var
 
 proc getContentDir*(): string =
   ## gets the path of cont://
+  when defined(ginGLFM):
+    return $glfmBundleDir()
   return getConfigDir() / APPNAME
 
 proc getFullFilePath*(file: string): string =

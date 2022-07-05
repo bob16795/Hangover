@@ -12,7 +12,7 @@ else:
 import os
 
 type
-  GraphicsContext* = object
+  GraphicsContext* = ref object
     ## stores some random graphics data for a loop
     when not defined(ginGLFM):
       window*: Window
@@ -74,6 +74,24 @@ proc update*(loop: var Loop, ctx: var GraphicsContext) =
   var delayed: bool
   if loop.lastTime != 0:
     loop.dt = loop.currentTime - loop.lastTime
+
+  if loop.updateproc(loop.dt, delayed):
+    loop.done = true
+  loop.dt = 0
+
+  loop.drawProc(ctx)
+
+proc update*(loop: var Loop, ctx: var GraphicsContext, time: cdouble) =
+  ## processes one frame of a loop
+  if loop.done:
+    echo "loop done"
+    return
+  loop.lastTime = loop.currentTime
+  loop.currentTime = time
+  var delayed: bool
+  if loop.lastTime != 0:
+    loop.dt = loop.currentTime - loop.lastTime
+  loop.dt = clamp(loop.dt, 0, 1)
 
   if loop.updateproc(loop.dt, delayed):
     loop.done = true

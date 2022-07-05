@@ -5,7 +5,7 @@ import types/point
 import types/color
 import types/rect
 import types/font
-import types/sound
+import types/sfx
 import types/song
 import types/shader
 
@@ -16,6 +16,6 @@ export point
 export color
 export rect
 export font
-export sound
+export sfx
 export song
 export shader
