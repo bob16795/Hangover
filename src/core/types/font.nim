@@ -8,6 +8,8 @@ import vector2
 import texture
 import rect
 
+# TODO: comment
+
 type
   Font* = object
     face: FT_Face

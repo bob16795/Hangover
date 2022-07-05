@@ -26,6 +26,8 @@ export uibutton
 export uielement
 export uirectangle
 
+#TODO: comment
+
 type
   UIManager* {.acyclic.} = object
     ## a ui manager, stores ui elements

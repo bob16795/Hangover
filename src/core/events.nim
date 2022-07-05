@@ -7,6 +7,8 @@ import tables
 import oids
 import core/types/texture
 
+# TODO: comment
+
 type
   EventId* = distinct uint8
   EventListener* = object

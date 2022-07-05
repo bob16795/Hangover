@@ -4,6 +4,8 @@ import strformat
 when defined(ginGLFM):
   import glfm
 
+#TODO: comment
+
 var
   APPNAME*: string
   ## set to change the app name in storage

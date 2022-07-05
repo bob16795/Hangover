@@ -1,7 +1,8 @@
 import opengl
-
 import point
 import tables
+
+# TODO: comment
 
 type
   ShaderParamKind* = enum

@@ -1,10 +1,10 @@
 import point
 import color
-
 import os
-
 import strformat
 import system
+
+#TODO: comment
 
 type
   AppData* = object

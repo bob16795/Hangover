@@ -8,6 +8,8 @@ import shader
 import algorithm
 import math
 
+# TODO: comment
+
 type
   Texture* = object
     tex*: GLuint

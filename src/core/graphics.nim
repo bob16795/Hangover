@@ -4,9 +4,7 @@ import types/vector2
 import types/shader
 import types/color
 import types/font
-
 import sequtils
-
 import events
 when defined(ginGLFM):
   import glfm
@@ -15,13 +13,12 @@ else:
   import glfw
 import opengl
 import glm
-
 import math
 import os
-
+from loop import GraphicsContext
 export opengl
 
-from loop import GraphicsContext
+#TODO: comment
 
 var cameraPos: Vector2
 var cameraSize: Vector2

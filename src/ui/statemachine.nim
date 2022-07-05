@@ -1,5 +1,7 @@
 import ../core/events
 
+#TODO: comment
+
 createEvent(EVENT_FSM_CHANGE)
 
 type

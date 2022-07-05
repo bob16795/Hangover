@@ -5,6 +5,8 @@ import core/types/vector2
 import core/types/color
 import core/types/rect
 
+#TODO: comment
+
 type
   UIFillMode* = enum
     FM_TILE

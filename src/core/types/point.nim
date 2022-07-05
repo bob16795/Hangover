@@ -1,5 +1,7 @@
 import math
 
+# TODO: comment
+
 type
   Point* = object
     x*: int

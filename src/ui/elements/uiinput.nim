@@ -6,8 +6,9 @@ import core/types/font
 import core/events
 import ui/elements/uielement
 import ui/types/uisprite
-
 import sugar
+
+#TODO: comment
 
 type
   UIInput* = ref object of UIElement

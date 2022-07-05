@@ -4,8 +4,9 @@ import core/types/color
 import core/types/rect
 import core/types/font
 import ui/elements/uielement
-
 import strutils
+
+#TODO: comment
 
 type
   UITextAlign* = enum

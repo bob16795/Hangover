@@ -6,6 +6,8 @@ import core/types/font
 import ui/elements/uielement
 import ui/types/uisprite
 
+#TODO: comment
+
 type
   UIGroup* = ref object of UIElement
     elements*: seq[UIElement]

@@ -1140,8 +1140,6 @@ static unsigned char *stbi__load_and_postprocess_8bit(stbi__context *s, int *x, 
     ri.bits_per_channel = 8;
   }
 
-  // @TODO: move stbi__convert_format to here
-
   if (stbi__vertically_flip_on_load)
   {
     int channels = req_comp ? req_comp : *comp;
@@ -1165,9 +1163,6 @@ static stbi__uint16 *stbi__load_and_postprocess_16bit(stbi__context *s, int *x, 
     result = stbi__convert_8_to_16((stbi_uc *)result, *x, *y, req_comp == 0 ? *comp : req_comp);
     ri.bits_per_channel = 16;
   }
-
-  // @TODO: move stbi__convert_format16 to here
-  // @TODO: special case RGB-to-Y (and RGBA-to-YA) for 8-bit-to-16-bit case to keep more precision
 
   if (stbi__vertically_flip_on_load)
   {
@@ -2289,7 +2284,6 @@ static int stbi__jpeg_decode_block_prog_dc(stbi__jpeg *j, short data[64], stbi__
   return 1;
 }
 
-// @OPTIMIZE: store non-zigzagged during the decode passes,
 // and only de-zigzag when dequantizing
 static int stbi__jpeg_decode_block_prog_ac(stbi__jpeg *j, short data[64], stbi__huffman *hac, stbi__int16 *fac)
 {
@@ -6546,8 +6540,8 @@ static void *stbi__tga_load(stbi__context *s, int *x, int *y, int *comp, int req
   int RLE_repeating = 0;
   int read_next_pixel = 1;
   STBI_NOTUSED(ri);
-  STBI_NOTUSED(tga_x_origin); // @TODO
-  STBI_NOTUSED(tga_y_origin); // @TODO
+  STBI_NOTUSED(tga_x_origin);
+  STBI_NOTUSED(tga_y_origin);
 
   //   do a tiny bit of precessing
   if (tga_image_type >= 8)
@@ -7035,7 +7029,6 @@ static void *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int req
 // Softimage PIC loader
 // by Tom Seddon
 //
-// See http://softimage.wiki.softimage.com/index.php/INFO:_PIC_file_format
 // See http://ozviz.wasp.uwa.edu.au/~pbourke/dataformats/softimagepic/
 
 #ifndef STBI_NO_PIC
@@ -7473,7 +7466,6 @@ static stbi_uc *stbi__process_gif_raster(stbi__context *s, stbi__gif *g)
       stbi__int32 code = bits & codemask;
       bits >>= codesize;
       valid_bits -= codesize;
-      // @OPTIMIZE: is there some way we can accelerate the non-clear path?
       if (code == clear)
       { // clear code
         codesize = lzw_cs + 1;

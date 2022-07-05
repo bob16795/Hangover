@@ -2,6 +2,8 @@ import sprite
 import tables
 import core/types/rect
 
+#TODO: comment
+
 type
   AnimationState* = object
     frames: seq[Sprite]

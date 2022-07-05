@@ -1,5 +1,7 @@
 import streams
 
+#TODO: comment
+
 type WavFile* = object
   ## stores PCM data
   data*: pointer

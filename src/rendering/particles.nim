@@ -4,6 +4,8 @@ import core/types/Color
 import core/types/Rect
 import random
 
+#TODO: comment
+
 template ifor*(variable: untyped, list: untyped, body: untyped): untyped =
   for i in 0..<list.len:
     template variable(): untyped = list[i]

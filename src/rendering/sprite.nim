@@ -5,6 +5,7 @@ import core/types/point
 import core/types/rect
 import core/types/shader
 
+#TODO: comment
 
 type
   Sprite* = object of RootObj

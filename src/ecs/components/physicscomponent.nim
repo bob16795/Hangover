@@ -7,6 +7,8 @@ import ecs/component
 import core/templates
 import ecs/genmacros
 
+#TODO: comment
+
 component PhysicsComponent:
   var
     velocity: Vector2

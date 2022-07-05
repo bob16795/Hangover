@@ -1,15 +1,14 @@
 import sugar
-
 import types/vector2
 import types/color
 import times
-
 when not defined(ginGLFM):
   import glfw
 else:
   import glfm
-
 import os
+
+#TODO: comment
 
 type
   GraphicsContext* = ref object
