@@ -74,6 +74,7 @@ method click*(b: UIButton, button: int) =
     b.pressed = not b.pressed
     b.action(b.pressed.int)
   else:
+    echo "click"
     b.action(button)
 
 method draw*(b: UIButton, parentRect: Rect) =

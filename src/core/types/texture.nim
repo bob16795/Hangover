@@ -6,6 +6,7 @@ import vector2
 import color
 import shader
 import algorithm
+import math
 
 type
   Texture* = object
@@ -104,18 +105,41 @@ type
 
 var
   textureProgram*: Shader
-  queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[Vert], rotation: GLfloat, layer: range[0..500]]]
+  queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[Vert], layer: range[0..500]]]
   buffers: seq[GLUint]
   cullSize: Vector2
 
-template verts(ds, de: Vector2, ss, se: Vector2, c: Color): untyped =
+proc rotated(pos: Vector2, center: Vector2, rotation: float32): Vector2 =
+  var
+    p = pos - center
+    s = sin(rotation)
+    c = cos(rotation)
+  result.x = p.x * c - p.y * s + center.x
+  result.y = p.x * s + p.y * c + center.y
+
+
+proc rotated(v: Vert, rotation: float32): Vert {.inline.} =
+  var center = newVector2((v[8] + v[10]) / 2, (v[9] + v[11]) / 2)
+  var pos1 = newvector2(v[0], v[1]).rotated(center, rotation)
+  var pos2 = newvector2(v[8], v[9]).rotated(center, rotation)
+  var pos3 = newvector2(v[10], v[11]).rotated(center, rotation)
+
+  result = v
+  result[0] = pos1.x
+  result[1] = pos1.y
+  result[8] = pos2.x
+  result[9] = pos2.y
+  result[10] = pos3.x
+  result[11] = pos3.y
+
+template verts(ds, de: Vector2, ss, se: Vector2, c: Color, rotation: float32): untyped =
   @[
-    [ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
-    [de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
-    [de.x, ds.y, se.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
-    [ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
-    [de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
-    [ds.x, de.y, ss.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y],
+    rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([de.x, ds.y, se.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([ds.x, de.y, ss.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
   ]
 
 proc resizeCull*(data: pointer) =
@@ -142,6 +166,7 @@ proc setupTexture*() =
   textureProgram.registerParam("layer", SPKFloat1)
 
 proc newTextureMem*(image: pointer, imageSize: cint): Texture =
+  result = Texture()
   glGenTextures(1, addr result.tex)
 
   glBindTexture(GL_TEXTURE_2D, result.tex)
@@ -168,6 +193,7 @@ proc newTextureMem*(image: pointer, imageSize: cint): Texture =
   result.size = newVector2(width.float32, height.float32)
 
 proc newTexture*(image: string): Texture =
+  result = Texture()
   glGenTextures(1, addr result.tex)
 
   glBindTexture(GL_TEXTURE_2D, result.tex)
@@ -209,17 +235,17 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
   var dst = dstRect.offset(-1 * textureOffset)
   if (not dst.aabb(newRect(newVector2(0, 0), cullSize))): return
   var vertices = verts(dst.location, dst.location + dst.size,
-      srcRect.location, srcRect.location + srcRect.size, color)
+      srcRect.location, srcRect.location + srcRect.size, color, rotation)
   if queue == @[]:
-    queue &= (u: true, p: program[], t: texture, vs: vertices, rotation: rotation.GLfloat, layer: layer)
-  elif layer == queue[^1].layer and texture == queue[^1].t and program[].id == queue[^1].p.id and rotation == queue[^1].rotation.GLfloat:
+    queue &= (u: true, p: program[], t: texture, vs: vertices, layer: layer)
+  elif layer == queue[^1].layer and texture == queue[^1].t and program[].id == queue[^1].p.id:
     queue[^1].vs &= vertices
   else:
-    queue &= (u: true, p: program[], t: texture, vs: vertices, rotation: rotation.GLfloat, layer: layer)
+    queue &= (u: true, p: program[], t: texture, vs: vertices, layer: layer)
 
 proc finishDraw*() =
 #  queue.sort(proc(a, b: tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
-#                        GLFloat]], rotation: GLfloat, layer: range[0..500]]): int = cmp(a.layer, b.layer))
+#                        GLFloat]], layer: range[0..500]]): int = cmp(a.layer, b.layer))
 #
   var startProg: GLint
   glGetIntegerv(GL_CURRENT_PROGRAM, addr startProg)
@@ -237,7 +263,6 @@ proc finishDraw*() =
   for i in 0..<len(queue):
     var q = queue[i]
     q.p.use()
-    q.p.setParam("rotation", addr q.rotation)
     var layer: float32 = q.layer.float32
     q.p.setParam("layer", addr layer)
     var last = len(q.vs)
