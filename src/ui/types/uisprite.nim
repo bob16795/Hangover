@@ -59,11 +59,11 @@ proc scale*(sprite: UISprite, scale: Vector2): UISprite =
   result.scale = scale
 
 proc drawSec*(sprite: var UISprite, src: Point, dest: var Rect, c: Color, layer: range[0..500]) =
-  var lol = sprite.renderSecs[src.x][src.y]
-  var d = dest.offset(newVector2(-1, -1))
-  d.width += 2
-  d.height += 2
-  sprite.texture.draw(lol, d, color = c, layer = layer)
+  var renderSec = sprite.renderSecs[src.x][src.y]
+  var dest = dest.offset(newVector2(-1, -1))
+  dest.width += 2
+  dest.height += 2
+  sprite.texture.draw(renderSec, dest, color = c, layer = layer)
 
 proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
            255, 255), layer: range[0..500] = 0) =
