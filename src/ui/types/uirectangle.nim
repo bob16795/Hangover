@@ -1,5 +1,7 @@
 import core/types/rect
 
+#TODO: comment
+
 type
   UIRectangle* = object
     ## a ui rectangle, allows you to set anchors based off ratios of a parent rectangle

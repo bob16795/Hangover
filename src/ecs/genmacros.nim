@@ -5,6 +5,8 @@ import strutils
 import types
 import sugar
 
+#TODO: comment
+
 type
   ComponentMethod = object
     name: string

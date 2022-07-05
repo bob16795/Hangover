@@ -5,6 +5,8 @@ import ecs/component
 import core/templates
 import ecs/genmacros
 
+#TODO: comment
+
 component PointComponent:
   var
     position: Vector2

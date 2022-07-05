@@ -2,6 +2,8 @@ import openal
 import streams
 import ../lib/readwav
 
+# TODO: comment
+
 type
   Sound* = object
     buffer*: ALuint

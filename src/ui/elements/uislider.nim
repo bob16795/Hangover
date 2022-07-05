@@ -5,8 +5,9 @@ import core/types/rect
 import core/types/font
 import ui/elements/uielement
 import ui/types/uisprite
-
 import sugar
+
+#TODO: comment
 
 type
   UISlider* = ref object of UIElement

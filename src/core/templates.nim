@@ -10,6 +10,8 @@ import ecs/types
 import ecs/entity
 import sugar
 
+#TODO: comment
+
 createEvent(EVENT_UPDATE)
 createEvent(EVENT_DRAW)
 createEvent(EVENT_DRAW_UI)

@@ -3,6 +3,8 @@ import core/types/rect
 import rendering/sprite
 import core/events
 
+#TODO: comment
+
 type
   ComponentLink* = object
     event*: EventId

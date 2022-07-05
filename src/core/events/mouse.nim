@@ -2,6 +2,8 @@ createEvent(EVENT_MOUSE_MOVE)
 createEvent(EVENT_MOUSE_CLICK)
 createEvent(EVENT_MOUSE_RELEASE)
 
+# TODO: comment
+
 when not defined(ginGLFM):
   proc mouseMoveCb*(win: Window, res: tuple[x, y: float64]) =
     var pos = res

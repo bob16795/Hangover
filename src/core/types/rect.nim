@@ -1,5 +1,7 @@
 import vector2
 
+# TODO: comment
+
 type
   Rect* = object of RootObj
     x*: float32

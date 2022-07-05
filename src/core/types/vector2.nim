@@ -1,6 +1,8 @@
 import math
 import point
 
+# TODO: comment
+
 type
   Vector2* = object
     x*: float32

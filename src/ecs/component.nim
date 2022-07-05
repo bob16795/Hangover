@@ -5,6 +5,8 @@ import oids
 import typetraits
 import sugar
 
+#TODO: comment
+
 template `data=`*(c: var Component, data: untyped) =
   c.dataType = name(data[].type)
   c.dataPtr = data

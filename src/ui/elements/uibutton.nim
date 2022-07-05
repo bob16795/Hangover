@@ -6,6 +6,8 @@ import core/types/font
 import ui/elements/uielement
 import ui/types/uisprite
 
+#TODO: comment
+
 type
   UIButton* = ref object of UIElement
     font*: ptr Font
