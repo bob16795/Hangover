@@ -5,23 +5,23 @@
 ![HangOver](src/assets/icon.ico)
 
 ## Contents
-- [What is Hangover](#what)
-- [Why Use Hangover](#why)
-  - [Optional Ec code][why-ec]
-  - [Clean(ish) Code][]
+- [What is Hangover](#what-is-hangover)
+- [Why Use Hangover](#why-use-hangover)
+  - [Optional Ec code](#optional-ec-code)
+  - [Clean(ish) Code](#cleanish-code)
 
-## [What is Hangover][what]
+## What is Hangover
 
 In short 2D game engine written in Nim. Hangover started as a full rewrite of a game engine called gin, which was inspired by monogame. But at the point of writing this Hangover has been inspired by Unity, Godot and more.
 
-## [Why Use Hangover][why]
+## Why Use Hangover
 
 There are little to no reasons to use hangover as it was just made as a side project, but these are the reasons I use it.
 
-### [Optional EC code][why-ec]
+### Optional EC code
 
 Hangover supports a ec system based off unitys. Allowing an "easier" transition from unity to Hangover.
 
-### [Clean(ish) Code][why-clean]
+### Clean(ish) Code
 
 Hangover uses nims macros to define systems, allowing for cleaner code.
