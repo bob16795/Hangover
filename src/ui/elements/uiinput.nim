@@ -39,12 +39,12 @@ proc newUIInput*(font: var Font, bounds: UIRectangle, hint = "",
 
   return r
 
-method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2): bool =
+method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2) =
   e.focused = false
   if not e.isActive:
-    return false
+    return
   if e.isDisabled != nil and e.isDisabled():
-    return false
+    return
 
   var bounds = e.bounds.toRect(parentRect)
   if (bounds.x < mousePos.x and bounds.x +
@@ -52,7 +52,6 @@ method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2): bool =
       (bounds.y < mousePos.y and bounds.y +
               bounds.height > mousePos.y):
     e.focused = true
-    return true
 
 method click*(e: UIInput, button: int) =
   if not e.focused: return
@@ -89,12 +88,12 @@ method draw*(e: UIInput, parentRect: Rect) =
     posy += sizeText(e.font[], text).y
 
 method update*(b: var UIInput, parentRect: Rect, mousePos: Vector2,
-    dt: float32): bool =
+    dt: float32) =
   if not b.isActive:
     if b.active:
       sendEvent(EVENT_STOP_LINE_ENTER, nil)
       b.active = false
-    return false
+    return
   var bounds = b.bounds.toRect(parentRect)
 
   if b.active and tmpText != "":
@@ -103,5 +102,3 @@ method update*(b: var UIInput, parentRect: Rect, mousePos: Vector2,
     else:
       b.text = tmpText
     tmpText = ""
-
-  return false

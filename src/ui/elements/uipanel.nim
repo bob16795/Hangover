@@ -23,8 +23,8 @@ proc newUIPanel*(sprite: UISprite, bounds: UIRectangle,
   result.popup = popup
 
 
-method checkHover*(p: UIPanel, parentRect: Rect, mousePos: Vector2): bool =
-  return false
+method checkHover*(p: UIPanel, parentRect: Rect, mousePos: Vector2) =
+  return
 
 method draw*(p: UIPanel, parentRect: Rect) =
   if not p.isActive:
@@ -37,9 +37,7 @@ method draw*(p: UIPanel, parentRect: Rect) =
     p.texture.draw(bounds, c = p.color, layer = 499)
 
 method update*(p: var UIPanel, parentRect: Rect, mousePos: Vector2,
-    dt: float32): bool =
+    dt: float32) =
   if not p.isActive:
-    return false
+    return
   var bounds = p.bounds.toRect(parentRect)
-
-  return false

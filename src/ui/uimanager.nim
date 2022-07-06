@@ -52,7 +52,7 @@ proc mouseMove(data: pointer): bool =
 
   # run check hover to update ui elements
   for e in um.elements:
-    discard e.checkHover(newRect(newVector2(0, 0), um.size), um.mousePos)
+    e.checkHover(newRect(newVector2(0, 0), um.size), um.mousePos)
   
   # if the mouse is draging something update it
   if drag != nil:
@@ -127,7 +127,7 @@ proc drawUI*() =
 proc updateUI*(dt: float32) =
   ## processes a ui tick
   for i in 0..<len um.elements:
-    discard um.elements[i].update(newRect(newVector2(0, 0), um.size),
+    um.elements[i].update(newRect(newVector2(0, 0), um.size),
         um.mousePos, dt)
 
 proc setUIActive*(i: int, value: bool) =

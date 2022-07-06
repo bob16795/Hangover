@@ -15,15 +15,14 @@ type
     color*: Color
     size*: Vector2
 
-method checkHover*(b: UIImage, parentRect: Rect, mousePos: Vector2): bool =
+method checkHover*(b: UIImage, parentRect: Rect, mousePos: Vector2) =
   b.focused = false
   if not b.isActive:
-    return false
+    return
   if b.isDisabled != nil and b.isDisabled():
-    return false
+    return
 
   var bounds = b.bounds.toRect(parentRect)
-  return false
 
 method click*(b: UIImage, button: int) =
   discard
@@ -42,9 +41,7 @@ method draw*(b: UIImage, parentRect: Rect) =
   b.sprite.draw(bounds.location, 0, bounds.size, c = b.color)
 
 method update*(b: var UIImage, parentRect: Rect, mousePos: Vector2,
-    dt: float32): bool =
+    dt: float32) =
   if not b.isActive:
-    return false
+    return
   var bounds = b.bounds.toRect(parentRect)
-
-  return false

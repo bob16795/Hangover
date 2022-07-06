@@ -3,6 +3,7 @@ import tables
 import core/types/rect
 
 #TODO: comment
+#TODO: add fsm
 
 type
   AnimationState* = object

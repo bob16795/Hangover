@@ -68,7 +68,7 @@ proc newUIButton*(texture: Texture, font: var Font, bounds: UIRectangle,
   result.text = text
   result.toggle = toggle
 
-method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2): bool =
+method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
   ## updates the button element on a mouse move
 
   # set focused to false
@@ -76,11 +76,11 @@ method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2): bool =
 
   # return if button is inactive
   if not b.isActive:
-    return false
+    return
 
   # return if the button is diabled
   if b.isDisabled != nil and b.isDisabled():
-    return false
+    return
   
   # get the bounds of the element
   var bounds = b.bounds.toRect(parentRect)
@@ -88,7 +88,6 @@ method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2): bool =
   # check if mouse is in the button
   if mousePos in bounds:
       b.focused = true
-      return true
 
 method click*(b: UIButton, button: int) =
   ## processes a click event for a button element
@@ -168,7 +167,7 @@ method draw*(b: UIButton, parentRect: Rect) =
     b.font[].draw(b.text, newPoint(posx.cint, posy.cint), textColor)
 
 method update*(b: var UIButton, parentRect: Rect, mousePos: Vector2,
-    dt: float32): bool =
+    dt: float32) =
   ## processes a frame for the button
 
   # return if the button is not active

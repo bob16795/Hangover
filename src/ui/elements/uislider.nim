@@ -19,7 +19,7 @@ type
     tmpVal: float
     update*: (v: float) -> void
 
-method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2): bool =
+method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2) =
   s.focused = false
 
   var bounds = s.bounds.toRect(parentRect)
@@ -33,16 +33,15 @@ method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2): bool =
   s.tmpVal = s.tmpVal.clamp(0, 1)
 
   if not s.isActive:
-    return false
+    return
   if s.isDisabled != nil and s.isDisabled():
-    return false
+    return
 
   if (bounds.x < mousePos.x and bounds.x +
           bounds.width > mousePos.x) and
       (bounds.y < mousePos.y and bounds.y +
               bounds.height > mousePos.y):
       s.focused = true
-      return true
 
 method click*(s: UISlider, button: int) =
   s.value = s.tmpVal
@@ -76,9 +75,8 @@ method draw*(s: UISlider, parentRect: Rect) =
       s.handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height))
 
 method update*(s: var UISlider, parentRect: Rect, mousePos: Vector2,
-    dt: float32): bool =
+    dt: float32) =
   if not s.isActive:
-    return false
-  var bounds = s.bounds.toRect(parentRect)
+    return
 
-  return false
+  var bounds = s.bounds.toRect(parentRect)

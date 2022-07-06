@@ -22,7 +22,7 @@ component UIComponent:
   proc eventMouseMove(pos: tuple[x, y: float64]): bool =
     var rect = parent[RectComponentData]
     this.mousePos = newVector2(pos.x, pos.y)
-    discard this.element.checkHover(newRect(rect.position, rect.size), this.mousePos)
+    this.element.checkHover(newRect(rect.position, rect.size), this.mousePos)
     if this.drag != nil:
       this.drag.drag(this.last)
 
@@ -48,7 +48,7 @@ component UIComponent:
   proc eventUpdate(dt: float32): bool =
     var rect = parent[RectComponentData]
     var dest = newRect(rect.position, rect.size)
-    discard this.element.update(dest,
+    this.element.update(dest,
         this.mousePos, dt)
 
   proc eventResize(data: void): bool =

@@ -24,16 +24,17 @@ proc add*(g: var UIGroup, e: UIElement) =
 proc clear*(g: var UIGroup) =
   g.elements = @[]
 
-method checkHover*(g: UIGroup, parentRect: Rect, mousePos: Vector2): bool =
+method checkHover*(g: UIGroup, parentRect: Rect, mousePos: Vector2) =
   g.focused = false
   if not g.isActive:
-    return false
+    return
   if g.isDisabled != nil and g.isDisabled():
-    return false
+    return
 
   var bounds = g.bounds.toRect(parentRect)
   for i in 0..<g.elements.len:
-    if g.elements[i].checkHover(bounds, mousePos):
+    g.elements[i].checkHover(bounds, mousePos)
+    if g.elements[i].focused:
       g.focused = true
 
 method click*(g: UIGroup, button: int) =
@@ -51,10 +52,9 @@ method draw*(g: UIGroup, parentRect: Rect) =
     g.elements[i].draw(bounds)
 
 method update*(g: var UIGroup, parentRect: Rect, mousePos: Vector2,
-    dt: float32): bool =
+    dt: float32) =
   if not g.isActive:
     return
   var bounds = g.bounds.toRect(parentRect)
   for i in 0..<g.elements.len:
-    discard g.elements[i].update(bounds, mousePos, dt)
-  return false
+    g.elements[i].update(bounds, mousePos, dt)
