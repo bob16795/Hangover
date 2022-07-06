@@ -2,7 +2,7 @@ import point
 import color
 import os
 import system
-import syncio
+#import syncio
 
 type
   AppData* = object

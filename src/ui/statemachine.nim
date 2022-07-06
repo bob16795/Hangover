@@ -31,14 +31,14 @@ proc newStateMachine*(states: seq[StateMachineState]): StateMachine =
   result.states = states
   result.currentState = 0
 
-proc initFlag*(id, next: int): Flag =
+proc initFlag*(id, next: int): Flag {.deprecated.} =
   newFlag(id, next)
 
-proc initState*(flags: seq[Flag]): StateMachineState {.depricated.} =
+proc initState*(flags: seq[Flag]): StateMachineState {.deprecated.} =
   ## Inits a state machine state
   newState(flags)
 
-proc initStateMachine*(states: seq[StateMachineState]): StateMachine {.depricated.} =
+proc initStateMachine*(states: seq[StateMachineState]): StateMachine {.deprecated.} =
   newStateMachine(states)
 
 proc checkConds(sms: StateMachineState): bool =
