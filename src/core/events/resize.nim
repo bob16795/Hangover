@@ -5,6 +5,7 @@ createEvent(EVENT_RESIZE_DONE)
 
 when not defined(ginGLFM):
   proc sizeCB*(win: Window, res: tuple[w, h: int32]) =
+    ## Called when the window is resized
     var r = res
     sendEvent(EVENT_RESIZE, addr r)
   

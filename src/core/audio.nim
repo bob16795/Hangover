@@ -4,8 +4,6 @@ import types/vector2
 import random
 import openal
 
-#TODO: comment
-
 const
   SOURCES = 30
 
@@ -89,16 +87,19 @@ proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0)) =
   nextSoundSource += 1
   if nextSoundSource == SOURCES:
     nextSoundSource = 0
-  #else:
-  #  sound.sound.play()
 
 proc playRand*(sound: Sound, rs, re: float32, pos: Vector2 = newVector2(0, 0)) =
   ## plays a sound at a random pitch
+  
+  # set pitch, buffer and position
   alSourcef(soundSources[nextSoundSource], AL_PITCH, rand(rs..re).float32)
   alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
   alSource3f(soundSources[nextSoundSource], AL_POSITION, pos.x, pos.y, 0)
-
+  
+  # play the sound
   alSourcePlay(soundSources[nextSoundSource])
+  
+  # loop the source
   nextSoundSource += 1
   if nextSoundSource == SOURCES:
     nextSoundSource = 0

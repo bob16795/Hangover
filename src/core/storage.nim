@@ -4,7 +4,7 @@ import strformat
 when defined(ginGLFM):
   import glfm
 
-#TODO: comment
+#TODO: register custom paths
 
 var
   APPNAME*: string
@@ -23,11 +23,14 @@ proc getFullFilePath*(file: string): string =
     new(e)
     e.msg = &"Invalid File Path '{file}'"
     raise e
+
   case file.split("://")[0]:
   of "cont", "content":
     return getAppDir() / "content" / file.split("://")[1]
   of "res", "resources":
     return getContentDir() / file.split("://")[1]
+
+  # error from invalid path
   var e: ref OSError
   new(e)
   e.msg = &"Invalid File Path '{file}'"

@@ -26,8 +26,6 @@ export uibutton
 export uielement
 export uirectangle
 
-#TODO: comment
-
 type
   UIManager* {.acyclic.} = object
     ## a ui manager, stores ui elements
@@ -37,37 +35,63 @@ type
 
 var
   um*: UIManager
-  drag*: UIElement
+  ## The ui manager
+  drag: UIElement
   uiScaleMult*: float32 = 1
+  ## scales the ui, ammount of pixels in 1 ui pixel
   last: int
 
 proc mouseMove(data: pointer): bool =
+  ## processes a mouse move event
+  
+  # get the event data
   var pos = cast[ptr tuple[x, y: float64]](data)[]
+  
+  # update the ui mouse position
   um.mousePos = newVector2(pos.x, pos.y)
+
+  # run check hover to update ui elements
   for e in um.elements:
     discard e.checkHover(newRect(newVector2(0, 0), um.size), um.mousePos)
+  
+  # if the mouse is draging something update it
   if drag != nil:
     drag.drag(last)
 
 proc mouseClick(data: pointer): bool =
+  ## processes a click event
+  
+  # get the event data
   var btn = cast[ptr int](data)[]
   last = btn
+
+  # stop input if its active
   sendEvent(EVENT_STOP_LINE_ENTER, nil)
+
+  # update drag
   for e in um.elements:
     if e.focused:
       e.click(btn)
       drag = e
 
 proc mouseRel(data: pointer): bool =
+  # update drag to nothing
   drag = nil
 
 proc resizeUI(data: pointer): bool =
+  ## resizes the ui to the screen size
+ 
+  # get the event data
   var size = cast[ptr tuple[x, y: int32]](data)[]
   um.size = newVector2(size.x.float32, size.y.float32)
 
 proc initUIManager*(size: Point) =
   ## creates a new UIManager
+  
+  # set the size
   um.size = newVector2(size.x.float32, size.y.float32)
+
+  # attach events
   createListener(EVENT_MOUSE_MOVE, mouseMove)
   createListener(EVENT_MOUSE_CLICK, mouseClick)
   createListener(EVENT_MOUSE_RELEASE, mouseRel)
@@ -83,15 +107,22 @@ proc addUIElements*(elems: seq[UIElement]) =
 
 proc drawUI*() =
   ## draws the ui
+  
+  # scale the ui if needed
   if uiScaleMult != 1:
     finishDraw()
-  scaleBuffer(uiScaleMult)
-  uiSpriteScaleMult = 1 / uiScaleMult
+    scaleBuffer(uiScaleMult)
+    uiSpriteScaleMult = 1 / uiScaleMult
+
+  # draw the ui
   for e in um.elements:
     e.draw(newRect(newVector2(0, 0), um.size / uiScaleMult))
+
+  # reset scale
   if uiScaleMult != 1:
     finishDraw()
-  scaleBuffer(1)
+    scaleBuffer(1)
+    uiSpriteScaleMult = 1
 
 proc updateUI*(dt: float32) =
   ## processes a ui tick

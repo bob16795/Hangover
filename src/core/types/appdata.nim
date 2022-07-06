@@ -1,10 +1,8 @@
 import point
 import color
 import os
-import strformat
 import system
-
-#TODO: comment
+import syncio
 
 type
   AppData* = object
@@ -15,15 +13,19 @@ type
     color*: Color
 
 const
-  tmp = getTempDir() & "/gin2"
-  ginIcon {.strdefine.}: string = staticExec("nimble path gin2") & "/assets/icon.ico"
   ginAppName {.strdefine.} = "Gin Game"
-  rcGen = staticExec("nimble path gin2") & "/assets/rcgen.sh"
-  tmpRc = tmp & "/gingame.rc"
-  tmpRes32 = tmp & "/gingame32.res"
-  tmpRes64 = tmp & "/gingame64.res"
 
 static:
+  # get misc data
+  const
+    tmp = getTempDir() & "/gin2"
+    ginIcon {.strdefine.}: string = staticExec("nimble path gin2") & "/assets/icon.ico"
+    rcGen = staticExec("nimble path gin2") & "/assets/rcgen.sh"
+    tmpRc = tmp & "/gingame.rc"
+    tmpRes32 = tmp & "/gingame32.res"
+    tmpRes64 = tmp & "/gingame64.res"
+
+  # create a res file and gen an icon
   when defined(windows):
     discard staticExec(&"mkdir {tmp}")
     discard staticExec(&"/bin/bash {rcGen} 0-0-0-0 '{ginAppName}' '{ginIcon}' {tmpRc}")
