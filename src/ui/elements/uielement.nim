@@ -26,12 +26,12 @@ type
     isDisabled*: () -> bool ## checks if the element is disabled
 
 method checkHover*(e: UIElement, parentRect: Rect,
-    mousePos: Vector2): bool {.base.} =
+    mousePos: Vector2) {.base.} =
   ## updates the element on a mouse move event
   echo "check hover not implemented for element"
 
 method update*(e: var UIElement, parentRect: Rect, mousePos: Vector2,
-    dt: float32): bool {.base.} =
+    dt: float32) {.base.} =
   ## updates the element on a frame
   echo "update is not implemented for element"
 

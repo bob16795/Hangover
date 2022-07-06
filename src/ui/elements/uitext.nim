@@ -58,10 +58,9 @@ method draw*(t: UIText, parentRect: Rect) =
     posy += t.font[].size.float32
 
 method update*(t: var UIText, parentRect: Rect, mousePos: Vector2,
-    dt: float32): bool =
+    dt: float32) =
   if not t.isActive:
-    return false
+    return
   var bounds = t.bounds.toRect(parentRect)
   if t.update != nil:
     t.text = t.update()
-  return false
