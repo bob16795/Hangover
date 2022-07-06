@@ -64,9 +64,9 @@ proc draw*(ps: ParticleSystem, offset: Vector2) =
     var
       pc = clamp(p.lifeRemaining / p.lifeTime, 0.0, 1.0)
       c = newColor(lerp(p.startColor.r, p.endColor.r, pc).uint8,
-                    lerp(p.startColor.g, p.endColor.g, pc).uint8,
-                    lerp(p.startColor.b, p.endColor.b, pc).uint8,
-                    lerp(p.startColor.a, p.endColor.a, pc).uint8)
+                   lerp(p.startColor.g, p.endColor.g, pc).uint8,
+                   lerp(p.startColor.b, p.endColor.b, pc).uint8,
+                   lerp(p.startColor.a, p.endColor.a, pc).uint8)
       s = lerp(p.startSize, p.endSize, pc)
       hitbox = newRect((p.position - offset -
                              newVector2(s / 2, s / 2)),

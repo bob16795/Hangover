@@ -1,22 +1,22 @@
 import opengl
 import ../lib/stbi
-
 import rect
 import vector2
 import color
 import shader
-import algorithm
 import math
-
-# TODO: comment
 
 type
   Texture* = object
+    ## A texture object
     tex*: GLuint
+    ## the opengl texture refrence
     size*: Vector2
+    ## the size of the texture
 
 var
   textureOffset*: Vector2
+  ## offsets all textures
 
 const
   vertexCode = """
@@ -33,59 +33,6 @@ void main()
     gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
     texCoords = vertex.zw;
     tintColor = tintColorIn;
-}
-"""
-  geoCode = """
-layout (lines) in;
-layout (triangle_strip, max_vertices = 4) out;
-
-in vec2 texRect[2];
-in vec4 tintColorGeo[2];
-
-out vec2 texCoords;
-out vec4 tintColor;
-uniform float layer;
-
-vec2 rotate(vec2 pos, vec2 origin) {
-  vec2 p = pos - origin;
-  vec2 result;
-  float s = sin(rotation);
-  float c = cos(rotation);
-  result.x = p.x * c - p.y * s + origin.x;
-  result.y = p.x * s + p.y * c + origin.y;
-  return result;
-}
-
-
-void main() {
-  vec2 origin = (gl_in[0].gl_Position.xy + gl_in[1].gl_Position.xy) / 2;
-  vec2 pos1, pos2;
-  pos1 = rotate(vec2(gl_in[0].gl_Position.x, gl_in[1].gl_Position.y), origin);
-  pos2 = vec2(layer, 1);
-  gl_Position = projection * vec4(pos1, pos2);
-  texCoords = vec2(texRect[0].x, texRect[1].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
-  pos1 = rotate(vec2(gl_in[0].gl_Position.x, gl_in[0].gl_Position.y), origin);
-  gl_Position = projection * vec4(pos1, pos2);
-  texCoords = vec2(texRect[0].x, texRect[0].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
-  pos1 = rotate(vec2(gl_in[1].gl_Position.x, gl_in[1].gl_Position.y), origin);
-  gl_Position = projection * vec4(pos1, pos2);
-  texCoords = vec2(texRect[1].x, texRect[1].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-
-  pos1 = rotate(vec2(gl_in[1].gl_Position.x, gl_in[0].gl_Position.y), origin);
-  gl_Position = projection * vec4(pos1, pos2);
-  texCoords = vec2(texRect[1].x, texRect[0].y);
-  tintColor = tintColorGeo[0];
-  EmitVertex();
-  
-  EndPrimitive();
 }
 """
   fragmentCode = """
@@ -107,6 +54,7 @@ type
 
 var
   textureProgram*: Shader
+  ## the default program used to render textures
   queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[Vert], layer: range[0..500]]]
   buffers: seq[GLUint]
   cullSize: Vector2
@@ -145,14 +93,17 @@ template verts(ds, de: Vector2, ss, se: Vector2, c: Color, rotation: float32): u
   ]
 
 proc resizeCull*(data: pointer) =
+  ## resizes the screen for culling
   var size = cast[ptr tuple[w, h: int32]](data)[]
   cullSize = newVector2(size.w.float32, size.h.float32)
 
 proc addVBO*() =
+  ## adds a vbo
   buffers &= 0.GLuint
   glGenBuffers(1, addr buffers[^1])
 
 proc setVBOS*(count: int) =
+  ## set the number of vbos
   if count < len(buffers):
     glDeleteBuffers((len(buffers) - count).GLsizei, addr buffers[count])
     buffers = buffers[0..<count]
@@ -161,6 +112,7 @@ proc setVBOS*(count: int) =
       addVBO()
 
 proc setupTexture*() =
+  ## setup texture stuff
   textureProgram = newShader(vertexCode, fragmentCode)
   textureProgram.registerParam("tintColor", SPKFloat4)
   textureProgram.registerParam("projection", SPKProj4)
@@ -168,9 +120,13 @@ proc setupTexture*() =
   textureProgram.registerParam("layer", SPKFloat1)
 
 proc newTextureMem*(image: pointer, imageSize: cint): Texture =
+  ## creates a new texture from a pointer
+  
+  # create a texture
   result = Texture()
-  glGenTextures(1, addr result.tex)
 
+  # generate the texture
+  glGenTextures(1, addr result.tex)
   glBindTexture(GL_TEXTURE_2D, result.tex)
 
   # set the texture wrapping/filtering options
@@ -183,21 +139,28 @@ proc newTextureMem*(image: pointer, imageSize: cint): Texture =
   # load the texture
   var
     width, height, channels: cint
-    data: pointer = stbi_load_from_memory(cast[ptr cuchar](image), imageSize, width, height, channels, 4)
+    data: pointer = stbi_load_from_memory(cast[ptr char](image), imageSize, width, height, channels, 4)
   if data == nil:
     echo "failed to load image"
     quit 1000
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
-      0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, data)
+      0, GL_RGBA, GL_UNSIGNED_BYTE, data)
   glGenerateMipmap(GL_TEXTURE_2D)
+
+  # cleanup
   stbi_image_free(data)
 
+  # set the size
   result.size = newVector2(width.float32, height.float32)
 
 proc newTexture*(image: string): Texture =
+  ## creates a new texture from a file
+  
+  # create the textyre
   result = Texture()
-  glGenTextures(1, addr result.tex)
 
+  # generate the textyre
+  glGenTextures(1, addr result.tex)
   glBindTexture(GL_TEXTURE_2D, result.tex)
 
   # set the texture wrapping/filtering options
@@ -215,10 +178,13 @@ proc newTexture*(image: string): Texture =
     echo "failed to load image"
     quit 1000
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
-      0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, data)
+      0, GL_RGBA, GL_UNSIGNED_BYTE, data)
   glGenerateMipmap(GL_TEXTURE_2D)
-  stbi_image_free(data)
 
+  # cleanup
+  stbi_image_free(data)
+  
+  # set the size
   result.size = newVector2(width.float32, height.float32)
 
 proc aabb*(a, b: Rect): bool =
@@ -228,48 +194,72 @@ proc aabb*(a, b: Rect): bool =
      a.y + a.height > b.y:
     return true
 
-
 proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
            color = newColor(255, 255, 255, 255), rotation: float = 0, layer: range[0..500] = 0) =
+  ## draws a texture
+  
+  # check the program
   var program = shader
   if program == nil:
     program = addr textureProgram
+
+  # calc the dest rectangle
   var dst = dstRect.offset(-1 * textureOffset)
+
+  # cull offscreen
   if (not dst.aabb(newRect(newVector2(0, 0), cullSize))): return
+  
+  # get the verts for the new rect
   var vertices = verts(dst.location, dst.location + dst.size,
       srcRect.location, srcRect.location + srcRect.size, color, rotation)
+
+  # if the queue is empty create it
   if queue == @[]:
     queue &= (u: true, p: program[], t: texture, vs: vertices, layer: layer)
+  
+  # attempt to add to the last queue item
   elif layer == queue[^1].layer and texture == queue[^1].t and program[].id == queue[^1].p.id:
     queue[^1].vs &= vertices
+  
+  # create a new queue item
   else:
     queue &= (u: true, p: program[], t: texture, vs: vertices, layer: layer)
 
 proc finishDraw*() =
-#  queue.sort(proc(a, b: tuple[u: bool, p: Shader, t: Texture, vs: seq[array[0..7,
-#                        GLFloat]], layer: range[0..500]]): int = cmp(a.layer, b.layer))
-#
+  ## renders the texture queue
+    
+  # gets the current program to reset later
   var startProg: GLint
   glGetIntegerv(GL_CURRENT_PROGRAM, addr startProg)
 
+  # checks what items to redraw
   if queue != @[]:
     for i in 0..<len(queue):
       if pqueue.len() > i and queue[i] == pqueue[i]: queue[i].u = false
 
-  # set texture
+  # set gl options
   glEnable(GL_BLEND)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
+  
+  # set texture
   glActiveTexture(GL_TEXTURE0)
-  setVBOS(len(queue))
-  for i in 0..<len(queue):
-    var q = queue[i]
-    q.p.use()
-    var layer: float32 = q.layer.float32
-    q.p.setParam("layer", addr layer)
-    var last = len(q.vs)
-    var vertices = q.vs
 
+  # setup vbo data
+  setVBOS(len(queue))
+
+  # redraw needed items
+  for i in 0..<len(queue):
+    # get the queue data
+    var
+      q = queue[i]
+      layer: float32 = q.layer.float32
+      vertices = q.vs
+   
+    # use the correct program
+    q.p.use()
+    q.p.setParam("layer", addr layer)
+  
+    # bind the queue items texture
     glBindTexture(GL_TEXTURE_2D, q.t.tex)
     glBindBuffer(GL_ARRAY_BUFFER, buffers[i])
 
@@ -278,6 +268,8 @@ proc finishDraw*() =
       glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(len(vertices) *
           sizeof(vertices[0])),
           addr(vertices[0]), GL_STREAM_DRAW)
+
+    # setup vertex attrib data
     glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(
         GLfloat), cast[pointer](0))
     glEnableVertexAttribArray(0)
@@ -290,16 +282,25 @@ proc finishDraw*() =
     glVertexAttribPointer(3, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(
         GLfloat), cast[pointer](12 * sizeof(GLfloat)))
     glEnableVertexAttribArray(3)
+
+    # unbind the buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     # render
     glDrawArrays(GL_TRIANGLES, 0, (len(vertices)).GLsizei)
+
+  # unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0)
-  #glDisable(GL_BLEND)
-  pqueue = queue
-  queue = @[]
   
+  # reset shader
   glUseProgram(startProg.GLuint)
 
+  # update pqueue
+  pqueue = queue
+
+  # reset queue
+  queue = @[]
+
 proc isDefined*(texture: Texture): bool =
+  ## check if a texture is defined
   return texture.tex != 0

@@ -15,7 +15,7 @@ proc stbi_load*(
   ## loads a image with stbi
 
 proc stbi_load_from_memory*(
-  buffer: ptr cuchar;
+  buffer: ptr char;
   len: cint;
   x, y, channels_in_file: var cint;
   desired_channels: cint

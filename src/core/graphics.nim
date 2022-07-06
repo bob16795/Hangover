@@ -18,7 +18,7 @@ import os
 from loop import GraphicsContext
 export opengl
 
-#TODO: comment
+# TODO: comment
 
 var cameraPos: Vector2
 var cameraSize: Vector2
