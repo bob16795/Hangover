@@ -1,6 +1,4 @@
-# Hangover
-
-![Build Status](https://github.com/bob16795/Hangover/actions/workflows/main.yml/badge.svg) [![wakatime](https://wakatime.com/badge/user/faa04513-4c3c-4d82-bcc8-ee5df73a3067/project/3a70c18c-9b13-46d7-bf58-06aa42788848.svg)](https://wakatime.com/badge/user/faa04513-4c3c-4d82-bcc8-ee5df73a3067/project/3a70c18c-9b13-46d7-bf58-06aa42788848)
+# Hangover ![Build Status](https://github.com/bob16795/Hangover/actions/workflows/main.yml/badge.svg) ![Loc](https://img.shields.io/tokei/lines/github/bob16795/hangover) [![Nimble](https://img.shields.io/badge/package-nimble-yellow)](https://nimble.directory/pkg/hangover)
 
 ![HangOver](hangover/assets/icon.ico)
 
