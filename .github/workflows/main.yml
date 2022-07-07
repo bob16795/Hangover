@@ -28,6 +28,6 @@ jobs:
       - uses: egor-tensin/setup-mingw@v2
         with:
           platform: x64
-      - run: sudo apt install libopenal-dev
+      - run: sudo apt install libopenal-dev libglfw3-dev libglfw3
       - run: nimble develop -Y
       - run: nimble test -Y
