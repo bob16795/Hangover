@@ -1,6 +1,6 @@
 import unittest
 
-import gin2
+import hangover
 
 import math
 

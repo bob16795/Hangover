@@ -1,2 +1,2 @@
-nim doc --project --index:on --outdir:docs src/gin2.nim
+nim doc --project --index:on --outdir:docs hangover.nim
 nimble --silent test

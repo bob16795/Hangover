@@ -2,7 +2,7 @@ import unittest
 import os
 import strutils
 
-import gin2
+import hangover
 
 suite "Storage":
   test "Root path works":

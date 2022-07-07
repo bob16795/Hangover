@@ -1,6 +1,6 @@
 import unittest
 
-import gin2
+import hangover
 
 suite "Rectangle":
   test "rectangle class can create from 4 args":
