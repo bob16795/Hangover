@@ -78,7 +78,6 @@ proc update*(loop: var Loop, ctx: var GraphicsContext, time: cdouble) =
   
   # calculate dt
   if loop.done:
-    echo "loop done"
     return
   loop.lastTime = loop.currentTime
   loop.currentTime = time

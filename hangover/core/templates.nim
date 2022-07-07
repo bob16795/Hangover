@@ -99,8 +99,6 @@ template Game*(body: untyped) =
               quit()
           finishDraw()
           finishRender(ctx)
-          when defined(GinDebug):
-            echo "loaded " & $(pc * 100).int & "% - " & loadStatus
         template setStatus(status: string): untyped =
           loadStatus = status
           drawLoading(pc, loadStatus, ctx, size)
@@ -178,13 +176,10 @@ template Game*(body: untyped) =
     proc onFrame*(display: ptr GLFMDisplay; frameTime: cdouble) =
       if not app.init:
         proc Setup(): AppData
-        echo "NimMainDone"
 
         app.data = Setup()
         app.ctx = initGraphics(app.data)
 
-        echo "graphics init"
-        
         initUIManager(app.size)
 
         app.loop = newLoop(60)
@@ -193,9 +188,7 @@ template Game*(body: untyped) =
           drawUI()
           app.ui = false
         
-        echo "body"
         body
-        echo "init"
 
         Initialize(app.ctx)
 
@@ -212,7 +205,6 @@ template Game*(body: untyped) =
             drawUI()
           finishrender(ctx)
         app.init = true
-        echo "init"
         var tmpSize = (app.size.x.int32, app.size.y.int32)
         sendEvent(EVENT_RESIZE, addr tmpSize)
 
@@ -235,7 +227,6 @@ template Game*(body: untyped) =
     proc onTouch*(display: ptr GLFMDisplay; touch: cint; phase: GLFMTouchPhase; x: cdouble;
              y: cdouble): bool =
       var data = (x.float64 + textureOffset.x.float64, y.float64 + textureOffset.y.float64, touch)
-      echo data
       sendEvent(EVENT_MOUSE_MOVE, addr data)
       if phase == GLFMTouchPhaseBegan:
         sendEvent(EVENT_MOUSE_CLICK, addr touch)

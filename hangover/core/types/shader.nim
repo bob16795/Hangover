@@ -31,7 +31,6 @@ else:
     SHADER_HEADER = "#version 330 core\n"
 
 proc newShader*(vCode, gCode, fCode: string): Shader =
-  echo vCode
   var
     vShaderCode = [(SHADER_HEADER & vCode).cstring]
     gShaderCode = [(SHADER_HEADER & gCode).cstring]
@@ -50,8 +49,6 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
     glGetShaderInfoLog(vertex, 512, nil, infoLog)
     echo $infoLog
     quit 1000
-  
-  echo "vertex"
 
   # geometry Shader
   geometry = glCreateShader(GL_GEOMETRY_SHADER)
@@ -63,8 +60,6 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
     glGetShaderInfoLog(geometry, 512, nil, infoLog)
     echo $infoLog
     quit 1000
-
-  echo "geo"
 
   # fragment Shader
   fragment = glCreateShader(GL_FRAGMENT_SHADER)
@@ -90,8 +85,6 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
     echo $infoLog
     quit 1000
   
-  echo "frag"
-
   # delete the shaders as they're linked into our program now and no longer necessary
   glDeleteShader(vertex)
   glDeleteShader(geometry)
@@ -223,8 +216,6 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
         echo ":("
       s.params[sp] = true
       return
-  #echo "unknown shader param: " & p
-
 
 proc runCompute*(compute: Shader, size: Point) =
   compute.use()

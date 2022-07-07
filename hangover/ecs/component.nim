@@ -23,7 +23,6 @@ proc `[]`*(c: Entity, d: typedesc): d =
   for ci in 0..<len components:
     if components[ci].dataType == name(d):
       return components[ci].dataPtr.d
-  echo name(d) & ":("
   return nil
 
 proc `[]=`*(c: Entity, d: typedesc, data: ComponentData) =
@@ -35,7 +34,6 @@ proc `[]=`*(c: Entity, d: typedesc, data: ComponentData) =
         components[ci].dataPtr = deepCopy(data)
         GC_ref(components[ci].dataPtr)
         return
-  echo name(d) & ":("
 
 proc attachMethod*(comp: Component, event: EventId, meth: proc(c: Entity, d: pointer): bool)=
   ## attaches a event to a component
