@@ -1,4 +1,4 @@
-import gin2
+import hangover
 import random
 import sugar
 import os
@@ -18,8 +18,11 @@ Game:
   proc Initialize(ctx: var GraphicsContext) =
     discard
 
-  proc Update(dt: float): bool =
+  proc Update(dt: float, delayed: bool): bool =
     discard
 
   proc Draw(ctx: var GraphicsContext) =
     clearBuffer(ctx, bg)
+
+  proc closeGame() =
+    discard

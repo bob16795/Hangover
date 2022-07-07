@@ -1,4 +1,4 @@
-import gin2
+import hangover
 
 GameECS "lol":
   var
