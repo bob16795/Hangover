@@ -28,7 +28,7 @@ type
 method checkHover*(e: UIElement, parentRect: Rect,
     mousePos: Vector2) {.base.} =
   ## updates the element on a mouse move event
-  echo "check hover not implemented for element"
+  discard
 
 method update*(e: var UIElement, parentRect: Rect, mousePos: Vector2,
     dt: float32) {.base.} =
