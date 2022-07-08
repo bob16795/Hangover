@@ -28,7 +28,7 @@ loop.drawProc =
   proc (dt: float, ctx: GraphicsContext) =
     clearBuffer(ctx, newColor(0, 0, 0, 255))
     for x in 0..29:
-      for y in 0..29:
+      for y in 0..28:
         renderTexture(texture, newRect(tiles[x * 30 + y].float32 * 0.5, 0,
             0.5, 1), newRect(32 * x.float32, 32 * y.float32, 32, 32))
     finishRender(ctx)

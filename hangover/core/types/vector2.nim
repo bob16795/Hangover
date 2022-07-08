@@ -98,3 +98,10 @@ proc toPoint*(p: Vector2): Point =
 proc toVector2*(p: Point): Vector2 =
   result.x = p.x.float32
   result.y = p.y.float32
+
+proc normal*(p: Vector2): Vector2 =
+  let mag = p.distance(newVector2(0, 0)).float32
+  result.x = p.x / mag
+  result.y = p.y / mag
+  if result.x.isNaN: result.x = 0
+  if result.y.isNaN: result.y = 0
