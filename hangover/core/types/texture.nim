@@ -5,6 +5,7 @@ import vector2
 import color
 import shader
 import math
+import hashes
 
 type
   Texture* = object
@@ -52,12 +53,29 @@ void main()
 type
   Vert = array[0..15, GLfloat]
 
+  QueueEntry = object
+    update: bool
+    shader: Shader
+    texture: Texture
+    verts: seq[Vert]
+    layer: range[0..500]
+
 var
   textureProgram*: Shader
   ## the default program used to render textures
-  queue, pqueue: seq[tuple[u: bool, p: Shader, t: Texture, vs: seq[Vert], layer: range[0..500]]]
+  queue: seq[QueueEntry]
+  pqueue: seq[Hash]
   buffers: seq[GLUint]
-  cullSize: Vector2
+
+proc hash(entry: QueueEntry): Hash =
+  var h: Hash = 0
+  h = h !& hash(entry.shader.id)
+  h = h !& hash(entry.texture.tex)
+  h = h !& hash(entry.layer)
+  for v in entry.verts:
+    h = h !& hash(v)
+
+  result = !$h
 
 proc rotated(pos: Vector2, center: Vector2, rotation: float32): Vector2 =
   var
@@ -91,11 +109,6 @@ template verts(ds, de: Vector2, ss, se: Vector2, c: Color, rotation: float32): u
     rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
     rotated([ds.x, de.y, ss.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
   ]
-
-proc resizeCull*(data: pointer) =
-  ## resizes the screen for culling
-  var size = cast[ptr tuple[w, h: int32]](data)[]
-  cullSize = newVector2(size.w.float32, size.h.float32)
 
 proc addVBO*() =
   ## adds a vbo
@@ -206,24 +219,31 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
   # calc the dest rectangle
   var dst = dstRect.offset(-1 * textureOffset)
 
-  # cull offscreen
-  if (not dst.aabb(newRect(newVector2(0, 0), cullSize))): return
-  
   # get the verts for the new rect
   var vertices = verts(dst.location, dst.location + dst.size,
       srcRect.location, srcRect.location + srcRect.size, color, rotation)
 
   # if the queue is empty create it
   if queue == @[]:
-    queue &= (u: true, p: program[], t: texture, vs: vertices, layer: layer)
+    queue &= QueueEntry(
+      update: true,
+      shader: program[],
+      texture: texture,
+      verts: vertices,
+      layer: layer)
   
   # attempt to add to the last queue item
-  elif layer == queue[^1].layer and texture == queue[^1].t and program[].id == queue[^1].p.id:
-    queue[^1].vs &= vertices
+  elif layer == queue[^1].layer and texture == queue[^1].texture and program[].id == queue[^1].shader.id:
+    queue[^1].verts &= vertices
   
   # create a new queue item
   else:
-    queue &= (u: true, p: program[], t: texture, vs: vertices, layer: layer)
+    queue &= QueueEntry(
+      update: true,
+      shader: program[],
+      texture: texture,
+      verts: vertices,
+      layer: layer)
 
 proc finishDraw*() =
   ## renders the texture queue
@@ -235,7 +255,7 @@ proc finishDraw*() =
   # checks what items to redraw
   if queue != @[]:
     for i in 0..<len(queue):
-      if pqueue.len() > i and queue[i] == pqueue[i]: queue[i].u = false
+      if pqueue.len() > i and hash(queue[i]) == pqueue[i]: queue[i].update = false
 
   # set gl options
   glEnable(GL_BLEND)
@@ -253,18 +273,18 @@ proc finishDraw*() =
     var
       q = queue[i]
       layer: float32 = q.layer.float32
-      vertices = q.vs
+      vertices = q.verts
    
     # use the correct program
-    q.p.use()
-    q.p.setParam("layer", addr layer)
+    q.shader.use()
+    q.shader.setParam("layer", addr layer)
   
     # bind the queue items texture
-    glBindTexture(GL_TEXTURE_2D, q.t.tex)
+    glBindTexture(GL_TEXTURE_2D, q.texture.tex)
     glBindBuffer(GL_ARRAY_BUFFER, buffers[i])
 
     # update VBO
-    if q.u:
+    if q.update:
       glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(len(vertices) *
           sizeof(vertices[0])),
           addr(vertices[0]), GL_STREAM_DRAW)
@@ -296,7 +316,9 @@ proc finishDraw*() =
   glUseProgram(startProg.GLuint)
 
   # update pqueue
-  pqueue = queue
+  pqueue = @[]
+  for qe in queue:
+    pqueue &= hash(qe)
 
   # reset queue
   queue = @[]

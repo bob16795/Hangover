@@ -127,7 +127,7 @@ proc drawUI*() =
 proc updateUI*(dt: float32) =
   ## processes a ui tick
   for i in 0..<len um.elements:
-    um.elements[i].update(newRect(newVector2(0, 0), um.size),
+    um.elements[i].update(newRect(newVector2(0, 0), um.size / uiScaleMult),
         um.mousePos, dt)
 
 proc setUIActive*(i: int, value: bool) =

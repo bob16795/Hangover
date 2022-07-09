@@ -252,6 +252,7 @@ template Game*(body: untyped) =
       glfmSetDisplayConfig(display, GLFMRenderingAPIOpenGLES32,
                            GLFMColorFormatRGBA8888, GLFMDepthFormatNone,
                            GLFMStencilFormatNone, GLFMMultisampleNone)
+      glfmSetDisplayChrome(display, GLFMUserInterfaceChromeFullscreen)
       glfmSetUserData(display, addr app)
 
       glfmSetSurfaceCreatedFunc(display, onCreate)

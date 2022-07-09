@@ -30,9 +30,6 @@ method draw*(p: UIPanel, parentRect: Rect) =
   if not p.isActive:
     return
   var bounds = p.bounds.toRect(parentRect)
-  # if p.popup:
-  #   drawFill(initRectangle(initPoint(0, 0), getWindowSize()), initColor(0,
-  #       0, 0, 128))
   if p.texture.texture.isDefined():
     p.texture.draw(bounds, c = p.color, layer = 499)
 
