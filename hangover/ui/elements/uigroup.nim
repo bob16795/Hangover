@@ -42,8 +42,6 @@ method click*(g: UIGroup, button: int) =
     if g.elements[i].focused:
       g.elements[i].click(button)
 
-
-
 method draw*(g: UIGroup, parentRect: Rect) =
   if not g.isActive:
     return
@@ -56,5 +54,6 @@ method update*(g: var UIGroup, parentRect: Rect, mousePos: Vector2,
   if not g.isActive:
     return
   var bounds = g.bounds.toRect(parentRect)
+  echo bounds
   for i in 0..<g.elements.len:
     g.elements[i].update(bounds, mousePos, dt)

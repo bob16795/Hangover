@@ -40,9 +40,6 @@ proc resizeBuffer*(data: pointer): bool =
   fontProgram.setParam("projection", projection.caddr)
   textureProgram.setParam("projection", projection.caddr)
 
-  # update texture culling
-  resizeCull(data)
-
 proc scaleBuffer*(scale: float32) =
   ## scales the buffer
   
@@ -53,10 +50,6 @@ proc scaleBuffer*(scale: float32) =
  
   # update viewport
   glViewport(0, 0, GLsizei(cameraSize.x), GLsizei(cameraSize.y))
-  
-  # update texture culling
-  var data = ((cameraSize.x / scale).int32, (cameraSize.y / scale).int32)
-  resizeCull(addr data)
 
 proc initGraphics*(data: AppData): GraphicsContext =
   ## setup graphics
