@@ -7,6 +7,7 @@ import shader
 import vector2
 import texture
 import rect
+import hangover/core/logging
 
 # TODO: comment
 
@@ -63,15 +64,18 @@ var
 
 proc initFT*() =
   if init(ft).int != 0:
-    echo "failed to load font library"
-    quit()
+    LOG_CRITICAL("font", "Font library failed to load")
+    quit(2)
+  LOG_DEBUG("font", "Loaded font library")
 
   fontProgram = newShader(vertexCode, fragmentCode)
   fontProgram.registerParam("projection", SPKProj4)
   fontProgram.registerParam("tintColor", SPKFloat4)
+  fontProgram.registerParam("layer", SPKFloat4)
 
 proc deinitFT*() =
   discard FT_Done_FreeType(ft)
+  LOG_DEBUG("font", "Unloaded font library")
 
 template `+`(p: pointer, off: int): pointer =
   cast[pointer](cast[ByteAddress](p) +% off * sizeof(uint8))
@@ -85,7 +89,7 @@ proc finFont*(f: Font, size: int): Font =
   var atlasSize = newPoint(0, 0)
   for c in 32..<128:
     if FT_Load_Char(result.face, c.culong, FT_LOAD_RENDER).int != 0:
-      echo "failed to load glyph '" & c.char & "'"
+      LOG_WARN("font", "Failed to load glyph `", c, "`")
       continue
     atlasSize.x += g.bitmap.width.cint
     atlasSize.y = max(atlasSize.y, g.bitmap.rows.cint)
@@ -143,15 +147,17 @@ proc finFont*(f: Font, size: int): Font =
 
 proc newFontMem*(data: cstring, dataSize: int64, size: int, spacing: int = 0): Font =
   if FT_New_Memory_Face(ft, data, cast[FT_Long](dataSize), 0, result.face).int != 0:
-    echo "failed to load font"
-    quit()
+    LOG_ERROR("font", "Failed to load font")
+    quit(2)
+  LOG_DEBUG("font", "Loaded font")
   result = finFont(result, size)
   result.spacing = spacing
 
 proc newFont*(face: string, size: int, spacing: int = 0): Font =
   if FT_New_Face(ft, face, 0, result.face).int != 0:
-    echo "failed to load font"
-    quit()
+    LOG_ERROR("font", "Failed to load font")
+    quit(2)
+  LOG_DEBUG("font", "Loaded font")
   result = finFont(result, size)
   result.spacing = spacing
 

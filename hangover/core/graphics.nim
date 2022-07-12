@@ -59,7 +59,8 @@ proc initGraphics*(data: AppData): GraphicsContext =
 
   # setup glfw
   when not defined(ginGLFM):
-    loadExtensions()
+    when not defined(useGlew):
+      loadExtensions()
     
     glfw.initialize()
 

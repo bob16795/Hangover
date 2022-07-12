@@ -5,6 +5,7 @@ import hangover/core/types/rect
 import hangover/core/types/font
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
+import hangover/core/logging
 
 #TODO: comment
 
@@ -54,6 +55,6 @@ method update*(g: var UIGroup, parentRect: Rect, mousePos: Vector2,
   if not g.isActive:
     return
   var bounds = g.bounds.toRect(parentRect)
-  echo bounds
+  LOG_TRACE("uigroup", bounds)
   for i in 0..<g.elements.len:
     g.elements[i].update(bounds, mousePos, dt)

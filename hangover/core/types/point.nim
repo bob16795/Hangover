@@ -1,6 +1,6 @@
 import math
 
-# TODO: comment
+# TODO: deprecate
 
 type
   Point* = object

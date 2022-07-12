@@ -33,7 +33,7 @@ method checkHover*(e: UIElement, parentRect: Rect,
 method update*(e: var UIElement, parentRect: Rect, mousePos: Vector2,
     dt: float32) {.base.} =
   ## updates the element on a frame
-  echo "update is not implemented for element"
+  discard
 
 method click*(e: UIElement, button: int) {.base.} =
   ## processes a click event
@@ -45,4 +45,4 @@ method drag*(e: UIElement, button: int) {.base.} =
 
 method draw*(e: UIElement, parentRect: Rect) {.base.} =
   ## draws the element
-  echo "draw is not implemented for element"
+  discard

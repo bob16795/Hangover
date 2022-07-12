@@ -6,6 +6,7 @@ import hangover/core/graphics
 import hangover/core/templates
 import hangover/core/events
 import hangover/core/loop
+import hangover/core/logging
 
 export types
 export audio
@@ -14,6 +15,7 @@ export graphics
 export templates
 export events
 export loop
+export logging
 
 # ui
 import hangover/ui/uimanager

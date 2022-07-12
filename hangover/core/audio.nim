@@ -3,6 +3,7 @@ import types/song
 import types/vector2
 import random
 import openal
+import hangover/core/logging
 
 const
   SOURCES = 30
@@ -19,7 +20,7 @@ var
   loopBuffer: ALuint
   alPaused: bool
 
-proc initAudio*() {.exportc, cdecl, dynlib.}=
+proc initAudio*() {.exportc, cdecl, dynlib.} =
   ## sets up the audio system
   var
     devicename = alcGetString(nil, ALC_DEFAULT_DEVICE_SPECIFIER);
@@ -58,7 +59,7 @@ proc updateAudio*() =
     alSourcePlay(musicSource)
   let e = alGetError()
   if e != AL_NO_ERROR:
-    echo "openAl error: " & $e
+    LOG_ERROR("audio", "openAl error", $e)
 
 
 proc play*(song: Song) =

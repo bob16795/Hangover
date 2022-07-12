@@ -105,3 +105,6 @@ proc normal*(p: Vector2): Vector2 =
   result.y = p.y / mag
   if result.x.isNaN: result.x = 0
   if result.y.isNaN: result.y = 0
+
+proc dot*(a, b: Vector2): float32 =
+  return a.x * b.x + a.y * b.y
