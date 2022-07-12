@@ -24,7 +24,7 @@ Game:
 
   proc drawLoading(pc: float32, loadStatus: string, ctx: GraphicsContext) =
     clearBuffer(ctx, newColor(0, 0, 255, 255))
-    echo loadStatus
+    LOG_TRACE("game1", loadStatus)
 
   proc Setup(): AppData =
     result = newAppData()
