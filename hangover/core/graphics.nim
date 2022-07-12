@@ -59,9 +59,6 @@ proc initGraphics*(data: AppData): GraphicsContext =
 
   # setup glfw
   when not defined(ginGLFM):
-    when not defined(useGlew):
-      loadExtensions()
-    
     glfw.initialize()
 
     var c = DefaultOpenglWindowConfig
@@ -74,6 +71,8 @@ proc initGraphics*(data: AppData): GraphicsContext =
     result.window = newWindow(c)
     glfw.swapInterval(1)
   
+    loadExtensions()
+    
   # setup texture data
   setupTexture()
 
