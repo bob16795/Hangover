@@ -48,7 +48,7 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
   if success == 0:
     glGetShaderInfoLog(vertex, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # geometry Shader
@@ -59,7 +59,7 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glGetShaderiv(geometry, GL_COMPILE_STATUS, addr success)
   if success == 0:
     glGetShaderInfoLog(geometry, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # fragment Shader
@@ -70,7 +70,7 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
   if success == 0:
     glGetShaderInfoLog(fragment, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # shader program
@@ -83,7 +83,7 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
   glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
   if success == 0:
     glGetProgramInfoLog(result.id, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # delete the shaders as they're linked into our program now and no longer necessary
@@ -107,7 +107,7 @@ proc newComputeShader*(cCode: string): Shader =
   glGetShaderiv(compute, GL_COMPILE_STATUS, addr success)
   if success == 0:
     glGetShaderInfoLog(compute, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # create program
@@ -118,7 +118,7 @@ proc newComputeShader*(cCode: string): Shader =
   glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
   if success == 0:
     glGetProgramInfoLog(result.id, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # delete the shaders as they're linked into our program now and no longer necessary
@@ -141,7 +141,7 @@ proc newShader*(vCode, fCode: string): Shader =
   glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
   if success <= 0:
     glGetShaderInfoLog(vertex, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # fragment Shader
@@ -152,7 +152,7 @@ proc newShader*(vCode, fCode: string): Shader =
   glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
   if success <= 0:
     glGetShaderInfoLog(fragment, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # shader program
@@ -164,7 +164,7 @@ proc newShader*(vCode, fCode: string): Shader =
   glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
   if success == 0:
     glGetProgramInfoLog(result.id, 512, nil, infoLog)
-    LOG_CRITICAL("shader", infoLog)
+    LOG_CRITICAL("ho->shader", infoLog)
     quit(2)
 
   # delete the shaders as they're linked into our program now and no longer necessary
@@ -174,14 +174,14 @@ proc newShader*(vCode, fCode: string): Shader =
 proc registerParam*(s: var Shader, p: ShaderParam) =
   for sp in s.params.keys:
     if p.name == sp.name:
-      LOG_ERROR("shader", "duplicate shader param `" & $p.kind & "`")
+      LOG_ERROR("ho->shader", "duplicate shader param `" & $p.kind & "`")
       return
   s.params[p] = false
 
 proc registerParam*(s: var Shader, n: string, k: ShaderParamKind) =
   for sp in s.params.keys:
     if n == sp.name:
-      LOG_ERROR("shader", "duplicate shader param `" & $n & "`")
+      LOG_ERROR("ho->shader", "duplicate shader param `" & $n & "`")
       return
 
   var p = ShaderParam(name: n, kind: k)
@@ -214,11 +214,11 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
       of SPKBool:
         glUniform1i(loc, cast[ptr GLint](value)[])
       else:
-        LOG_ERROR("shader", "shader param kind not implemented `", sp.kind, "`")
+        LOG_ERROR("ho->shader", "shader param kind not implemented `", sp.kind, "`")
         return
       s.params[sp] = true
       return
-  LOG_ERROR("shader", "shader param not found `" & $p & "`")
+  LOG_ERROR("ho->shader", "shader param not found `" & $p & "`")
 
 proc runCompute*(compute: Shader, size: Point) =
   compute.use()

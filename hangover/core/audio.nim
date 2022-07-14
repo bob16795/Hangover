@@ -59,7 +59,7 @@ proc updateAudio*() =
     alSourcePlay(musicSource)
   let e = alGetError()
   if e != AL_NO_ERROR:
-    LOG_ERROR("audio", "openAl error", $e)
+    LOG_ERROR("ho->audio", "openAl error", $e)
 
 
 proc play*(song: Song) =
