@@ -26,6 +26,6 @@ Hangover uses nims macros to define systems, allowing for cleaner code.
 
 # Games Made in Hangover
 
-[Chesker](https://prestosilver.itch.io/chesker)
-[Bugz Bows and Curses](https://prestosilver.itch.io/bugz)
+- [Chesker](https://prestosilver.itch.io/chesker)
+- [Bugz Bows and Curses](https://prestosilver.itch.io/bugz)
 
