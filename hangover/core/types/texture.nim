@@ -155,7 +155,7 @@ proc newTextureMem*(image: pointer, imageSize: cint): Texture =
     width, height, channels: cint
     data: pointer = stbi_load_from_memory(cast[ptr char](image), imageSize, width, height, channels, 4)
   if data == nil:
-    LOG_CRITICAL("texture", "failed to load image")
+    LOG_CRITICAL("ho->texture", "failed to load image")
     quit(2)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
       0, GL_RGBA, GL_UNSIGNED_BYTE, data)
@@ -166,7 +166,7 @@ proc newTextureMem*(image: pointer, imageSize: cint): Texture =
 
   # set the size
   result.size = newVector2(width.float32, height.float32)
-  LOG_DEBUG("texture", "Loaded texture")
+  LOG_DEBUG("ho->texture", "Loaded texture")
 
 proc newTexture*(image: string): Texture =
   ## creates a new texture from a file
@@ -190,7 +190,7 @@ proc newTexture*(image: string): Texture =
     width, height, channels: cint
     data: pointer = stbi_load(image, width, height, channels, 4)
   if data == nil:
-    LOG_CRITICAL("texture", "failed to load image")
+    LOG_CRITICAL("ho->texture", "failed to load image")
     quit(2)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
       0, GL_RGBA, GL_UNSIGNED_BYTE, data)
@@ -201,7 +201,7 @@ proc newTexture*(image: string): Texture =
   
   # set the size
   result.size = newVector2(width.float32, height.float32)
-  LOG_DEBUG("texture", "Loaded texture")
+  LOG_DEBUG("ho->texture", "Loaded texture")
 
 proc aabb*(a, b: Rect): bool =
   if a.x < b.x + b.width and
