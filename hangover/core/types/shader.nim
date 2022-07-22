@@ -174,14 +174,14 @@ proc newShader*(vCode, fCode: string): Shader =
 proc registerParam*(s: var Shader, p: ShaderParam) =
   for sp in s.params.keys:
     if p.name == sp.name:
-      LOG_ERROR("ho->shader", "duplicate shader param `" & $p.kind & "`")
+      LOG_WARN("ho->shader", "duplicate shader param `" & $p.kind & "`")
       return
   s.params[p] = false
 
 proc registerParam*(s: var Shader, n: string, k: ShaderParamKind) =
   for sp in s.params.keys:
     if n == sp.name:
-      LOG_ERROR("ho->shader", "duplicate shader param `" & $n & "`")
+      LOG_WARN("ho->shader", "duplicate shader param `" & $n & "`")
       return
 
   var p = ShaderParam(name: n, kind: k)
@@ -214,7 +214,7 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
       of SPKBool:
         glUniform1i(loc, cast[ptr GLint](value)[])
       else:
-        LOG_ERROR("ho->shader", "shader param kind not implemented `", sp.kind, "`")
+        LOG_WARN("ho->shader", "shader param kind not implemented `", sp.kind, "`")
         return
       s.params[sp] = true
       return

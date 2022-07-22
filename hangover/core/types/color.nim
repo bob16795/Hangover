@@ -1,3 +1,5 @@
+import strutils 
+
 #TODO: comment
 
 type
@@ -40,3 +42,10 @@ proc bf*(c: Color): float32 =
 proc af*(c: Color): float32 =
   if c.a == 1: 1.0
   else: c.a.float32 / 255.0
+
+proc `$`*(c: Color): string =
+  result = "#"
+  result &= c.r.toHex(2)
+  result &= c.g.toHex(2)
+  result &= c.b.toHex(2)
+  result &= c.a.toHex(2)

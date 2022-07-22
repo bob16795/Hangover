@@ -1,7 +1,5 @@
 import unicode
 
-# TODO: comment
-
 createEvent(EVENT_PRESS_KEY)
 createEvent(EVENT_RELEASE_KEY)
 createEvent(EVENT_LINE_ENTER)

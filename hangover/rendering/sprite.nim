@@ -30,7 +30,12 @@ proc setShader*(this: Sprite, shader: ptr Shader): Sprite =
   result.shader = shader
   return result
 
-proc draw*(sprite: Sprite, target: Rect, rotation: float32 = 0, color: Color = newColor(255, 255, 255), layer: range[0..500] = 0) =
+proc draw*(sprite: Sprite,
+           target: Rect,
+           rotation: float32 = 0,
+           color: Color = newColor(255, 255, 255),
+           layer: range[0..500] = 0,
+           params: seq[TextureParam] = @[]) =
   ## draws a sprite at `target`
 
   # get target bounds
@@ -42,7 +47,7 @@ proc draw*(sprite: Sprite, target: Rect, rotation: float32 = 0, color: Color = n
   
   # draw
   sprite.texture.draw(sprite.sourceBounds, newRect(target.location,
-                        trgSize), shader = sprite.shader, color = color, rotation = rotation, layer = layer)
+                        trgSize), shader = sprite.shader, color = color, rotation = rotation, layer = layer, params = params)
 
 proc draw*(sprite: Sprite, position: Vector2, rotation: float32,
     size: Vector2 = newVector2(0, 0), c: Color = newColor(255, 255, 255, 255)) {.deprecated: "Use targetRect instead".} =

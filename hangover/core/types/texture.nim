@@ -9,7 +9,7 @@ import hashes
 import hangover/core/logging
 
 type
-  Texture* = object
+  Texture* = ref object of RootObj
     ## A texture object
     tex*: GLuint
     ## the opengl texture refrence
@@ -21,7 +21,7 @@ var
   ## offsets all textures
 
 const
-  vertexCode = """
+  textureVertexCode* = """
 layout (location = 0) in vec4 vertex;
 layout (location = 1) in vec4 tintColorIn;
 uniform float rotation;
@@ -37,7 +37,7 @@ void main()
     tintColor = tintColorIn;
 }
 """
-  fragmentCode = """
+  textureFragmentCode* = """
 in vec2 texCoords;
 in vec4 tintColor;
 
@@ -53,6 +53,9 @@ void main()
 
 type
   Vert = array[0..15, GLfloat]
+  TextureParam* = object
+    data*: pointer
+    name*: string
 
   QueueEntry = object
     update: bool
@@ -60,6 +63,7 @@ type
     texture: Texture
     verts: seq[Vert]
     layer: range[0..500]
+    params: seq[TextureParam]
 
 var
   textureProgram*: Shader
@@ -127,11 +131,35 @@ proc setVBOS*(count: int) =
 
 proc setupTexture*() =
   ## setup texture stuff
-  textureProgram = newShader(vertexCode, fragmentCode)
+  textureProgram = newShader(textureVertexCode, textureFragmentCode)
   textureProgram.registerParam("tintColor", SPKFloat4)
   textureProgram.registerParam("projection", SPKProj4)
   textureProgram.registerParam("rotation", SPKFloat1)
   textureProgram.registerParam("layer", SPKFloat1)
+
+proc newTexture*(size: Vector2): Texture =
+  ## creates a new texture with size
+  
+  # create a texture
+  result = Texture()
+  
+  # generate the texture
+  glGenTextures(1, addr result.tex)
+  glBindTexture(GL_TEXTURE_2D, result.tex)
+
+  # set the texture wrapping/filtering options
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+      GL_NEAREST.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+
+  # tex nothing
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, size.x.GLsizei, size.y.GLsizei,
+      0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
+
+  # set size
+  result.size = size
 
 proc newTextureMem*(image: pointer, imageSize: cint): Texture =
   ## creates a new texture from a pointer
@@ -210,8 +238,13 @@ proc aabb*(a, b: Rect): bool =
      a.y + a.height > b.y:
     return true
 
-proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
-           color = newColor(255, 255, 255, 255), rotation: float = 0, layer: range[0..500] = 0) =
+method draw*(texture: Texture,
+             srcRect, dstRect: Rect,
+             shader: ptr Shader = nil,
+             color = newColor(255, 255, 255, 255),
+             rotation: float = 0,
+             layer: range[0..500] = 0,
+             params: seq[TextureParam] = @[]) =
   ## draws a texture
   
   # check the program
@@ -233,10 +266,15 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
       shader: program[],
       texture: texture,
       verts: vertices,
-      layer: layer)
+      layer: layer,
+      params: params
+    )
   
   # attempt to add to the last queue item
-  elif layer == queue[^1].layer and texture == queue[^1].texture and program[].id == queue[^1].shader.id:
+  elif layer == queue[^1].layer and
+       texture.tex == queue[^1].texture.tex and
+       program[].id == queue[^1].shader.id and
+       params == queue[^1].params:
     queue[^1].verts &= vertices
   
   # create a new queue item
@@ -246,7 +284,9 @@ proc draw*(texture: Texture, srcRect, dstRect: Rect, shader: ptr Shader = nil,
       shader: program[],
       texture: texture,
       verts: vertices,
-      layer: layer)
+      layer: layer,
+      params: params
+    )
 
 proc finishDraw*() =
   ## renders the texture queue
@@ -277,10 +317,12 @@ proc finishDraw*() =
       q = queue[i]
       layer: float32 = q.layer.float32
       vertices = q.verts
-   
+
     # use the correct program
     q.shader.use()
     q.shader.setParam("layer", addr layer)
+    for param in q.params:
+      q.shader.setParam(param.name, param.data)
   
     # bind the queue items texture
     glBindTexture(GL_TEXTURE_2D, q.texture.tex)
@@ -306,11 +348,12 @@ proc finishDraw*() =
         GLfloat), cast[pointer](12 * sizeof(GLfloat)))
     glEnableVertexAttribArray(3)
 
+    # render
+    glDrawArrays(GL_TRIANGLES, 0, (len(vertices)).GLsizei)
+
     # unbind the buffer
     glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-    # render
-    glDrawArrays(GL_TRIANGLES, 0, (len(vertices)).GLsizei)
 
   # unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0)
@@ -329,3 +372,10 @@ proc finishDraw*() =
 proc isDefined*(texture: Texture): bool =
   ## check if a texture is defined
   return texture.tex != 0
+
+proc bindTo*(t: Texture, to: GLenum) =
+  glActiveTexture(to)
+  glBindTexture(GL_TEXTURE_2D, t.tex)
+
+  glActiveTexture(GL_TEXTURE0)
+

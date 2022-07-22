@@ -108,3 +108,6 @@ proc normal*(p: Vector2): Vector2 =
 
 proc dot*(a, b: Vector2): float32 =
   return a.x * b.x + a.y * b.y
+
+proc `$`*(v: Vector2): string =
+  result = "(" & $v.x & ", " & $v.y & ")"
