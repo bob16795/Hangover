@@ -8,6 +8,7 @@ import hangover/core/types/font
 import hangover/core/types/sfx
 import hangover/core/types/song
 import hangover/core/types/shader
+import hangover/core/types/textureatlas
 
 export appData
 export texture
@@ -19,3 +20,4 @@ export font
 export sfx
 export song
 export shader
+export textureatlas

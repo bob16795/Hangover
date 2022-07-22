@@ -21,6 +21,7 @@ export opengl
 var cameraPos: Vector2
 var cameraSize: Vector2
 var ctx: GraphicsContext
+var shaders: seq[Shader]
 
 proc resizeBuffer*(data: pointer): bool =
   ## called when window is resized
@@ -39,6 +40,11 @@ proc resizeBuffer*(data: pointer): bool =
   var projection = ortho(cameraPos.x, cameraPos.x + res.w.float, cameraPos.y + res.h.float, cameraPos.y, 501, -501)
   fontProgram.setParam("projection", projection.caddr)
   textureProgram.setParam("projection", projection.caddr)
+  for si in 0..<len shaders:
+    shaders[si].setParam("projection", projection.caddr)
+
+proc regShader*(shader: Shader) =
+  shaders &= shader
 
 proc scaleBuffer*(scale: float32) =
   ## scales the buffer
@@ -152,14 +158,11 @@ proc setFullscreen*(ctx: var GraphicsContext, fs: bool) =
           ypos: ctx.pos.y.int32, width: ctx.size.x.int32,
           height: ctx.size.y.int32, refreshRate: 0.int32)
 
-proc getBufferTexture*(): Texture =
+proc getBufferTexture*(t: Texture) =
   ## reads the buffer into a texture
   
   # finish render for accurate capture
   finishDraw()
-
-  # setup result
-  result = Texture()
 
   # get dims
   var
@@ -179,15 +182,7 @@ proc getBufferTexture*(): Texture =
   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, addr buffer[0])
  
   # generate the texture
-  glGenTextures(1, addr result.tex)
-  glBindTexture(GL_TEXTURE_2D, result.tex)
-
-  # set the texture wrapping/filtering options
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-      GL_NEAREST.GLint)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+  glBindTexture(GL_TEXTURE_2D, t.tex)
 
   # set the texture from the buffer
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,

@@ -91,7 +91,5 @@ proc contains*(r: Rect, v: Vector2): bool =
 
 proc contains*(r: Rect, v: Rect): bool =
   ## checks aabb for a rectangle
-  var halfSize = v.size / 2
-  var r2 = r
-  #TODO: fix
-  return r2.contains(v.center)
+  return (r.x < v.x + v.width and r.x + r.width > v.x) and
+         (r.y < v.y + v.height and r.y + r.height > v.y)
