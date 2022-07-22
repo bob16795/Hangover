@@ -87,9 +87,9 @@ proc finFont*(f: Font, size: int): Font =
   template g: untyped = result.face.glyph
 
   var atlasSize = newPoint(0, 0)
-  for c in 32..<128:
+  for c in 0..<128:
     if FT_Load_Char(result.face, c.culong, FT_LOAD_RENDER).int != 0:
-      LOG_WARN("ho->font", "Failed to load glyph `", c, "`")
+      #LOG_WARN("ho->font", "Failed to load glyph `", c, "`")
       continue
     atlasSize.x += g.bitmap.width.cint
     atlasSize.y = max(atlasSize.y, g.bitmap.rows.cint)
@@ -112,23 +112,22 @@ proc finFont*(f: Font, size: int): Font =
 
   var x: cuint
 
-  for c in 32..<128:
+  for c in 0..<128:
     if FT_Load_Char(result.face, c.culong, FT_LOAD_RENDER).int != 0:
       continue
-    if g.bitmap.width == 0 or g.bitmap.rows == 0:
-      continue
-    var tmpBuffer: seq[uint8]
-    var idx: int = 0
-    for x in 0..g.bitmap.width:
-      for y in 0..g.bitmap.rows:
-        tmpBuffer &= cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
-        tmpBuffer &= 0
-        tmpBuffer &= 0
-        tmpBuffer &= 0
-        idx += 1
+    if g.bitmap.width != 0 and g.bitmap.rows != 0:
+      var tmpBuffer: seq[uint8]
+      var idx: int = 0
+      for x in 0..g.bitmap.width:
+        for y in 0..g.bitmap.rows:
+          tmpBuffer &= cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
+          tmpBuffer &= 0
+          tmpBuffer &= 0
+          tmpBuffer &= 0
+          idx += 1
 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, x.GLint, 0, g.bitmap.width.GLsizei,
-        g.bitmap.rows.GLsizei, GL_RGBA, GL_UNSIGNED_BYTE, addr tmpBuffer[0])
+      glTexSubImage2D(GL_TEXTURE_2D, 0, x.GLint, 0, g.bitmap.width.GLsizei,
+          g.bitmap.rows.GLsizei, GL_RGBA, GL_UNSIGNED_BYTE, addr tmpBuffer[0])
 
     result.characters[c.int] = Character(
       size: newPoint(result.face.glyph.bitmap.width.cint,
