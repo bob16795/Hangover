@@ -8,7 +8,7 @@ type
     width*: float32
     height*: float32
 
-proc newRect*(x, y, width, height: int | float | float32 | float64): Rect =
+proc newRect*(x, y, width, height: int | int16 | int32 | float | float32 | float64): Rect =
   ## creates a rectangle
   result.x = x.float32
   result.y = y.float32
