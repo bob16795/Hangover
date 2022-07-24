@@ -4,6 +4,7 @@ import hangover/core/types/point
 import hangover/core/types/vector2
 import hangover/core/types/color
 import hangover/core/types/rect
+import hangover/core/logging
 
 ## a 9 part sprite
 ##
@@ -123,14 +124,17 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
 
   # too small to draw a ui sprite
   var minSize = (sprite.sourceBounds.size - sprite.center.size)
-  minSize.x *= sprite.scale.x * uiSpriteScaleMult
-  minSize.y *= sprite.scale.y * uiSpriteScaleMult
+  minSize.x /= sprite.scale.x
+  minSize.y /= sprite.scale.y
   if renderRect.width <= minSize.x or renderRect.height <= minSize.y:
+    LOG_DEBUG("ho->uisprite", "bad size", renderRect.size, "(<", minSize, ") drawing normal")
     sprite.draw(renderRect, 0, color = c, layer = layer)
     return 
   
   # no center defined
-  if sprite.center.width == 0 or sprite.center.height == 0: return
+  if sprite.center.width == 0 or sprite.center.height == 0:
+    LOG_DEBUG("ho->uisprite", "no center defined not drawing sprite")
+    return
   
   # init vars for drawing
   var

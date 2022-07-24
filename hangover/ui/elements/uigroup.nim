@@ -55,6 +55,5 @@ method update*(g: var UIGroup, parentRect: Rect, mousePos: Vector2,
   if not g.isActive:
     return
   var bounds = g.bounds.toRect(parentRect)
-  LOG_TRACE("uigroup", bounds)
   for i in 0..<g.elements.len:
     g.elements[i].update(bounds, mousePos, dt)

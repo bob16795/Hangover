@@ -30,8 +30,7 @@ method draw*(p: UIPanel, parentRect: Rect) =
   if not p.isActive:
     return
   var bounds = p.bounds.toRect(parentRect)
-  if p.texture.texture.isDefined():
-    p.texture.draw(bounds, c = p.color, layer = 499)
+  p.texture.draw(bounds, c = p.color)
 
 method update*(p: var UIPanel, parentRect: Rect, mousePos: Vector2,
     dt: float32) =

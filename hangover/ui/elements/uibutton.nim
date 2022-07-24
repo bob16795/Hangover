@@ -5,6 +5,7 @@ import hangover/core/types/rect
 import hangover/core/types/font
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
+import hangover/core/logging
 
 #TODO: comment
 #TODO: add align
@@ -13,6 +14,7 @@ type
   UIButton* = ref object of UIElement
     ## A button element for ui
     font*: ptr Font
+    fontMult*: float32
     action*: UIAction
     text*: string
     textUpdate*: UIUpdate
@@ -136,7 +138,7 @@ method draw*(b: UIButton, parentRect: Rect) =
   # if the button has a icon draw it
   if (b.hasSprite):
     var posx = (bounds.x) + ((bounds.width - bounds.height) -
-        sizeText(b.font[], b.text).x) / 2
+        sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
     b.sprite.draw(newVector2(posx, bounds.y),
         0, newVector2(bounds.height, bounds.height), c = b.color)
 
@@ -144,12 +146,12 @@ method draw*(b: UIButton, parentRect: Rect) =
   if (b.hasToggleSprite):
     if b.pressed:
       var posx = (bounds.x) + ((bounds.width - bounds.height) -
-          sizeText(b.font[], b.text).x) / 2
+          sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
       b.toggleSprite.draw(newVector2(posx, bounds.y),
           0, newVector2(bounds.height, bounds.height), c = b.color)
     if b.focused:
       var posx = (bounds.x) + ((bounds.width - bounds.height) -
-          sizeText(b.font[], b.text).x) / 2
+          sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
       b.toggleSprite.draw(newVector2(posx, bounds.y),
           0, newVector2(bounds.height, bounds.height), c = newColor(255,
               255, 255, 128))
@@ -158,13 +160,13 @@ method draw*(b: UIButton, parentRect: Rect) =
   if (b.text != ""):
     var posx: float32 = (bounds.x + ((
                 bounds.width - sizeText(b.font[],
-                b.text).x) / 2))
-    var posy: float32 = bounds.y + ((bounds.height - b.font[].size.float32) /
+                b.text, b.fontMult * uiElemScale).x) / 2))
+    var posy: float32 = bounds.y + ((bounds.height - b.font[].size.float32 * b.fontMult * uiElemScale) /
         2)
     if b.hasSprite:
       posx = (bounds.x + bounds.height + 10) + ((bounds.width - bounds.height) -
-          sizeText(b.font[], b.text).x) / 2
-    b.font[].draw(b.text, newPoint(posx.cint, posy.cint), textColor)
+          sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
+    b.font[].draw(b.text, newPoint(posx.cint, posy.cint), textColor, b.fontMult * uiElemScale)
 
 method update*(b: var UIButton, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
@@ -177,3 +179,5 @@ method update*(b: var UIButton, parentRect: Rect, mousePos: Vector2,
   # update the button text
   if b.textUpdate != nil:
     b.text = b.textUpdate()
+  if b.fontMult == 0:
+    b.fontMult = 1

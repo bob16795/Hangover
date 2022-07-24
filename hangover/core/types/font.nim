@@ -91,7 +91,7 @@ proc finFont*(f: Font, size: int): Font =
     if FT_Load_Char(result.face, c.culong, FT_LOAD_RENDER).int != 0:
       #LOG_WARN("ho->font", "Failed to load glyph `", c, "`")
       continue
-    atlasSize.x += g.bitmap.width.cint
+    atlasSize.x += g.bitmap.width.cint + 1
     atlasSize.y = max(atlasSize.y, g.bitmap.rows.cint)
   
   glActiveTexture(GL_TEXTURE0)
@@ -140,7 +140,7 @@ proc finFont*(f: Font, size: int): Font =
       tw: g.bitmap.width.float32 / atlasSize.x.float32,
       th: g.bitmap.rows.float32 / atlasSize.y.float32,
     )
-    x += g.bitmap.width
+    x += g.bitmap.width + 1
   glBindTexture(GL_TEXTURE_2D, 0)
   discard FT_Done_Face(result.face)
 
