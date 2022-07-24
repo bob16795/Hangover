@@ -13,6 +13,9 @@ export sprite
 
 # TODO: cleanup return bools
 
+var
+  uiElemScale*: float32 = 1
+
 type
   UIAction* = (i: int) -> void
     ## a action called when a button is pressed

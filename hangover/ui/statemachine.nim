@@ -57,6 +57,7 @@ proc checkCondsNext(sms: StateMachineState): int =
 
 proc setFlag*(sm: var StateMachine, id: int) =
   ## triggerss a state machine flag
+  var data = [sm.currentState, sm.currentState]
   for i in 0..<sm.states[sm.currentState].conds.len:
     if sm.states[sm.currentState].conds[i].id == id:
       sm.states[sm.currentState].conds[i].value = true
@@ -64,4 +65,6 @@ proc setFlag*(sm: var StateMachine, id: int) =
     sm.currentState = sm.states[sm.currentState].checkCondsNext();
   for i in 0..<sm.states[sm.currentState].conds.len:
     sm.states[sm.currentState].conds[i].value = false
-  sendEvent(EVENT_FSM_CHANGE, addr sm.currentState)
+  if sm.currentState != data[1]:
+    data[1] = sm.currentState
+    sendEvent(EVENT_FSM_CHANGE, addr data)

@@ -15,6 +15,7 @@ type
     ARight
   UIText* = ref object of UIElement
     font*: ptr Font
+    fontMult*: float32
     text*: string
     inactive*: bool
     update*: UIUpdate
@@ -49,12 +50,12 @@ method draw*(t: UIText, parentRect: Rect) =
     var posx: float32 = bounds.x
     case t.align:
       of ACenter:
-        posx = bounds.x + (bounds.width - sizeText(t.font[], text).x) / 2
+        posx = bounds.x + (bounds.width - sizeText(t.font[], text, t.fontMult * uiElemScale).x) / 2
       of ARight:
-        posx = bounds.x + bounds.width - sizeText(t.font[], text).x
+        posx = bounds.x + bounds.width - sizeText(t.font[], text, t.fontMult * uiElemScale).x
       else: discard
     posx = max(posx, bounds.x)
-    t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color, layer = 500)
+    t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color, t.fontMult * uiElemScale)
     posy += t.font[].size.float32
 
 method update*(t: var UIText, parentRect: Rect, mousePos: Vector2,

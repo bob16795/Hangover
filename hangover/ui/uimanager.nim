@@ -48,11 +48,11 @@ proc mouseMove(data: pointer): bool =
   var pos = cast[ptr tuple[x, y: float64]](data)[]
   
   # update the ui mouse position
-  um.mousePos = newVector2(pos.x, pos.y)
+  um.mousePos = newVector2(pos.x, pos.y) / uiScaleMult
 
   # run check hover to update ui elements
   for e in um.elements:
-    e.checkHover(newRect(newVector2(0, 0), um.size), um.mousePos)
+    e.checkHover(newRect(newVector2(0, 0), um.size / uiScaleMult), um.mousePos)
   
   # if the mouse is draging something update it
   if drag != nil:
@@ -113,6 +113,8 @@ proc drawUI*() =
     finishDraw()
     scaleBuffer(uiScaleMult)
     uiSpriteScaleMult = 1 / uiScaleMult
+    uiElemScale = uiScaleMult
+  
 
   # draw the ui
   for e in um.elements:
@@ -123,6 +125,7 @@ proc drawUI*() =
     finishDraw()
     scaleBuffer(1)
     uiSpriteScaleMult = 1
+    uiElemScale = 1
 
 proc updateUI*(dt: float32) =
   ## processes a ui tick

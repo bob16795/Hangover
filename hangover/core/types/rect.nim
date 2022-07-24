@@ -75,7 +75,7 @@ proc offset*(r: Rect, offset: Vector2): Rect =
 
 proc center*(r: Rect): Vector2 =
   ## geets the center of a rectangle
-  return newVector2(r.x + (r.width / 2).float32, r.y + (r.height / 2).float32)
+  return r.location + r.size / 2
 
 proc clamp*(v: Vector2, r: Rect): Vector2 =
   ## clamps a vector2 into a rectangle
