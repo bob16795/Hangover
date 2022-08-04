@@ -36,3 +36,8 @@ export sprite
 # entity component system
 import hangover/ecs/all
 export all
+
+# collisions
+when defined hoCollisions:
+  import hangover/collisions/collisions
+  export collisions

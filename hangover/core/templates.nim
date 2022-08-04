@@ -130,7 +130,7 @@ template Game*(body: untyped) =
         deinitFT()
 
         createListener(EVENT_RESIZE, proc(p: pointer): bool = loop.forceDraw(ctx))
-        createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = loop.forceDraw(ctx))
+        #createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = loop.forceDraw(ctx))
         
 
         loop.updateProc =

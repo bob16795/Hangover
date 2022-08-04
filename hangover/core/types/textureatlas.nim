@@ -11,13 +11,14 @@ import hangover/core/logging
 import tables
 import hangover/ui/types/uirectangle
 
-const TEXTURE_ATLAS_SIZE = 512
+const TEXTURE_ATLAS_SIZE = 256
 
 type
   TextureAtlasData* = object
-    size: Vector2
-    data: pointer
-    name: string
+    size*: Vector2
+    data*: pointer
+    name*: string
+    stbi: bool
 
   TextureAtlasEntry* = ref object of Texture
     source*: Texture
@@ -37,6 +38,7 @@ proc newTextureData*(image: string, name: string): TextureAtlasData =
   result.data = data
   result.size = newVector2(width.float32, height.float32)
   result.name = name
+  result.stbi = true
   if data == nil:
     LOG_CRITICAL("ho->texture", "failed to load image")
     quit(2)
@@ -49,6 +51,7 @@ proc newTextureDataMem*(image: pointer, imageSize: cint, name: string): TextureA
   result.data = data
   result.size = newVector2(width.float32, height.float32)
   result.name = name
+  result.stbi = true
   if data == nil:
     LOG_CRITICAL("ho->texture", "failed to load image")
     quit(2)
@@ -136,9 +139,16 @@ proc pack*(ta: var TextureAtlas) =
     var best = positions[0]
     var bestIdx = 0
     for pidx in 1..<len positions:
-      var tmpScore = getScore(targ.offset(positions[pidx]), ta.entrys)
+      var pos = positions[pidx]
+      if pos.x < 0:
+        pos.x *= -1
+        pos.x -= targ.width
+      if pos.y < 0:
+        pos.y *= -1
+        pos.y -= targ.height
+      var tmpScore = getScore(targ.offset(pos), ta.entrys)
       if tmpScore > score:
-        best = positions[pidx]
+        best = pos
         bestIdx = pidx
         score = tmpScore
     
@@ -148,14 +158,20 @@ proc pack*(ta: var TextureAtlas) =
       quit(2)
     targ.location = best
     positions.delete(bestIdx)
+
     positions &= newVector2(best.x + targ.width, best.y)
     positions &= newVector2(best.x, best.y + targ.height)
     positions &= newVector2(best.x + targ.width, best.y + targ.height)
     
+    positions &= newVector2(-best.x - targ.width, best.y)
+    positions &= newVector2(best.x, -best.y - targ.height)
+    positions &= newVector2(-best.x - targ.width, -best.y - targ.height)
+
     glTexSubImage2D(GL_TEXTURE_2D, 0, targ.x.GLint, targ.y.GLint, targ.width.GLsizei, targ.height.GLsizei, GL_RGBA, GL_UNSIGNED_BYTE, ta.target[tidx].data)
     ta.entrys[ta.target[tidx].name] = TextureAtlasEntry(bounds: targ)
-
-    stbi_image_free(ta.target[tidx].data)
+    
+    if ta.target[tidx].stbi:
+      stbi_image_free(ta.target[tidx].data)
   for vi in ta.entrys.keys:
     ta.entrys[vi].source = ta.source
 

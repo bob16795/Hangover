@@ -24,6 +24,7 @@ type
     hasSprite*: bool
     hasToggleSprite*: bool
     normalUI*, clickedUI*, disabledUI*, focusedUI*: UISprite
+    iconScale*: float32
     toggle*: bool
     pressed*: bool
     color*: Color
@@ -120,8 +121,7 @@ method draw*(b: UIButton, parentRect: Rect) =
     # check if the button should be disabled
     if (b.isDisabled()):
       textColor = newColor(128, 0, 0, 255)
-      if b.disabledUI.texture.isDefined():
-        sprite = b.disabledUI
+      sprite = b.disabledUI
     else:
       if b.focused:
         sprite = b.focusedUI
@@ -137,10 +137,12 @@ method draw*(b: UIButton, parentRect: Rect) =
 
   # if the button has a icon draw it
   if (b.hasSprite):
-    var posx = (bounds.x) + ((bounds.width - bounds.height) -
+    let iconSize = bounds.height * b.iconScale
+    let posx = bounds.x + ((bounds.width - iconSize) -
         sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
-    b.sprite.draw(newVector2(posx, bounds.y),
-        0, newVector2(bounds.height, bounds.height), c = b.color)
+    let posy = bounds.y + (bounds.height - iconSize) / 2
+    b.sprite.draw(newVector2(posx, posy),
+        0, newVector2(iconSize, iconSize), c = b.color)
 
   # if the button has a focused icon draw it
   if (b.hasToggleSprite):
@@ -161,8 +163,7 @@ method draw*(b: UIButton, parentRect: Rect) =
     var posx: float32 = (bounds.x + ((
                 bounds.width - sizeText(b.font[],
                 b.text, b.fontMult * uiElemScale).x) / 2))
-    var posy: float32 = bounds.y + ((bounds.height - b.font[].size.float32 * b.fontMult * uiElemScale) /
-        2)
+    var posy: float32 = bounds.y + ((bounds.height - b.font[].sizeText(b.text, b.fontMult * uiElemScale).y.float32) / 2)
     if b.hasSprite:
       posx = (bounds.x + bounds.height + 10) + ((bounds.width - bounds.height) -
           sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
@@ -181,3 +182,5 @@ method update*(b: var UIButton, parentRect: Rect, mousePos: Vector2,
     b.text = b.textUpdate()
   if b.fontMult == 0:
     b.fontMult = 1
+  if b.iconScale == 0:
+    b.iconScale = 0.75

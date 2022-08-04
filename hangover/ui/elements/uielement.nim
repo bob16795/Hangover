@@ -5,6 +5,7 @@ import hangover/core/types/vector2
 import hangover/rendering/sprite
 import hangover/ui/types/uirectangle
 import hangover/ui/types/uisprite
+import hangover/core/logging
 
 export uirectangle
 export uisprite
@@ -47,5 +48,9 @@ method drag*(e: UIElement, button: int) {.base.} =
   discard
 
 method draw*(e: UIElement, parentRect: Rect) {.base.} =
+  ## draws the element
+  discard
+
+method scroll*(e: UIElement, offset: Vector2) {.base.} =
   ## draws the element
   discard

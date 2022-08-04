@@ -43,7 +43,7 @@ method draw*(t: UIText, parentRect: Rect) =
   var bounds = t.bounds.toRect(parentRect)
   var h: float32 = 0
   for text in t.text.split("\n"):
-    h += t.font[].size.float32
+    h += t.font[].size.float32 * t.fontMult * uiElemScale
   var posy: float32 = bounds.y + (bounds.height - h) / 2
   posy = max(posy, bounds.y)
   for text in t.text.split("\n"):
@@ -56,7 +56,7 @@ method draw*(t: UIText, parentRect: Rect) =
       else: discard
     posx = max(posx, bounds.x)
     t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color, t.fontMult * uiElemScale)
-    posy += t.font[].size.float32
+    posy += t.font[].size.float32 * t.fontMult * uiElemScale
 
 method update*(t: var UIText, parentRect: Rect, mousePos: Vector2,
     dt: float32) =

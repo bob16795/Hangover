@@ -16,6 +16,7 @@ type
     update*: (string) -> string
     hint*: string
     font*: ptr Font
+    fontMult*: float32
     active*: bool
 
 var tmpText = ""
@@ -70,22 +71,22 @@ method draw*(e: UIInput, parentRect: Rect) =
   if (e.text != ""):
     var text = e.text
     if e.active: text &= "|"
-    var h: float32 = sizeText(e.font[], e.text).y
+    var h: float32 = sizeText(e.font[], e.text, e.fontMult * uiElemScale).y
     var posy: float32 = bounds.y + ((bounds.height - h) / 2)
     var posx: float32 = bounds.x + (bounds.width - sizeText(e.font[],
-        e.text).x) / 2
-    e.font[].draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0))
-    posy += sizeText(e.font[], text).y
+        e.text, e.fontMult * uiElemScale).x) / 2
+    e.font[].draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0), e.fontMult * uiElemScale)
+    posy += sizeText(e.font[], text, e.fontMult * uiElemScale).y
   elif (e.hint != ""):
     var text = e.hint
-    var h: float32 = sizeText(e.font[], text).y
+    var h: float32 = sizeText(e.font[], text, e.fontMult * uiElemScale).y
     var posy: float32 = bounds.y + ((bounds.height - h) / 2)
-    var posx: float32 = bounds.x + (bounds.width - sizeText(e.font[], text).x) / 2
-    e.font[].draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0, 150))
+    var posx: float32 = bounds.x + (bounds.width - sizeText(e.font[], text, e.fontMult * uiElemScale).x) / 2
+    e.font[].draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0, 150), e.fontMult * uiElemScale)
     if e.active:
-      posx = bounds.x + (bounds.width - sizeText(e.font[], "|").x) / 2
-      e.font[].draw("|", newPoint(posx.cint, posy.cint), newColor(0, 0, 0))
-    posy += sizeText(e.font[], text).y
+      posx = bounds.x + (bounds.width - sizeText(e.font[], "|", e.fontMult * uiElemScale).x) / 2
+      e.font[].draw("|", newPoint(posx.cint, posy.cint), newColor(0, 0, 0), e.fontMult * uiElemScale)
+    posy += sizeText(e.font[], text, e.fontMult * uiElemScale).y
 
 method update*(b: var UIInput, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
@@ -96,9 +97,8 @@ method update*(b: var UIInput, parentRect: Rect, mousePos: Vector2,
     return
   var bounds = b.bounds.toRect(parentRect)
 
-  if b.active and tmpText != "":
+  if b.active:
     if b.update != nil:
       b.text = b.update(tmpText)
     else:
       b.text = tmpText
-    tmpText = ""

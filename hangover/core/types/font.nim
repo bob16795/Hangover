@@ -120,7 +120,11 @@ proc finFont*(f: Font, size: int): Font =
       var idx: int = 0
       for x in 0..g.bitmap.width:
         for y in 0..g.bitmap.rows:
-          tmpBuffer &= cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
+          var d = cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
+          if d > 128:
+            tmpBuffer &= 255
+          else:
+            tmpBuffer &= 0
           tmpBuffer &= 0
           tmpBuffer &= 0
           tmpBuffer &= 0
@@ -184,10 +188,14 @@ proc draw*(font: Font, text: string, position: Point, color: Color, scale: float
     pos.x += font.spacing + (2 * font.border).cint
 
 proc sizeText*(font: Font, text: string, scale: float32 = 1): Vector2 =
+  var ypos: float32 = 0 
   for c in text:
     if not font.characters.len > c.int: continue
     var
       ch = font.characters[c.int]
+    ypos = (ch.bearing.y).float32 * scale
+    var height = ypos + ch.size.y.float32 * scale
     result.x += ((ch.advance shr 6).float32 * scale)
     result.x += font.spacing.float32 + (2 * font.border).float32
-  result.y = font.size.float32
+    if height > result.y:
+      result.y = height
