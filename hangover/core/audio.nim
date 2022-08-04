@@ -20,6 +20,9 @@ var
   loopBuffer: ALuint
   alPaused: bool
 
+  musicVol: float32
+
+
 proc initAudio*() {.exportc, cdecl, dynlib.} =
   ## sets up the audio system
   var
@@ -45,6 +48,13 @@ proc pauseAudio*() {.exportc, cdecl, dynlib.} =
 proc playAudio*() {.exportc, cdecl, dynlib.} =
   alSourcePlay(musicSource)
   alPaused = false
+
+proc setVolume*(vol: float32, music: bool) =
+  if music:
+    alSourcef(musicSource, AL_GAIN, ALfloat vol)
+  else:
+    for s in soundSources:
+      alSourcef(s, AL_GAIN, ALfloat vol)
 
 proc updateAudio*() =
   ## updates audio
@@ -76,12 +86,12 @@ proc play*(song: Song) =
     discard
   loopBuffer = song.loopBuffer
 
-proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0)) =
+proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0), pitch: float32 = 1.0) =
   ## plays a sound, pos is for spacial sound
   var sourceState: ALint
   alGetSourcei(soundSources[nextSoundSource], AL_SOURCE_STATE, addr sourceState)
   if sourceState != AL_PLAYING:
-    alSourcef(soundSources[nextSoundSource], AL_PITCH, 1.0.float32)
+    alSourcef(soundSources[nextSoundSource], AL_PITCH, pitch)
     alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
     alSource3f(soundSources[nextSoundSource], AL_POSITION, pos.x, pos.y, 0)
     alSourcePlay(soundSources[nextSoundSource])

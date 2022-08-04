@@ -3,6 +3,7 @@ import hangover/ui/elements/uibutton
 import hangover/ui/elements/uislider
 import hangover/ui/elements/uipanel
 import hangover/ui/elements/uigroup
+import hangover/ui/elements/uidynamic
 import hangover/ui/elements/uiimage
 import hangover/ui/elements/uiinput
 import hangover/ui/elements/uitext
@@ -13,6 +14,7 @@ import hangover/core/types/rect
 import hangover/core/types/point
 import hangover/core/types/vector2
 import hangover/core/types/texture
+import hangover/core/logging
 import macros
 import sugar
 
@@ -25,6 +27,7 @@ export uislider
 export uibutton
 export uielement
 export uirectangle
+export uidynamic
 
 type
   UIManager* {.acyclic.} = object
@@ -36,10 +39,9 @@ type
 var
   um*: UIManager
   ## The ui manager
-  drag: UIElement
+  dragProc*: proc()
   uiScaleMult*: float32 = 1
   ## scales the ui, ammount of pixels in 1 ui pixel
-  last: int
 
 proc mouseMove(data: pointer): bool =
   ## processes a mouse move event
@@ -55,28 +57,36 @@ proc mouseMove(data: pointer): bool =
     e.checkHover(newRect(newVector2(0, 0), um.size / uiScaleMult), um.mousePos)
   
   # if the mouse is draging something update it
-  if drag != nil:
-    drag.drag(last)
+  if dragProc != nil:
+    dragProc()
 
 proc mouseClick(data: pointer): bool =
   ## processes a click event
   
   # get the event data
   var btn = cast[ptr int](data)[]
-  last = btn
 
   # stop input if its active
   sendEvent(EVENT_STOP_LINE_ENTER, nil)
 
   # update drag
-  for e in um.elements:
+  for ei in 0..<len um.elements:
+    var e = um.elements[ei]
     if e.focused:
       e.click(btn)
-      drag = e
+      capture e:
+        dragProc = () => e.drag(btn)
 
 proc mouseRel(data: pointer): bool =
   # update drag to nothing
-  drag = nil
+  dragProc = nil
+
+proc mouseScroll(data: pointer): bool =
+  var offset = cast[ptr Vector2](data)[]
+
+  for ei in 0..<len um.elements:
+    var e = um.elements[ei]
+    e.scroll(offset)
 
 proc resizeUI(data: pointer): bool =
   ## resizes the ui to the screen size
@@ -95,6 +105,7 @@ proc initUIManager*(size: Point) =
   createListener(EVENT_MOUSE_MOVE, mouseMove)
   createListener(EVENT_MOUSE_CLICK, mouseClick)
   createListener(EVENT_MOUSE_RELEASE, mouseRel)
+  createListener(EVENT_MOUSE_SCROLL, mouseScroll)
   createListener(EVENT_RESIZE, resizeUI)
 
 proc addUIElement*(e: UIElement) =

@@ -1,7 +1,7 @@
 import unicode
 
-createEvent(EVENT_PRESS_KEY)
-createEvent(EVENT_RELEASE_KEY)
+createEvent(EVENT_PRESS_KEY, true)
+createEvent(EVENT_RELEASE_KEY, true)
 createEvent(EVENT_LINE_ENTER)
 createEvent(EVENT_START_LINE_ENTER)
 createEvent(EVENT_STOP_LINE_ENTER)

@@ -1,11 +1,17 @@
-from hangover/core/loop import GraphicsContext
-import hangover/core/types/texture
+from loop import GraphicsContext
 import tables
 import oids
+import hangover/core/logging
+import hangover/core/types/texture
+import hangover/core/types/vector2
 
 when not defined(ginGLFM):
   import glfw
   export glfw.Key
+
+when defined debug:
+  import macros
+
 
 type
   EventId* = distinct uint8
@@ -22,15 +28,27 @@ var
   lastEventId {.compileTime.}: EventId
   listeners: Table[EventId, seq[EventListener]]
 
-template createEvent*(name: untyped): untyped =
+when defined debug:
+  var
+    debugNames {.compileTime.}: Table[EventId, string]
+    
+  macro getDbgName(x: untyped): string = x.toStrLit()
+
+template createEvent*(name: untyped, hide: bool = false): untyped =
   ## creates an event
-  var name = static: lastEventId
+  const name = static: lastEventId
   export name
+
+  when defined(debug) and not hide:
+    debugNames[name] = getDbgName(name)
   static:
     lastEventId = lastEventId + 1.EventId
 
 proc sendEvent*(event: EventId, data: pointer) =
   ## sends an event to the manager
+  when defined debug:
+    if event in debugNames:
+      LOG_TRACE("ho->events", debugNames[event])
   if event in listeners:
     for call in listeners[event]:
       if call.p(data):
@@ -74,6 +92,7 @@ proc setupEventCallbacks*(ctx: GraphicsContext) =
     ctx.window.windowSizeCb = resizeCB
     ctx.window.cursorPositionCb = mouseMoveCb
     ctx.window.mouseButtonCb = mouseButtonCb
+    ctx.window.scrollCb = mouseScrollCb
     ctx.window.charCb = charCb
 
   # setup listeners for keyboard

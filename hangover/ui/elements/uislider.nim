@@ -3,6 +3,7 @@ import hangover/core/types/point
 import hangover/core/types/color
 import hangover/core/types/rect
 import hangover/core/types/font
+import hangover/core/logging
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
 import sugar
@@ -16,8 +17,10 @@ type
     sprite*, handleSprite*: UISprite
     value*: float
     handleSize*: float
+    barSize*: float
     tmpVal: float
     update*: (v: float) -> void
+    scrollSensitivity*: float
 
 method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2) =
   s.focused = false
@@ -48,11 +51,6 @@ method click*(s: UISlider, button: int) =
   if s.update != nil:
     s.update(s.value)
 
-method drag*(s: UISlider, button: int) =
-  s.value = s.tmpVal
-  if s.update != nil:
-    s.update(s.value)
-
 method draw*(s: UISlider, parentRect: Rect) =
   if not s.isActive:
     return
@@ -63,15 +61,15 @@ method draw*(s: UISlider, parentRect: Rect) =
       var posy: float32 = ((bounds.y + halfSize) * (1 -
           s.value)) + (bounds.y + bounds.height -
           halfSize) * (s.value) - halfSize
-      var posx: float32 = ((bounds.x + bounds.width) + bounds.x) / 2
-      s.sprite.draw(newRect(posx - 2, bounds.y, 4, bounds.height))
-      s.sprite.draw(newRect(bounds.x, posy, bounds.width, s.handleSize))
+      var posx: float32 = bounds.x + (bounds.width) / 2
+      s.sprite.draw(newRect(posx - s.barSize / 2, bounds.y, s.barSize, bounds.height))
+      s.handleSprite.draw(newRect(bounds.x, posy, bounds.width, s.handleSize))
     else:
       var posx: float32 = ((bounds.x + halfSize) * (1 -
           s.value)) + (bounds.x + bounds.width -
           halfSize) * (s.value) - halfSize
-      var posy: float32 = ((bounds.y + bounds.height) + bounds.y) / 2
-      s.sprite.draw(newRect(bounds.x, posy - 16, bounds.width, 32))
+      var posy: float32 = bounds.y + (bounds.height) / 2
+      s.sprite.draw(newRect(bounds.x, posy - s.barSize / 2, bounds.width, s.barSize))
       s.handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height))
 
 method update*(s: var UISlider, parentRect: Rect, mousePos: Vector2,
@@ -80,3 +78,17 @@ method update*(s: var UISlider, parentRect: Rect, mousePos: Vector2,
     return
 
   var bounds = s.bounds.toRect(parentRect)
+
+method drag*(e: UISlider, button: int) =
+  e.value = e.tmpVal
+  if e.update != nil:
+    e.update(e.value)
+
+method scroll*(e: UISlider, offset: Vector2) =
+  if e.vertical:
+    e.value += e.scrollSensitivity * offset.y
+  else:
+    e.value += e.scrollSensitivity * offset.x
+  e.value = clamp(e.value, 0, 1)
+  if e.update != nil:
+    e.update(e.value)

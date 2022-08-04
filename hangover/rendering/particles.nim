@@ -5,11 +5,15 @@ import hangover/core/types/Rect
 import random
 
 #TODO: comment
+#TODO: add scale
 
 template ifor*(variable: untyped, list: untyped, body: untyped): untyped =
   for i in 0..<list.len:
     template variable(): untyped = list[i]
     body
+
+const
+  MAX_PARTICLES = 5000
 
 type
   ParticleProps* = object
@@ -26,7 +30,7 @@ type
 
   ParticleSystem* = object
     ## a particle system, stores up to 5000 particles
-    pool: array[5000, Particle]
+    pool: array[MAX_PARTICLES, Particle]
     idx: int
     texture*: Texture
 
@@ -97,9 +101,9 @@ proc emit*(ps: var ParticleSystem, props: ParticleProps) =
   p.startSize = props.startSize
   p.endSize = props.endSize
 
-  ps.pool[ps.idx mod 100] = p
+  ps.pool[ps.idx mod MAX_PARTICLES] = p
 
 proc tryEmit*(ps: var ParticleSystem, props: ParticleProps) =
   ## emits a particle if the next particle is free
-  if not ps.pool[(ps.idx + 1) mod 100].isActive:
+  if not ps.pool[(ps.idx + 1) mod MAX_PARTICLES].isActive:
     ps.emit(props)

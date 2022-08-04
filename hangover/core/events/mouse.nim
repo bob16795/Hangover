@@ -1,6 +1,7 @@
-createEvent(EVENT_MOUSE_MOVE)
-createEvent(EVENT_MOUSE_CLICK)
-createEvent(EVENT_MOUSE_RELEASE)
+createEvent(EVENT_MOUSE_MOVE, true)
+createEvent(EVENT_MOUSE_CLICK, true)
+createEvent(EVENT_MOUSE_RELEASE, true)
+createEvent(EVENT_MOUSE_SCROLL, true)
 
 # TODO: comment
 
@@ -17,3 +18,8 @@ when not defined(ginGLFM):
       sendEvent(EVENT_MOUSE_CLICK, addr btn)
     else:
       sendEvent(EVENT_MOUSE_RELEASE, addr btn)
+
+  proc mouseScrollCb*(win: Window, res: tuple[x, y: float64]) =
+    var offset = newVector2(res.x, res.y)
+
+    sendEvent(EVENT_MOUSE_SCROLL, addr offset)

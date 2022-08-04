@@ -124,16 +124,16 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
 
   # too small to draw a ui sprite
   var minSize = (sprite.sourceBounds.size - sprite.center.size)
-  minSize.x /= sprite.scale.x
-  minSize.y /= sprite.scale.y
+  minSize.x *= sprite.scale.x# * uiSpriteScaleMult
+  minSize.y *= sprite.scale.y# * uiSpriteScaleMult
   if renderRect.width <= minSize.x or renderRect.height <= minSize.y:
-    LOG_DEBUG("ho->uisprite", "bad size", renderRect.size, "(<", minSize, ") drawing normal")
+    LOG_DEBUG("ho->uisprite", "bad size drawing normal")
     sprite.draw(renderRect, 0, color = c, layer = layer)
-    return 
+    return
   
   # no center defined
   if sprite.center.width == 0 or sprite.center.height == 0:
-    LOG_DEBUG("ho->uisprite", "no center defined not drawing sprite")
+    LOG_WARN("ho->uisprite", "no center defined not drawing sprite")
     return
   
   # init vars for drawing

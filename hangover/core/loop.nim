@@ -42,10 +42,7 @@ proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
     loop.currentTime = cpuTime()
   var delayed: bool
   if loop.lastTime != 0:
-    loop.dt = loop.currentTime - loop.lastTime
-
-  if loop.updateproc(loop.dt, delayed):
-    loop.done = true
+    loop.dt = 0
 
   loop.drawProc(ctx)
 
