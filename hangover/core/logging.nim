@@ -44,8 +44,7 @@ method log*(l: Logger, priority: LogPriority, file, message: string) =
     of lpCrit:  "CRITICAL"
   if priority >= l.priority:
     echo &"[{pString}] {file}: {message}"
-  l.output.write(&"[{pString}] {file}: {message}\n")
-  l.output.flush()
+    l.output.write(&"[{pString}] {file}: {message}\n")
 
 
 template LOG_TRACE*(file: string, message: varargs[string, `$`]) = logger.log(lpTrace, file, message.join(" "))

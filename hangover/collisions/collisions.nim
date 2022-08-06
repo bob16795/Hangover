@@ -10,8 +10,9 @@ type
     dynamic*: bool
     targets*: set[CollisionLayer]
     velocity*: Vector2
+    elasticity*: float
   
-  CollisionResolution = object
+  CollisionData = object
     collision: bool
     dist: float32
     exit: float32
@@ -39,7 +40,7 @@ template newCollisionLayer*(name: untyped): untyped =
   static:
     lastCollisionLayerId = lastCollisionLayerId + 1.CollisionLayer
 
-func rayVsRect*(start: Vector2, dir: Vector2, target: Rect): tuple[
+func rayVsRect(start: Vector2, dir: Vector2, target: Rect): tuple[
     success: bool, contact_normal, contact_point: Vector2, contact_time: float32,
     exit_time: float32] {.inline.} =
   var
@@ -87,7 +88,7 @@ func rayVsRect*(start: Vector2, dir: Vector2, target: Rect): tuple[
       contact_point: contact_point, contact_time: t_hit_near,
       exit_time: t_hit_far)
 
-func dynamicRectVsRect*(dynamicRect: CollisionRect, staticRect: CollisionRect, elapsed: float32): CollisionResolution {.inline.} =
+func dynamicRectVsRect(dynamicRect: CollisionRect, staticRect: CollisionRect, elapsed: float32): CollisionData {.inline.} =
   if dynamicRect.velocity == Vector2():
     return
 
@@ -106,12 +107,19 @@ func dynamicRectVsRect*(dynamicRect: CollisionRect, staticRect: CollisionRect, e
     result.dist = r.contact_time
     result.exit = r.exit_time
 
-func resolveCollision*(velocity: Vector2, dynamicRect, staticRect: CollisionRect,
-    elapsed: float32): Vector2 {.inline.} =
-  var r = dynamicRectVsRect(dynamicRect, staticRect, elapsed)
-  if r.collision:
-    return newVector2(r.norm.x * abs(velocity.x), r.norm.y * abs(velocity.y)) *
-        (1 - r.dist)
+func resolveCollision(velocity: Vector2, a, b: CollisionRect, elapsed: float32): Vector2 {.inline.} =
+  if a.dynamic != b.dynamic:
+    var dRect, sRect: CollisionRect
+    if a.dynamic:
+      dRect = a
+      sRect = b
+    else:
+      dRect = b
+      sRect = a
+    var r = dynamicRectVsRect(dRect, sRect, elapsed)
+    if r.collision:
+      var norm = newVector2(r.norm.x * abs(velocity.x), r.norm.y * abs(velocity.y)) * (1 - r.dist)
+      var elastic = newVector2(r.norm.x * abs(velocity.x), r.norm.y * abs(velocity.y)) * (1 - r.dist) * dRect.elasticity
 
 proc newCollisionRect*(x, y, w, h: float32, v: bool): CollisionRect =
   result = CollisionRect()
@@ -141,7 +149,7 @@ proc register*(cm: var CollisionManager, add: CollisionRect, layer: CollisionLay
   else:
     cm.collisions[layer] = @[add]
 
-proc quickCmp(a, b: CollisionResolution): int = cmp(a.dist, b.dist)
+proc quickCmp(a, b: CollisionData): int = cmp(a.dist, b.dist)
 
 proc update*(cm: var CollisionManager, dt: float32) =
   for layerKey in cm.collisions.keys:
@@ -150,7 +158,7 @@ proc update*(cm: var CollisionManager, dt: float32) =
       for collisionAi in 0..<len cm.collisions[layerKey]:
         template collisionA: untyped = cm.collisions[layerKey][collisionAi]
         if collisionA.dynamic != true: continue
-        var resolutions: seq[CollisionResolution]
+        var resolutions: seq[CollisionData]
         var checkRect: Rect
         checkRect.location = collisionA[].location - 2 * collisionA[].size
         checkRect.size = 3 * collisionA[].size + (dt * collisionA.velocity)

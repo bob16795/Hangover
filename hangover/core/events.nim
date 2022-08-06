@@ -1,7 +1,7 @@
-from loop import GraphicsContext
 import tables
 import oids
 import hangover/core/logging
+from hangover/core/loop import GraphicsContext
 import hangover/core/types/texture
 import hangover/core/types/vector2
 
@@ -36,7 +36,7 @@ when defined debug:
 
 template createEvent*(name: untyped, hide: bool = false): untyped =
   ## creates an event
-  const name = static: lastEventId
+  var name = static: lastEventId
   export name
 
   when defined(debug) and not hide:
