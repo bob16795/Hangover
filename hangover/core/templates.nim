@@ -138,8 +138,7 @@ template Game*(body: untyped) =
             when not defined(ginGLFM):
               glfw.pollEvents()
               if glfw.shouldClose(ctx.window):
-                gameClose()
-                quit()
+                return true
             updateUI(dt)
             updateAudio()
             return Update(dt, delayed)
@@ -153,6 +152,7 @@ template Game*(body: untyped) =
 
         while not loop.done:
           loop.update(ctx)
+        gameClose()
         
       ginMain()
   else:
