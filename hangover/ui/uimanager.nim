@@ -147,6 +147,8 @@ proc updateUI*(dt: float32) =
 proc setUIActive*(i: int, value: bool) =
   ## sets the ui element at index i to active
   um.elements[i].active = value
+  for e in um.elements:
+    e.checkHover(newRect(newVector2(0, 0), um.size / uiScaleMult), um.mousePos)
 
 proc isDashNode(n: NimNode): bool =
   n.kind == nnkPrefix and $n[0] == "-"

@@ -58,3 +58,5 @@ method scroll*(e: UIElement, offset: Vector2) {.base.} =
 method `active=`*(e: UIElement, value: bool) {.base.} =
   ## hides / shows the element
   e.isActive = value
+  if not value:
+    e.focused = false
