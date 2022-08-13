@@ -133,6 +133,13 @@ proc isFullscreen*(ctx: GraphicsContext): bool =
   else:
     false
 
+proc setShowMouse*(ctx: var GraphicsContext, value: bool) =
+  if value:
+    ctx.window.cursorMode = cmNormal
+  else:
+    ctx.window.cursorMode = cmHidden 
+
+
 proc setFullscreen*(ctx: var GraphicsContext, fs: bool) =
   ## sets the window to fullscreen.
   ## does nothing if fullscreen is already correct

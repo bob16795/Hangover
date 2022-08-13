@@ -3,12 +3,12 @@ import hangover/core/types/vector2
 import math
 import tables
 import algorithm
+import segfaults
 
 type
   CollisionLayer* = distinct uint8
   CollisionRect* = ref object of Rect
     dynamic*: bool
-    targets*: set[CollisionLayer]
     velocity*: Vector2
     elasticity*: float
   
@@ -19,17 +19,18 @@ type
     norm: Vector2
     rect: CollisionRect
 
-  CollisionCallback* = proc(a, b: CollisionRect)
+  CollisionCallback* = proc(a, b: var CollisionRect)
 
   CollisionManager* = object
     collisions: Table[CollisionLayer, seq[CollisionRect]]
     interactions: Table[CollisionLayer, set[CollisionLayer]]
-    # TODO: callbacks: Table[array[2, CollisionLayer], CollisionCallback]
+    callbacks: Table[array[2, CollisionLayer], CollisionCallback]
 
 proc `+`(a, b: CollisionLayer): CollisionLayer {.borrow.}
 proc `==`(a, b: CollisionLayer): bool {.borrow.}
 
 var
+  collisionSteps*: int = 5
   lastCollisionLayerId {.compileTime.}: CollisionLayer
 
 template newCollisionLayer*(name: untyped): untyped =
@@ -107,7 +108,7 @@ func dynamicRectVsRect(dynamicRect: CollisionRect, staticRect: CollisionRect, el
     result.dist = r.contact_time
     result.exit = r.exit_time
 
-func resolveCollision(velocity: Vector2, a, b: CollisionRect, elapsed: float32): Vector2 {.inline.} =
+func resolveCollision(startVelocity, velocity: Vector2, a, b: CollisionRect, elapsed: float32): Vector2 {.inline.} =
   if a.dynamic != b.dynamic:
     var dRect, sRect: CollisionRect
     if a.dynamic:
@@ -119,7 +120,9 @@ func resolveCollision(velocity: Vector2, a, b: CollisionRect, elapsed: float32):
     var r = dynamicRectVsRect(dRect, sRect, elapsed)
     if r.collision:
       var norm = newVector2(r.norm.x * abs(velocity.x), r.norm.y * abs(velocity.y)) * (1 - r.dist)
-      var elastic = newVector2(r.norm.x * abs(velocity.x), r.norm.y * abs(velocity.y)) * (1 - r.dist) * dRect.elasticity
+      var targetVel = velocity + norm
+      var elastic = newVector2(-targetVel.x * abs(r.norm.x), -targetVel.y * abs(r.norm.y)) + (newVector2(velocity.x * abs(r.norm.x), velocity.y * abs(r.norm.y)) * -1) * dRect.elasticity
+      return norm + elastic
 
 proc newCollisionRect*(x, y, w, h: float32, v: bool): CollisionRect =
   result = CollisionRect()
@@ -130,12 +133,22 @@ proc newCollisionRect*(x, y, w, h: float32, v: bool): CollisionRect =
   
   result.dynamic = v
 
+proc newCollisionRect*(location, size: Vector2, v: bool): CollisionRect =
+  result = newCollisionRect(location.x, location.y, size.x, size.y, v)
+
+proc newCollisionRect*(rect: Rect, v: bool): CollisionRect =
+  result = newCollisionRect(rect.location, rect.size, v)
+
 proc setCollides*(cm: var CollisionManager, layer: CollisionLayer, collides: set[CollisionLayer]) =
   cm.interactions[layer] = collides
 
 proc clear*(cm: var CollisionManager) =
   for layerKey in cm.collisions.keys:
-    cm.collisions[layerKey] = @[]
+    cm.collisions[layerkey] = @[]
+
+proc clearLayer*(cm: var CollisionManager, layer: CollisionLayer) =
+  if layer in cm.collisions:
+    cm.collisions[layer] = @[]
 
 proc register*(cm: var CollisionManager, add: seq[CollisionRect], layer: CollisionLayer) =
   if layer in cm.collisions:
@@ -151,7 +164,7 @@ proc register*(cm: var CollisionManager, add: CollisionRect, layer: CollisionLay
 
 proc quickCmp(a, b: CollisionData): int = cmp(a.dist, b.dist)
 
-proc update*(cm: var CollisionManager, dt: float32) =
+proc updateStep*(cm: var CollisionManager, dt: float32) =
   for layerKey in cm.collisions.keys:
     for interactKey in cm.interactions[layerKey]:
       if not(interactKey in cm.collisions): continue
@@ -176,11 +189,21 @@ proc update*(cm: var CollisionManager, dt: float32) =
 
           if resolution.collision:
             resolutions &= resolution
+            try:
+              cm.callbacks[[layerKey, interactKey]](collisionA, collisionB)
+            except:
+              discard
 
         resolutions.sort(quickCmp)
 
+        var startVel = collisionA.velocity
         for resolution in resolutions:
-          collisionA.velocity += resolveCollision(collisionA.velocity, collisionA, resolution.rect, dt)
+          collisionA.velocity += resolveCollision(startVel, collisionA.velocity, collisionA, resolution.rect, dt)
           if collisionA.velocity == newVector2(0, 0): break
 
         collisionA[].location = collisionA[].location + collisionA.velocity * dt
+
+proc update*(cm: var CollisionManager, dt: float32) =
+  var stepDt = dt / collisionSteps.float32
+  for s in 0..<collisionSteps:
+    cm.updateStep(stepDt)

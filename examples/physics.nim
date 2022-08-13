@@ -18,14 +18,18 @@ Game:
 
   proc Setup(): AppData =
     result = newAppData()
+    result.size = newPoint(200, 216)
     result.name = "Minimal Hangover Template"
 
   proc Initialize(ctx: var GraphicsContext) =
-    walls &= newCollisionRect(0, 200, 200, 10, false)
+    walls &= newCollisionRect(0, 200, 200, 1, false)
     walls &= newCollisionRect(200, 0, 10, 200, false)
+    walls &= newCollisionRect(0, -1, 200, 1, false)
+    walls &= newCollisionRect(-1, 0, 1, 200, false)
 
-    pRect = newCollisionRect(0, 0, 100, 100, true)
-    pRect.velocity = newVector2(100, 100)
+    pRect = newCollisionRect(50, 50, 100, 100, true)
+    pRect.velocity = newVector2(200, 200)
+    pRect.elasticity = 1.0
 
     # setup collision manager
     cm.setCollides(LAYER_WALL, {LAYER_PLAYER})
@@ -36,7 +40,17 @@ Game:
 
     texture = newTexture(getAppDir() / "content/sprites.bmp")
   
+  var
+    fps: int
+    time: float32
+  
   proc Update(dt: float, delayed: bool): bool =
+    time += dt
+    fps += 1
+    if time > 1:
+      echo fps
+      fps = 0
+      time = 0
     cm.update(dt)
 
   proc Draw(ctx: var GraphicsContext) =
