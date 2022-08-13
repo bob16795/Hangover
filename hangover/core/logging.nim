@@ -18,21 +18,22 @@ type
     output*: Stream
     fileOutput: bool
 
+method enableFileOutput(l: var Logger) =
+  l.output = newFileStream("hangover.log", fmWrite)
+  l.fileOutput = true
+
 proc newLogger(priority: LogPriority = lpInfo): Logger =
   when defined debug:
     result.priority = lpDebug
   else:
     result.priority = priority 
-  result.output = newFileStream("hangover.log", fmWrite)
+  result.enableFileOutput()
 
 var
   logger = newLogger()
 
 method `priority=`*(l: var Logger, priority: LogPriority) =
   l.priority = priority
-
-method enableFileOutput*(l: Logger) =
-  discard
 
 method log*(l: Logger, priority: LogPriority, file, message: string) =
   var pString = case priority:
@@ -44,7 +45,9 @@ method log*(l: Logger, priority: LogPriority, file, message: string) =
     of lpCrit:  "CRITICAL"
   if priority >= l.priority:
     echo &"[{pString}] {file}: {message}"
+  if l.fileOutput:
     l.output.write(&"[{pString}] {file}: {message}\n")
+    l.output.flush()
 
 
 template LOG_TRACE*(file: string, message: varargs[string, `$`]) = logger.log(lpTrace, file, message.join(" "))

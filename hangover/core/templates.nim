@@ -9,6 +9,7 @@ import hangover/core/events
 import hangover/ecs/types
 import hangover/ecs/entity
 import sugar
+import segfaults
 
 ## templates:
 ## creates a game loop 

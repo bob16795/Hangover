@@ -70,3 +70,6 @@ method scroll*(g: UIGroup, offset: Vector2) =
   for i in 0..<g.elements.len:
     g.elements[i].scroll(offset)
 
+method `active=`*(g: UIGroup, value: bool) =
+  for e in g.elements:
+    e.active = value

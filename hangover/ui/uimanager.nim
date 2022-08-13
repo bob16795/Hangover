@@ -146,7 +146,7 @@ proc updateUI*(dt: float32) =
 
 proc setUIActive*(i: int, value: bool) =
   ## sets the ui element at index i to active
-  um.elements[i].isActive = value
+  um.elements[i].active = value
 
 proc isDashNode(n: NimNode): bool =
   n.kind == nnkPrefix and $n[0] == "-"

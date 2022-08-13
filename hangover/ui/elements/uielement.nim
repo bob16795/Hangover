@@ -54,3 +54,7 @@ method draw*(e: UIElement, parentRect: Rect) {.base.} =
 method scroll*(e: UIElement, offset: Vector2) {.base.} =
   ## draws the element
   discard
+
+method `active=`*(e: UIElement, value: bool) {.base.} =
+  ## hides / shows the element
+  e.isActive = value
