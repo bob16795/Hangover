@@ -71,5 +71,8 @@ method scroll*(g: UIGroup, offset: Vector2) =
     g.elements[i].scroll(offset)
 
 method `active=`*(g: UIGroup, value: bool) =
+  g.isActive = value
+  if not value:
+    g.focused = false
   for e in g.elements:
     e.active = value
