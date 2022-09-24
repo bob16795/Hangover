@@ -20,8 +20,9 @@ export opengl
 
 var cameraPos: Vector2
 var cameraSize: Vector2
-var ctx: GraphicsContext
+var globalCtx*: GraphicsContext
 var shaders: seq[Shader]
+
 
 proc resizeBuffer*(data: pointer): bool =
   ## called when window is resized
@@ -97,7 +98,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
     glEnable(GL_MULTISAMPLE) 
 
   result.color = data.color
-  ctx = result
+  globalCtx = result
 
 when defined(hangui):
   proc libSetFb*(id: GLuint, w, h: int32) {.exportc, cdecl, dynlib.} =
@@ -137,7 +138,7 @@ proc setShowMouse*(ctx: var GraphicsContext, value: bool) =
   if value:
     ctx.window.cursorMode = cmNormal
   else:
-    ctx.window.cursorMode = cmHidden 
+    ctx.window.cursorMode = cmDisabled 
 
 
 proc setFullscreen*(ctx: var GraphicsContext, fs: bool) =
@@ -194,3 +195,6 @@ proc getBufferTexture*(t: Texture) =
   # set the texture from the buffer
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, width.GLsizei, height.GLsizei,
       0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, addr buffer[0])
+
+proc setCursorPos*(pos: Vector2) =
+  `cursorPos=`(globalCtx.window, (x: pos.x.float64, y: pos.y.float64))
