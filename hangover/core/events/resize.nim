@@ -1,5 +1,8 @@
 createEvent(EVENT_RESIZE)
-createEvent(EVENT_RESIZE_DONE)
+createEvent(EVENT_RESIZE_FRAMEBUFFER)
+
+let
+  EVENT_RESIZE_DONE* {.deprecated.} = EVENT_RESIZE_FRAMEBUFFER
 
 #TODO: comment
 
