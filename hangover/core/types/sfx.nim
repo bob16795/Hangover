@@ -5,6 +5,7 @@ import ../lib/readwav
 type
   Sound* = object
     ## stores a sound effect
+    valid*: bool
     buffer*: ALuint ## the al buffer
 
 proc newSoundMem*(s: Stream): Sound =
@@ -18,6 +19,7 @@ proc newSoundMem*(s: Stream): Sound =
   alGenBuffers(ALsizei 1, addr result.buffer)
   alBufferData(result.buffer, AL_FORMAT_MONO16, wav.data, ALsizei wav.size,
       ALsizei wav.freq)
+  result.valid = true
 
 proc newSound*(file: string): Sound =
   ## creates a sound from file
