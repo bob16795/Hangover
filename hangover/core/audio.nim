@@ -29,10 +29,10 @@ proc initAudio*() {.exportc, cdecl, dynlib.} =
     devicename = alcGetString(nil, ALC_DEFAULT_DEVICE_SPECIFIER);
 
   device = alcOpenDevice(devicename);
-  if device == nil: quit "OpenAL: failed to get default device"
+  if device == nil: LOG_CRITICAL "ho->audio", "OpenAL: failed to get default device"
   audioCtx = device.alcCreateContext(nil)
-  if audioCtx == nil: quit "OpenAL: failed to create context"
-  if not alcMakeContextCurrent(audioCtx): quit "OpenAL: failed to make context current"
+  if audioCtx == nil: LOG_CRITICAL "ho->audio", "OpenAL: failed to create context"
+  if not alcMakeContextCurrent(audioCtx): LOG_CRITICAL "ho->audio", "OpenAL: failed to make context current"
 
 
   # generate song source
