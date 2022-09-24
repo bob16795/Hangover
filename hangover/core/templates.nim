@@ -14,9 +14,9 @@ import segfaults
 ## templates:
 ## creates a game loop 
 
-createEvent(EVENT_UPDATE)
-createEvent(EVENT_DRAW)
-createEvent(EVENT_DRAW_UI)
+createEvent(EVENT_UPDATE, true)
+createEvent(EVENT_DRAW, true)
+createEvent(EVENT_DRAW_UI, true)
 createEvent(EVENT_INIT)
 createEvent(EVENT_LOADED)
 createEvent(EVENT_CLOSE)
@@ -103,6 +103,7 @@ template Game*(body: untyped) =
         template setStatus(status: string): untyped =
           loadStatus = status
           drawLoading(pc, loadStatus, ctx, size)
+          LOG_DEBUG "ho->load", loadStatus
           when not defined(ginGLFM):
             glfw.pollEvents()
             if glfw.shouldClose(ctx.window):

@@ -3,9 +3,11 @@ import hangover/core/types/point
 import hangover/core/types/color
 import hangover/core/types/rect
 import hangover/core/types/font
+import hangover/core/types/sfx
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
 import hangover/core/logging
+import hangover/core/audio
 
 #TODO: comment
 #TODO: add align
@@ -28,6 +30,10 @@ type
     toggle*: bool
     pressed*: bool
     color*: Color
+
+var
+  buttonHoverSound*: Sound
+  buttonClickSound*: Sound
 
 proc newUIButton*(texture: Texture, font: var Font, bounds: UIRectangle,
         action: UIAction = nil, text = "", disableProc: proc(): bool = nil,
@@ -74,6 +80,8 @@ proc newUIButton*(texture: Texture, font: var Font, bounds: UIRectangle,
 method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
   ## updates the button element on a mouse move
 
+  var wasFocused = b.focused
+
   # set focused to false
   b.focused = false
 
@@ -90,7 +98,10 @@ method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
 
   # check if mouse is in the button
   if mousePos in bounds:
-      b.focused = true
+    if not wasFocused:
+      if buttonHoverSound.valid:
+        buttonHoverSound.play()
+    b.focused = true
 
 method click*(b: UIButton, button: int) =
   ## processes a click event for a button element
@@ -101,6 +112,8 @@ method click*(b: UIButton, button: int) =
     b.action(b.pressed.int)
   else:
     b.action(button)
+  if buttonClickSound.valid:
+    buttonClickSound.play()
 
 method draw*(b: UIButton, parentRect: Rect) =
   ## draw a button element

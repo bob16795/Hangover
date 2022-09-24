@@ -47,6 +47,10 @@ type
 
     isActive*: bool
 
+proc clear*(ps: var ParticleSystem) =
+  ifor part, ps.pool:
+    part.isActive = false
+
 proc update*(ps: var ParticleSystem, dt: float32) =
   ## updates a particle system
   ifor part, ps.pool:
