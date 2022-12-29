@@ -111,3 +111,6 @@ proc dot*(a, b: Vector2): float32 =
 
 proc `$`*(v: Vector2): string =
   result = "(" & $v.x & ", " & $v.y & ")"
+
+proc lerp*(a, b: Vector2, pc: float): Vector2 =
+  result = a + (b - a) * pc
