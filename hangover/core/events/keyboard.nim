@@ -9,16 +9,19 @@ createEvent(EVENT_SET_LINE_TEXT)
 
 var
   lineInput = false
+  lineInputNew = false
   lineText = ""
 
 when not defined(ginGLFM):
+  var keyMods*: set[ModifierKey]
+  
   proc keyCb*(win: Window, key: Key, scanCode: int32, action: KeyAction,
       mods: set[ModifierKey]) =
+    keyMods = mods
     if lineInput:
       if action != kaUp and key == keyBackspace and lineText != "":
         lineText = lineText[0..^2]
         sendEvent(EVENT_LINE_ENTER, addr lineText)
-      return
     case action:
     of kaDown:
       var k = key
@@ -30,7 +33,9 @@ when not defined(ginGLFM):
       discard
   
   proc charCb*(win: Window, r: Rune) =
-    if not lineInput: return
+    if lineInput == false or not lineInputNew:
+      lineInputNew = lineInput
+      return
     lineText &= $r
     sendEvent(EVENT_LINE_ENTER, addr lineText)
   
