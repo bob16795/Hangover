@@ -76,6 +76,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
       c.nMultiSamples = data.aa.int32
 
     result.window = newWindow(c)
+    # TODO: make part of init data
     glfw.swapInterval(1)
   
     loadExtensions()
@@ -135,10 +136,11 @@ proc isFullscreen*(ctx: GraphicsContext): bool =
     false
 
 proc setShowMouse*(ctx: var GraphicsContext, value: bool) =
-  if value:
-    ctx.window.cursorMode = cmNormal
-  else:
-    ctx.window.cursorMode = cmDisabled 
+  when not defined(ginGLFM):
+    if value:
+      ctx.window.cursorMode = cmNormal
+    else:
+      ctx.window.cursorMode = cmDisabled 
 
 
 proc setFullscreen*(ctx: var GraphicsContext, fs: bool) =
@@ -197,4 +199,5 @@ proc getBufferTexture*(t: Texture) =
       0, GL_RGBA, GL_UNSIGNED_BYTE.GLenum, addr buffer[0])
 
 proc setCursorPos*(pos: Vector2) =
-  `cursorPos=`(globalCtx.window, (x: pos.x.float64, y: pos.y.float64))
+  when not defined(ginGLFM):
+    `cursorPos=`(globalCtx.window, (x: pos.x.float64, y: pos.y.float64))
