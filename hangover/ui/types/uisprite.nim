@@ -186,13 +186,6 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
   destRect.height = tempDest.height - sideSizes.y
   sprite.drawSec(newPoint(0, 1), destRect, c, layer)
 
-  # draw segment e
-  destRect = sprite.renderSecs[1][1]
-  destRect.location = newVector2(tempDest.x + aSize.x, tempDest.y + aSize.y)
-  destRect.width = tempDest.width - sideSizes.x
-  destRect.height = tempDest.height - sideSizes.y
-  sprite.drawSec(newPoint(1, 1), destRect, c, layer)
-
   # draw segment f
   destRect = sprite.renderSecs[2][1]
   destRect.location = newVector2((tempDest.x + tempDest.width) - sprite.renderSecs[2][
@@ -226,3 +219,10 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
   sprite.drawSec(newPoint(2, 2), destRect, c, layer)
+
+  # draw segment e
+  destRect = sprite.renderSecs[1][1]
+  destRect.location = newVector2(tempDest.x + aSize.x, tempDest.y + aSize.y)
+  destRect.width = tempDest.width - sideSizes.x
+  destRect.height = tempDest.height - sideSizes.y
+  sprite.drawSec(newPoint(1, 1), destRect, c, layer)
