@@ -99,8 +99,12 @@ proc finFont*(f: Font, size: int): Font =
   glBindTexture(GL_TEXTURE_2D, result.texture)
   #glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE.GLint)
   #glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE.GLint)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST.GLint)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+  when not defined(fontaa):
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST.GLint)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+  else:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR.GLint)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR.GLint)
   
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
   glPixelStorei(GL_PACK_ALIGNMENT, 1)
@@ -121,10 +125,13 @@ proc finFont*(f: Font, size: int): Font =
       for x in 0..g.bitmap.width:
         for y in 0..g.bitmap.rows:
           var d = cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
-          if d > 128:
-            tmpBuffer &= 255
+          when not defined(fontaa):
+            if d > 128:
+              tmpBuffer &= 255
+            else:
+              tmpBuffer &= 0
           else:
-            tmpBuffer &= 0
+            tmpBuffer &= d
           tmpBuffer &= 0
           tmpBuffer &= 0
           tmpBuffer &= 0
@@ -164,7 +171,8 @@ proc newFont*(face: string, size: int, spacing: int = 0): Font =
   result = finFont(result, size)
   result.spacing = spacing
 
-proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1, layer: range[0..500] = 0) =
+
+proc draw*(font: Font, text: string, position: Vector2, color: Color, scale: float32 = 1, layer: range[0..500] = 0) =
   var pos = position
 
   var srect = newRect(0, 0, 1, 1)
@@ -172,10 +180,10 @@ proc draw*(font: Font, text: string, position: Point, color: Color, scale: float
     if not font.characters.len > c.int: continue
     var
       ch = font.characters[c.int]
-      w = (ch.size.x.float32 * scale).cint
-      h = (ch.size.y.float32 * scale).cint
-      xpos = pos.x + ((ch.bearing.x).float32 * scale).cint
-      ypos = pos.y - ((ch.bearing.y).float32 * scale).cint + (font.size.float32 * scale).cint
+      w = (ch.size.x.float32 * scale)
+      h = (ch.size.y.float32 * scale)
+      xpos = pos.x + (ch.bearing.x).float32 * scale
+      ypos = pos.y - (ch.bearing.y).float32 * scale + font.size.float32 * scale
     srect.x = ch.tx
     srect.width = ch.tw
     srect.height = ch.th
@@ -184,8 +192,11 @@ proc draw*(font: Font, text: string, position: Point, color: Color, scale: float
     var tex = Texture(tex: font.texture)
     tex.draw(srect, newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border,
         h.float32 + 2 * font.border), addr fontProgram, color, layer = layer)
-    pos.x += ((ch.advance shr 6).float32 * scale).cint
-    pos.x += font.spacing + (2 * font.border).cint
+    pos.x += ((ch.advance shr 6).float32 * scale)
+    pos.x += font.spacing.float32 + (2 * font.border)
+
+proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1, layer: range[0..500] = 0) {.deprecated.} =
+  font.draw(text, position.toVector2(), color, scale, layer)
 
 proc sizeText*(font: Font, text: string, scale: float32 = 1): Vector2 =
   var ypos: float32 = 0 
