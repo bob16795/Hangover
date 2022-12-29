@@ -103,6 +103,7 @@ proc setupEventCallbacks*(ctx: GraphicsContext) =
   createListener(EVENT_STOP_LINE_ENTER,
                  proc(d: pointer): bool =
                    lineInput = false
+                   lineInputNew = false
                    lineText = "")
   createListener(EVENT_SET_LINE_TEXT,
     setLineText)
