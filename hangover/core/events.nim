@@ -80,7 +80,7 @@ proc detachListener*(id: Oid) =
 include events/keyboard
 include events/mouse
 include events/resize
-include events/joystick
+include events/dragdrop
 
 proc setupEventCallbacks*(ctx: GraphicsContext) =
   ## sets the default callbacks
@@ -94,6 +94,7 @@ proc setupEventCallbacks*(ctx: GraphicsContext) =
     ctx.window.mouseButtonCb = mouseButtonCb
     ctx.window.scrollCb = mouseScrollCb
     ctx.window.charCb = charCb
+    ctx.window.dropCb = dropCb
 
   # setup listeners for keyboard
   createListener(EVENT_START_LINE_ENTER,

@@ -40,7 +40,7 @@ method draw*(b: UIImage, parentRect: Rect) =
 
   b.sprite.draw(bounds.location, 0, bounds.size, c = b.color)
 
-method update*(b: var UIImage, parentRect: Rect, mousePos: Vector2,
+method update*(b: UIImage, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not b.isActive:
     return

@@ -21,7 +21,7 @@ proc newUIDynamic*(bounds: UIRectangle): UIDynamic =
   result.isActive = true
   result.bounds = bounds
 
-method update*(d: var UIDynamic, parentRect: Rect, mousePos: Vector2,
+method update*(d: UIDynamic, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not d.isActive:
     return

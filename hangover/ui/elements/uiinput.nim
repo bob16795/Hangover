@@ -88,7 +88,7 @@ method draw*(e: UIInput, parentRect: Rect) =
       e.font[].draw("|", newPoint(posx.cint, posy.cint), newColor(0, 0, 0), e.fontMult * uiElemScale)
     posy += sizeText(e.font[], text, e.fontMult * uiElemScale).y
 
-method update*(b: var UIInput, parentRect: Rect, mousePos: Vector2,
+method update*(b: UIInput, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not b.isActive:
     if b.active:

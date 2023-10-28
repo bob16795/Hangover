@@ -32,7 +32,7 @@ export uidynamic
 type
   UIManager* {.acyclic.} = object
     ## a ui manager, stores ui elements
-    elements: seq[UIElement]
+    elements*: seq[UIElement]
     size: Vector2
     mousePos: Vector2
 

@@ -60,10 +60,10 @@ proc newUIButton*(texture: Texture, font: var Font, bounds: UIRectangle,
     result.disabledUI = newUiSprite(texture, newRect(16, 0, 8, 8),
           newRect(18, 2, 4, 4))
   
-  if sprite.texture.isDefined():
+  if sprite.texture != nil:
     result.sprite = sprite
     result.hasSprite = true
-  if toggleSprite.texture.isDefined():
+  if toggleSprite.texture != nil:
     result.toggleSprite = toggleSprite
     result.hasToggleSprite = true
 
@@ -182,7 +182,7 @@ method draw*(b: UIButton, parentRect: Rect) =
           sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
     b.font[].draw(b.text, newPoint(posx.cint, posy.cint), textColor, b.fontMult * uiElemScale)
 
-method update*(b: var UIButton, parentRect: Rect, mousePos: Vector2,
+method update*(b: UIButton, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   ## processes a frame for the button
 

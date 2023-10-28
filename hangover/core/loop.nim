@@ -35,16 +35,21 @@ proc newLoop*(fps: float64): Loop =
 
 proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
   ## forces the loop to draw the window
+  let initTime = loop.lastTime
+
   loop.lastTime = loop.currentTime
   when not defined(ginGLFM):
     loop.currentTime = glfw.getTime()
-  when defined(hangui) or defined(ginGLFM):
-    loop.currentTime = cpuTime()
-  var delayed: bool
-  if loop.lastTime != 0:
-    loop.dt = 0
+    when defined(hangui) or defined(ginGLFM):
+      loop.currentTime = cpuTime()
+  
+  if loop.currentTime - loop.lastTime > loop.targetFPS:
+    if loop.lastTime != 0:
+      loop.dt = 0
 
-  loop.drawProc(ctx)
+    loop.drawProc(ctx)
+  else:
+    loop.lastTime = initTime
 
 proc update*(loop: var Loop, ctx: var GraphicsContext) =
   ## processes one frame of a loop

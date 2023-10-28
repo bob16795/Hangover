@@ -38,7 +38,7 @@ proc resizeBuffer*(data: pointer): bool =
   cameraSize = newVector2(res.w.float32, res.h.float32)
 
   # update shader matrices
-  var projection = ortho(cameraPos.x, cameraPos.x + res.w.float, cameraPos.y + res.h.float, cameraPos.y, 501, -501)
+  var projection = ortho(cameraPos.x, cameraPos.x + res.w.float, cameraPos.y + res.h.float, cameraPos.y, -100, 100)
   fontProgram.setParam("projection", projection.caddr)
   textureProgram.setParam("projection", projection.caddr)
   for si in 0..<len shaders:
@@ -51,7 +51,7 @@ proc scaleBuffer*(scale: float32) =
   ## scales the buffer
   
   # update the shader matrices
-  var projection = scale(ortho(cameraPos.x, cameraPos.x + cameraSize.x.float, cameraPos.y + cameraSize.y.float, cameraPos.y, 501, -501), scale)
+  var projection = scale(ortho(cameraPos.x, cameraPos.x + cameraSize.x.float, cameraPos.y + cameraSize.y.float, cameraPos.y, -100, 100), scale)
   fontProgram.setParam("projection", projection.caddr)
   textureProgram.setParam("projection", projection.caddr)
  
@@ -97,6 +97,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
   # setup antialiasing
   if data.aa != 0:
     glEnable(GL_MULTISAMPLE) 
+  glEnable(GL_DEPTH_TEST) 
 
   result.color = data.color
   globalCtx = result
@@ -117,7 +118,7 @@ proc deinitGraphics*(ctx: GraphicsContext) =
 proc clearBuffer*(ctx: GraphicsContext, color: Color) =
   ## clears the buffer with color
   glClearColor(color.rf, color.gf, color.bf, color.af)
-  glClear(GL_COLOR_BUFFER_BIT)
+  glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
 proc finishRender*(ctx: GraphicsContext) =
   ## finishes a draw
