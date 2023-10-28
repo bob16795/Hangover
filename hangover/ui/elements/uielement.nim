@@ -34,7 +34,7 @@ method checkHover*(e: UIElement, parentRect: Rect,
   ## updates the element on a mouse move event
   discard
 
-method update*(e: var UIElement, parentRect: Rect, mousePos: Vector2,
+method update*(e: UIElement, parentRect: Rect, mousePos: Vector2,
     dt: float32) {.base.} =
   ## updates the element on a frame
   discard

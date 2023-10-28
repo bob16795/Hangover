@@ -54,7 +54,7 @@ method draw*(g: UIGroup, parentRect: Rect) =
   for i in 0..<g.elements.len:
     g.elements[i].draw(bounds)
 
-method update*(g: var UIGroup, parentRect: Rect, mousePos: Vector2,
+method update*(g: UIGroup, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not g.isActive:
     return

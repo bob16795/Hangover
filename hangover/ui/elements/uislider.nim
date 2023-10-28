@@ -72,7 +72,7 @@ method draw*(s: UISlider, parentRect: Rect) =
       s.sprite.draw(newRect(bounds.x, posy - s.barSize / 2, bounds.width, s.barSize))
       s.handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height))
 
-method update*(s: var UISlider, parentRect: Rect, mousePos: Vector2,
+method update*(s: UISlider, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not s.isActive:
     return

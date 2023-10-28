@@ -25,6 +25,7 @@ const
 layout (location = 0) in vec4 vertex;
 layout (location = 1) in vec4 tintColorIn;
 uniform float rotation;
+uniform float layer;
 uniform mat4 projection;
 
 out vec2 texCoords;
@@ -32,7 +33,7 @@ out vec4 tintColor;
 
 void main()
 {
-    gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);
+    gl_Position = projection * vec4(vertex.xy, layer, 1.0);
     texCoords = vertex.zw;
     tintColor = tintColorIn;
 }
@@ -47,7 +48,10 @@ uniform sampler2D text;
 
 void main()
 {
-    color = tintColor * texture(text, texCoords);
+    vec4 texel = tintColor * texture(text, texCoords);
+    if (texel.a < 0.5)
+        discard;
+    color = texel;
 }
 """
 

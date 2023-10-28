@@ -32,7 +32,7 @@ method draw*(p: UIPanel, parentRect: Rect) =
   var bounds = p.bounds.toRect(parentRect)
   p.texture.draw(bounds, c = p.color)
 
-method update*(p: var UIPanel, parentRect: Rect, mousePos: Vector2,
+method update*(p: UIPanel, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not p.isActive:
     return

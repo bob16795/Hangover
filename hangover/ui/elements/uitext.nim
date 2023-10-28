@@ -16,7 +16,7 @@ type
   UIText* = ref object of UIElement
     font*: ptr Font
     fontMult*: float32
-    text*: string
+    text*: ref string
     inactive*: bool
     update*: UIUpdate
     align*: UITextAlign
@@ -35,18 +35,19 @@ proc newUIText*(font: var Font, bounds: UIRectangle, update: UIUpdate,
   result.inactive = ina
   result.underline = ul
   result.color = color
+  result.text = string.new()
 
 method draw*(t: UIText, parentRect: Rect) =
   if not t.isActive:
     return
-  if (t.text == ""): return
+  if (t.text == nil or t.text[] == ""): return
   var bounds = t.bounds.toRect(parentRect)
   var h: float32 = 0
-  for text in t.text.split("\n"):
+  for text in t.text[].split("\n"):
     h += t.font[].size.float32 * t.fontMult * uiElemScale
   var posy: float32 = bounds.y + (bounds.height - h) / 2
   posy = max(posy, bounds.y)
-  for text in t.text.split("\n"):
+  for text in t.text[].split("\n"):
     var posx: float32 = bounds.x
     case t.align:
       of ACenter:
@@ -58,10 +59,12 @@ method draw*(t: UIText, parentRect: Rect) =
     t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color, t.fontMult * uiElemScale)
     posy += t.font[].size.float32 * t.fontMult * uiElemScale
 
-method update*(t: var UIText, parentRect: Rect, mousePos: Vector2,
+method update*(t: UIText, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not t.isActive:
     return
   var bounds = t.bounds.toRect(parentRect)
   if t.update != nil:
-    t.text = t.update()
+    if t.text == nil:
+        t.text = string.new()
+    t.text[] = t.update()
