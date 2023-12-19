@@ -33,7 +33,7 @@ template Game*(body: untyped) =
 
       proc libEvent*(id: EventId, data: pointer) {.exportc, cdecl, dynlib.} =
         if id == EVENT_MOUSE_MOVE:
-          var dat = cast[ptr tuple[x, y: float64]](data)[]
+          let dat = cast[ptr tuple[x, y: float64]](data)[]
           dat.x += textureOffset.x
           dat.y += textureOffset.y
           sendEvent(id, addr dat)
@@ -45,9 +45,12 @@ template Game*(body: untyped) =
       
       proc libInit*(): GraphicsContext {.exportc, cdecl, dynlib.} =
         result = GraphicsContext()
-        NimMain()
+        try:
+            NimMain()
+        except:
+            discard
         loadExtensions()
-        var data = Setup()
+        let data = Setup()
         result.color = data.color
         setupTexture()
         initFT()
@@ -63,7 +66,7 @@ template Game*(body: untyped) =
         return Update(dt, false)
 
       proc libDraw*(ctx: GraphicsContext) {.exportc, cdecl, dynlib.} =
-        var color = ctx.color
+        let color = ctx.color
         glClearColor(color.rf, color.gf, color.bf, color.af)
         glClear(GL_COLOR_BUFFER_BIT)
         Draw(ctx)
@@ -86,7 +89,7 @@ template Game*(body: untyped) =
         ctx = initGraphics(data)
 
         proc UpdateSize(data: pointer): bool =
-          var res = cast[ptr tuple[w, h: int32]](data)[]
+          let res = cast[ptr tuple[w, h: int32]](data)[]
           size = newPoint(res.w.cint, res.h.cint)
 
         createListener(EVENT_RESIZE, UpdateSize)
@@ -112,8 +115,9 @@ template Game*(body: untyped) =
           finishRender(ctx)
         template noUI() = ui = false
         template drawUIEarly() =
-          drawUI()
-          ui = false
+          if ui:
+            drawUI()
+            ui = false
 
         body
 
@@ -158,7 +162,7 @@ template Game*(body: untyped) =
         
       ginMain()
   else:
-    var nimInit* = true
+    var nimInit* = true 
     type
       GinApp* = object
         started*: bool
@@ -168,14 +172,19 @@ template Game*(body: untyped) =
         loop*: Loop
         size*: Point
         ctx*: GraphicsContext
+        lineText: string
+        display: ptr GLFMDisplay
 
     var app: GinApp
     
-    template setStatus(status: string): untyped = discard
-    template setPercent(status: untyped): untyped = discard
     template noUI() = app.ui = false
 
-    proc onFrame*(display: ptr GLFMDisplay; frameTime: cdouble) =
+    proc glfmForceDraw(display: ptr GLFMDisplay){.importc.}
+
+    proc showKeyboard*(val: bool) =
+        app.display.glfmSetKeyboardVisible(val)
+
+    proc onFrame*(display: ptr GLFMDisplay; frameTime: cdouble) {.exportc, cdecl} =
       if not app.init:
         proc Setup(): AppData
 
@@ -186,8 +195,25 @@ template Game*(body: untyped) =
 
         app.loop = newLoop(60)
         app.ctx.window = display
+        
+        var pc: float32
+        var loadStatus: string
+
+        template setPercent(perc: float): untyped =
+          pc = perc
+          drawLoading(pc, loadStatus, ctx, app.size)
+          finishDraw()
+          finishRender(ctx)
+          display.glfmForceDraw()
+        template setStatus(status: string): untyped =
+          loadStatus = status
+          drawLoading(pc, loadStatus, ctx, app.size)
+          finishDraw()
+          finishRender(ctx)
+          display.glfmForceDraw()
         template drawUIEarly() =
-          drawUI()
+          if app.ui:
+            drawUI()
           app.ui = false
         
         body
@@ -196,7 +222,6 @@ template Game*(body: untyped) =
 
         app.loop.updateProc =
           proc (dt: float, delayed: bool): bool =
-            updateAudio()
             updateUI(dt)
             return Update(dt, delayed)
 
@@ -207,60 +232,76 @@ template Game*(body: untyped) =
             drawUI()
           finishrender(ctx)
         app.init = true
-        var tmpSize = (app.size.x.int32, app.size.y.int32)
+        let tmpSize = (app.size.x.int32, app.size.y.int32)
         sendEvent(EVENT_RESIZE, addr tmpSize)
 
         createListener(EVENT_CLOSE, proc(d: pointer): bool = gameClose())
 
-      clearBuffer(app.ctx, app.ctx.color)
-      app.loop.update(app.ctx, frameTime)
+      if app.loop.done:
+        sendEvent(EVENT_CLOSE, nil)
+        quit()
 
-    proc onResize*(display: ptr GLFMDisplay, w, h: cint) =
-        var tmpResize = (w.int32, h.int32)
+      try:
+        updateAudio()
+        clearBuffer(app.ctx, app.ctx.color)
+        app.loop.update(app.ctx, frameTime)
+      except Exception as ex:
+        LOG_ERROR $ex[]
+
+    proc onResize*(display: ptr GLFMDisplay, w, h: cint)  {.exportc, cdecl}  =
+        let tmpResize = (w.int32, h.int32)
         app.size = newPoint(w.int, h.int)
         sendEvent(EVENT_RESIZE, addr tmpResize)
     
-    proc onCreate*(display: ptr GLFMDisplay, w, h: cint) =
-        var tmpSize: tuple[w, h: int32]
+    proc onCreate*(display: ptr GLFMDisplay, w, h: cint)  {.exportc, cdecl} =
+        let tmpSize: tuple[w, h: int32]
         tmpSize = (w.int32, h.int32)
         app.size = newPoint(w.int, h.int)
         sendEvent(EVENT_RESIZE, addr tmpSize)
+        um.size = newVector2(w.float32, h.float32)
         
     proc onTouch*(display: ptr GLFMDisplay; touch: cint; phase: GLFMTouchPhase; x: cdouble;
-             y: cdouble): bool =
-      var data = (x.float64 + textureOffset.x.float64, y.float64 + textureOffset.y.float64, touch)
+             y: cdouble): bool  {.exportc, cdecl} =
+      let data = (x.float64, y.float64, touch)
       sendEvent(EVENT_MOUSE_MOVE, addr data)
       if phase == GLFMTouchPhaseBegan:
-        sendEvent(EVENT_MOUSE_CLICK, addr touch)
+        sendEvent(EVENT_MOUSE_CLICK, unsafeAddr touch)
       elif phase == GLFMTouchPhaseEnded:
-        sendEvent(EVENT_MOUSE_RELEASE, addr touch)
+        sendEvent(EVENT_MOUSE_RELEASE, unsafeAddr touch)
     
+    proc onChar(display: ptr GLFMDisplay, str: cstring, mods: cint) {.exportc, cdecl.} =
+      app.lineText &= $str
+      sendEvent(EVENT_LINE_ENTER, addr app.lineText)
+
     proc onKey*(display: ptr GLFMDisplay; keyCode: Key; action: KeyAction;
-           modifiers: cint): bool =
+           modifiers: cint): bool  {.exportc, cdecl} =
       case action:
         of keyActionPressed:
-          sendEvent(EVENT_PRESS_KEY, addr keyCode)
+          sendEvent(EVENT_PRESS_KEY, unsafeAddr keyCode)
         of keyActionReleased:
-          sendEvent(EVENT_RELEASE_KEY, addr keyCode)
+          sendEvent(EVENT_RELEASE_KEY, unsafeAddr keyCode)
         else:
           discard
 
-    proc onDestroy*(display: ptr GLFMDisplay) =
+    proc onDestroy*(display: ptr GLFMDisplay)  {.exportc, cdecl} =
       sendEvent(EVENT_CLOSE, nil)
 
     proc glfmMain*(display: ptr GLFMDisplay) {.exportc, cdecl.} =
       NimMain()
+
       app = GinApp()
+      app.display = display
       glfmSetDisplayConfig(display, GLFMRenderingAPIOpenGLES32,
-                           GLFMColorFormatRGBA8888, GLFMDepthFormatNone,
+                           GLFMColorFormatRGBA8888, GLFMDepthFormat16,
                            GLFMStencilFormatNone, GLFMMultisampleNone)
       glfmSetDisplayChrome(display, GLFMUserInterfaceChromeFullscreen)
       glfmSetUserData(display, addr app)
 
       glfmSetSurfaceCreatedFunc(display, onCreate)
       glfmSetSurfaceDestroyedFunc(display, onDestroy)
-      glfmSetMainLoopFunc(display, onFrame)
       glfmSetSurfaceResizedFunc(display, onResize)
+      glfmSetMainLoopFunc(display, onFrame)
+      glfmSetCharfunc(display, onChar)
 
       glfmSetTouchFunc(display, onTouch)
       glfmSetKeyFunc(display, onKey)
@@ -274,16 +315,16 @@ template GameECS*(name: string, body: untyped) =
 
     proc Initialize(ctx: GraphicsContext) = 
       setupEntities()
-      var tmpCtx = ctx
+      let tmpCtx = ctx
       sendEvent(EVENT_INIT, addr tmpCtx)
       sendEvent(EVENT_LOADED, nil)
 
     proc Update(dt: float32, delayed: bool): bool =
-      var tmpDt = dt
+      let tmpDt = dt
       sendEvent(EVENT_UPDATE, addr tmpDt)
 
     proc Draw(ctx: GraphicsContext) =
-      var tmpCtx = ctx
+      let tmpCtx = ctx
       sendEvent(EVENT_DRAW, addr tmpCtx)
       finishDraw()
       sendEvent(EVENT_DRAW_UI, addr tmpCtx)

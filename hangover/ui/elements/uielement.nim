@@ -24,10 +24,20 @@ type
     ## gets the text to update a text element
   UIElement* = ref object of RootObj
     ## a generic ui element does nothing
-    focused*: bool ## wether the element is focused
-    isActive*: bool ## if the element is active
-    bounds*: UIRectangle ## the target bounds
+    focused*: bool          ## wether the element is focused
+    isActive*: bool         ## if the element is active
+    bounds*: UIRectangle    ## the target bounds
     isDisabled*: () -> bool ## checks if the element is disabled
+  UIDir* = enum
+    UINext
+    UIPrev
+    UISelect
+    UIScrollUp
+    UIScrollDown
+    UIUp
+    UIDown
+    UILeft
+    UIRight
 
 method checkHover*(e: UIElement, parentRect: Rect,
     mousePos: Vector2) {.base.} =
@@ -43,7 +53,7 @@ method click*(e: UIElement, button: int) {.base.} =
   ## processes a click event
   discard
 
-method drag*(e: UIElement, button: int) {.base.} =
+method drag*(e: UIElement, button: int, done: bool) {.base.} =
   ## process a move event when the mouse is pressed
   discard
 
@@ -55,8 +65,22 @@ method scroll*(e: UIElement, offset: Vector2) {.base.} =
   ## draws the element
   discard
 
+method focus*(e: UIElement, focus: bool) {.base.} =
+  ## returns true if you can focus the element
+  e.focused = focus
+
 method `active=`*(e: UIElement, value: bool) {.base.} =
   ## hides / shows the element
   e.isActive = value
   if not value:
-    e.focused = false
+    e.focus(false)
+
+method focusable*(e: UIElement): bool {.base.} =
+  ## returns true if you can focus the element
+  false
+
+method navigate*(e: UIElement, dir: UIDir): bool {.base.} =
+  ## navigates to the next elem
+  if e.focused:
+    e.focus(false)
+    return true

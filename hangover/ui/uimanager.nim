@@ -6,8 +6,10 @@ import hangover/ui/elements/uigroup
 import hangover/ui/elements/uidynamic
 import hangover/ui/elements/uiimage
 import hangover/ui/elements/uiinput
+import hangover/ui/elements/uiscroll
 import hangover/ui/elements/uitext
 import hangover/ui/types/uirectangle
+import hangover/ui/types/uitween
 import hangover/core/events
 import hangover/core/graphics
 import hangover/core/types/rect
@@ -15,8 +17,12 @@ import hangover/core/types/point
 import hangover/core/types/vector2
 import hangover/core/types/texture
 import hangover/core/logging
+import hangover/core/types/color
+import algorithm
 import macros
 import sugar
+import opengl
+import math
 
 export uitext
 export uiinput
@@ -28,78 +34,111 @@ export uibutton
 export uielement
 export uirectangle
 export uidynamic
+export uiscroll
+export uitween
 
 type
   UIManager* {.acyclic.} = object
     ## a ui manager, stores ui elements
     elements*: seq[UIElement]
-    size: Vector2
+    size*: Vector2
     mousePos: Vector2
+    scale*: float32
+
+    fbo*: GLuint
+    aSize: Vector2
+    renderTexture: GLuint
+    depthTexture: GLuint
 
 var
   um*: UIManager
   ## The ui manager
-  dragProc*: proc()
-  uiScaleMult*: float32 = 1
-  ## scales the ui, ammount of pixels in 1 ui pixel
+  dragProc*: proc(done: bool)
+  uiTransparency*: float32
+
+prOc uiHeight*(): float32 =
+  result = um.size.y
+
+  if result < 300:
+    return 1000
+
+  if result > 1000:
+    result /= floor(result / 1000)
+  else:
+    result *= ceil(1000 / result)
+
+  if result > 1500:
+    result -= 500
 
 proc mouseMove(data: pointer): bool =
   ## processes a mouse move event
-  
+
   # get the event data
   var pos = cast[ptr tuple[x, y: float64]](data)[]
-  
+
+  let
+    uiAspect = um.size.x / um.size.y
+    uiscaledHeight = uiHeight() / um.scale
+    uiSize = newPoint((uiAspect * uiScaledHeight).int, uiScaledHeight.int)
+
+  pos.x /= um.size.x / uiSize.x.float32
+  pos.y /= um.size.y / uiSize.y.float32
+
   # update the ui mouse position
-  um.mousePos = newVector2(pos.x, pos.y) / uiScaleMult
+  um.mousePos = newVector2(pos.x, pos.y)
 
   # run check hover to update ui elements
   for e in um.elements:
-    e.checkHover(newRect(newVector2(0, 0), um.size / uiScaleMult), um.mousePos)
-  
+    e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
+
   # if the mouse is draging something update it
   if dragProc != nil:
-    dragProc()
+    dragProc(false)
 
 proc mouseClick(data: pointer): bool =
   ## processes a click event
-  
+
   # get the event data
-  var btn = cast[ptr int](data)[]
+  let btn = cast[ptr int](data)[]
 
   # stop input if its active
   sendEvent(EVENT_STOP_LINE_ENTER, nil)
 
   # update drag
   for ei in 0..<len um.elements:
-    var e = um.elements[ei]
+    let e = um.elements[ei]
     if e.focused:
       e.click(btn)
       capture e:
-        dragProc = () => e.drag(btn)
+        dragProc = (done: bool) => e.drag(btn, done)
 
 proc mouseRel(data: pointer): bool =
   # update drag to nothing
+  if dragProc != nil:
+    dragProc(true)
   dragProc = nil
 
 proc mouseScroll(data: pointer): bool =
-  var offset = cast[ptr Vector2](data)[]
+  let offset = cast[ptr Vector2](data)[]
 
   for ei in 0..<len um.elements:
-    var e = um.elements[ei]
+    let e = um.elements[ei]
     e.scroll(offset)
 
 proc resizeUI(data: pointer): bool =
   ## resizes the ui to the screen size
- 
+
   # get the event data
-  var size = cast[ptr tuple[x, y: int32]](data)[]
-  um.size = newVector2(size.x.float32, size.y.float32)
+  let size = cast[ptr tuple[x, y: int32]](data)[]
+  if size.x != 0 and size.y != 0:
+    um.size = newVector2(size.x.float32, size.y.float32)
 
 proc initUIManager*(size: Point) =
   ## creates a new UIManager
-  
+
   # set the size
   um.size = newVector2(size.x.float32, size.y.float32)
+  um.scale = 1.0
 
   # attach events
   createListener(EVENT_MOUSE_MOVE, mouseMove)
@@ -107,6 +146,10 @@ proc initUIManager*(size: Point) =
   createListener(EVENT_MOUSE_RELEASE, mouseRel)
   createListener(EVENT_MOUSE_SCROLL, mouseScroll)
   createListener(EVENT_RESIZE, resizeUI)
+
+  glGenFramebuffers(1, addr um.fbo)
+  glGenRenderbuffers(1, addr um.depthTexture);
+  glGenTextures(1, addr um.renderTexture);
 
 proc addUIElement*(e: UIElement) =
   ## adds a single ui element to the ui
@@ -118,37 +161,137 @@ proc addUIElements*(elems: seq[UIElement]) =
 
 proc drawUI*() =
   ## draws the ui
-  
-  # scale the ui if needed
-  if uiScaleMult != 1:
-    finishDraw()
-    scaleBuffer(uiScaleMult)
-    uiSpriteScaleMult = 1 / uiScaleMult
-    uiElemScale = uiScaleMult
-  
+  let
+    uiAspect = um.size.x / um.size.y
+    uiscaledHeight = uiHeight() / um.scale
+    uiSize = newPoint((uiAspect * uiScaledHeight).int, uiScaledHeight.int)
 
-  # draw the ui
+  if uiSize != um.aSize.toPoint() and uiSize.toVector2().distanceSq(newVector2(0, 0)) > 128 * 128:
+    try:
+      glBindFramebuffer(GL_FRAMEBUFFER, um.fbo)
+      glBindTexture(GL_TEXTURE_2D, um.renderTexture)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, uiSize.x.GLsizei,
+                   uiSize.y.GLsizei, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, um.renderTexture, 0)
+
+      glBindRenderbuffer(GL_RENDERBUFFER, um.depthTexture);
+      # glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, uiSize.x.GLsizei,
+      #                        uiSize.y.GLsizei)
+      #glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+      #                           GL_RENDERBUFFER, um.depthTexture)
+
+      if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+        LOG_ERROR "ho->ui", "failed to create ui fb"
+        return
+
+      glBindFramebuffer(GL_FRAMEBUFFER, 0)
+      um.aSize = uiSize.toVector2()
+    except Exception as ex:
+      LOG_ERROR $ex[]
+
+  ## draw the ui
+  finishDraw()
+  glBindFramebuffer(GL_FRAMEBUFFER, um.fbo)
+  setCameraSize(um.aSize.x.int32, um.aSize.y.int32)
+
+  glClearColor(0, 0, 0, 0)
+  glClear(GL_COLOR_BUFFER_BIT)
+
   for e in um.elements:
-    e.draw(newRect(newVector2(0, 0), um.size / uiScaleMult))
+    e.draw(newRect(newVector2(0, 0), um.aSize))
 
-  # reset scale
-  if uiScaleMult != 1:
-    finishDraw()
-    scaleBuffer(1)
-    uiSpriteScaleMult = 1
-    uiElemScale = 1
+  finishDraw()
+  glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+  setCameraSize(um.size.x.int32, um.size.y.int32)
+
+  let tex = Texture(tex: um.renderTexture)
+  tex.draw(newRect(0, 0, 1, 1), newRect(0, 0, um.size.x, um.size.y), flip = [
+      false, true], color = newColor(255, 255, 255, (255 * uiTransparency).uint8))
 
 proc updateUI*(dt: float32) =
   ## processes a ui tick
   for i in 0..<len um.elements:
-    um.elements[i].update(newRect(newVector2(0, 0), um.size / uiScaleMult),
+    um.elements[i].update(newRect(newVector2(0, 0), um.asize),
         um.mousePos, dt)
+  for t in tweens:
+    t.update(dt)
 
 proc setUIActive*(i: int, value: bool) =
   ## sets the ui element at index i to active
-  um.elements[i].active = value
-  for e in um.elements:
-    e.checkHover(newRect(newVector2(0, 0), um.size / uiScaleMult), um.mousePos)
+  if um.elements[i].isActive != value:
+    um.elements[i].active = value
+    for e in um.elements:
+      e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
+    for t in tweens:
+      t.reset()
+
+proc uiNavigate*(dir: UIDir) =
+  case dir:
+    of UIScrollUp:
+      let offset = newVector2(0, -10)
+
+      for ei in 0..<len um.elements:
+        let e = um.elements[ei]
+        e.scroll(offset)
+    of UIScrollDown:
+      let offset = newVector2(0, 10)
+
+      for ei in 0..<len um.elements:
+        let e = um.elements[ei]
+        e.scroll(offset)
+    of UISelect:
+      for e in um.elements:
+        if not e.isActive: continue
+
+        if e.focused:
+          e.click(1)
+          return
+    of UINext:
+      var focusNext = false
+
+      for e in um.elements:
+        if not e.isActive: continue
+
+        if focusNext:
+          if e.focusable():
+            e.focus(true)
+            return
+        if e.navigate(dir):
+          if e.focused: return
+          focusNext = true
+
+      for e in um.elements:
+        if not e.isActive: continue
+
+        if e.focusable():
+          e.focus(true)
+          return
+
+    of UIPrev:
+      var focusNext = false
+
+      for e in um.elements.reversed():
+        if not e.isActive: continue
+
+        if focusNext:
+          if e.focusable():
+            e.focus(true)
+            return
+        if e.navigate(dir):
+          if e.focused: return
+          focusNext = true
+
+      for e in um.elements.reversed():
+        if not e.isActive: continue
+
+        if e.focusable():
+          e.focus(true)
+          return
+    else:
+      discard
 
 proc isDashNode(n: NimNode): bool =
   n.kind == nnkPrefix and $n[0] == "-"
@@ -193,4 +336,3 @@ proc uiAux(outName, body: NimNode): NimNode =
 macro createUIElems*(name: untyped, body: untyped): untyped =
   ## creates a ui system stores the result into a seq[UIElement] in name
   uiAux(name, body)
-

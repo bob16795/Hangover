@@ -35,6 +35,7 @@ proc draw*(sprite: Sprite,
            rotation: float32 = 0,
            color: Color = newColor(255, 255, 255),
            layer: range[0..500] = 0,
+           shader: ptr Shader = nil,
            params: seq[TextureParam] = @[]) =
   ## draws a sprite at `target`
 
@@ -47,7 +48,7 @@ proc draw*(sprite: Sprite,
   
   # draw
   sprite.texture.draw(sprite.sourceBounds, newRect(target.location,
-                        trgSize), shader = sprite.shader, color = color, rotation = rotation, layer = 0, params = params)
+                        trgSize), shader = if shader == nil: sprite.shader else: shader, color = color, rotation = rotation, layer = 0, params = params)
 
 proc draw*(sprite: Sprite, position: Vector2, rotation: float32,
     size: Vector2 = newVector2(0, 0), c: Color = newColor(255, 255, 255, 255)) {.deprecated: "Use targetRect instead".} =

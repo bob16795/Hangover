@@ -24,7 +24,7 @@ component UIComponent:
     this.mousePos = newVector2(pos.x, pos.y)
     this.element.checkHover(newRect(rect.position, rect.size), this.mousePos)
     if this.drag != nil:
-      this.drag.drag(this.last)
+      this.drag.drag(this.last, true)
 
   proc eventMouseClick(btn: int): bool =
     this.last = btn

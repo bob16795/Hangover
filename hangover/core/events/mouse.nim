@@ -13,13 +13,13 @@ when not defined(ginGLFM):
     sendEvent(EVENT_MOUSE_MOVE, addr pos)
   
   proc mouseButtonCb*(win: Window, button: MouseButton, action: bool, mods: set[ModifierKey]) =
-    var btn = ord(button)
+    let btn = ord(button)
     if action:
       sendEvent(EVENT_MOUSE_CLICK, addr btn)
     else:
       sendEvent(EVENT_MOUSE_RELEASE, addr btn)
 
   proc mouseScrollCb*(win: Window, res: tuple[x, y: float64]) =
-    var offset = newVector2(res.x, res.y)
+    let offset = newVector2(res.x, res.y)
 
     sendEvent(EVENT_MOUSE_SCROLL, addr offset)

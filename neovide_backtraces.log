@@ -1,0 +1,250 @@
+2023-11-22 12:04:24 - Neovide panicked with the message 'Focus Lost Failed: NeovimError(Some(0), "BufWinLeave Autocommands for \"<buffer=1>\": Vim(append):Error executing lua callback: ...site/pack/packer/start/barbar.nvim/lua/barbar/events.lua:224: attempt to index a nil value\nstack traceback:\n\t...site/pack/packer/start/barbar.nvim/lua/barbar/events.lua:224: in function <...site/pack/packer/start/barbar.nvim/lua/barbar/events.lua:223>")'. (File: src/bridge/ui_commands.rs; Line: 144, Column: 18)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-11-22 12:04:24 - Neovide panicked with the message 'Mouse Input Failed: SendError(WriterError(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }), "nvim_input_mouse")'. (File: src/bridge/ui_commands.rs; Line: 69, Column: 18)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-11-22 12:04:24 - Neovide panicked with the message 'Could not setup setting notifier for refresh_rate_idle: Error sending request 'nvim_command''. (File: src/error_handling.rs; Line: 5, Column: 5)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-11-22 12:04:24 - Neovide panicked with the message 'called `Result::unwrap()` on an `Err` value: SendError { .. }'. (File: src/event_aggregator.rs; Line: 51, Column: 28)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: __libc_start_main
+  19: <unknown>
+
+2023-12-12 17:54:23 - Neovide panicked with the message 'Mouse Input Failed: SendError(WriterError(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }), "nvim_input_mouse")'. (File: src/bridge/ui_commands.rs; Line: 71, Column: 18)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-12-15 18:20:52 - Neovide panicked with the message 'Could not setup setting notifier for debug_renderer: Error sending request 'nvim_command''. (File: src/error_handling.rs; Line: 5, Column: 5)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-12-15 18:20:52 - Neovide panicked with the message 'Mouse Input Failed: SendError(WriterError(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }), "nvim_input_mouse")'. (File: src/bridge/ui_commands.rs; Line: 71, Column: 18)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-12-15 18:20:52 - Neovide panicked with the message 'called `Result::unwrap()` on an `Err` value: SendError { .. }'. (File: src/event_aggregator.rs; Line: 51, Column: 28)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: __libc_start_main
+  19: <unknown>
+
+2023-12-18 17:31:59 - Neovide panicked with the message 'Could not setup setting notifier for remember_window_position: Error sending request 'nvim_command''. (File: src/error_handling.rs; Line: 5, Column: 5)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-12-18 17:31:59 - Neovide panicked with the message 'called `Result::unwrap()` on an `Err` value: SendError { .. }'. (File: src/event_aggregator.rs; Line: 51, Column: 28)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: __libc_start_main
+  19: <unknown>
+
+2023-12-18 18:15:24 - Neovide panicked with the message 'Focus Lost Failed: NeovimError(Some(0), "BufWinLeave Autocommands for \"<buffer=1>\": Vim(append):Error executing lua callback: ...site/pack/packer/start/barbar.nvim/lua/barbar/events.lua:224: attempt to index a nil value\nstack traceback:\n\t...site/pack/packer/start/barbar.nvim/lua/barbar/events.lua:224: in function <...site/pack/packer/start/barbar.nvim/lua/barbar/events.lua:223>")'. (File: src/bridge/ui_commands.rs; Line: 149, Column: 18)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-12-18 18:16:34 - Neovide panicked with the message 'Could not setup setting notifier for floating_blur: Error sending request 'nvim_command''. (File: src/error_handling.rs; Line: 5, Column: 5)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+
+2023-12-18 18:18:32 - Neovide panicked with the message 'called `Result::unwrap()` on an `Err` value: SendError { .. }'. (File: src/event_aggregator.rs; Line: 51, Column: 28)
+   0: <unknown>
+   1: <unknown>
+   2: <unknown>
+   3: <unknown>
+   4: <unknown>
+   5: <unknown>
+   6: <unknown>
+   7: <unknown>
+   8: <unknown>
+   9: <unknown>
+  10: <unknown>
+  11: <unknown>
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: __libc_start_main
+  19: <unknown>
+

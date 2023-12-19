@@ -24,18 +24,15 @@ when not defined(ginGLFM):
         sendEvent(EVENT_LINE_ENTER, addr lineText)
     case action:
     of kaDown:
-      var k = key
+      let k = key
       sendEvent(EVENT_PRESS_KEY, addr k)
     of kaUp:
-      var k = key
+      let k = key
       sendEvent(EVENT_RELEASE_KEY, addr k)
     else:
       discard
   
   proc charCb*(win: Window, r: Rune) =
-    if lineInput == false or not lineInputNew:
-      lineInputNew = lineInput
-      return
     lineText &= $r
     sendEvent(EVENT_LINE_ENTER, addr lineText)
   

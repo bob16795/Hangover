@@ -8,19 +8,28 @@ import vector2
 import texture
 import rect
 import hangover/core/logging
+import unicode
+import tables
+import hangover/rendering/sprite
 
 # TODO: comment
+
+const FONT_TEX_SIZE = 256
 
 type
   Font* = object
     face: FT_Face
-    texture*: GLuint
     size*: int
-    characters: array[0..128, Character]
+    textures*: seq[Texture]
+    characters: Table[Rune, Character]
     spacing: int
     border*: float32
+    emojis*: Table[Rune, Sprite]
+    lastRune*: Rune
   Character* = object
+    tex: int
     tx: GLfloat
+    ty: GLfloat
     tw: GLfloat
     th: GLfloat
     bearing: Point
@@ -82,49 +91,55 @@ template `+`(p: pointer, off: int): pointer =
 
 proc finFont*(f: Font, size: int): Font =
   result = f
+
   discard FT_Set_Pixel_Sizes(result.face, 0, size.cuint)
 
   template g: untyped = result.face.glyph
 
-  var atlasSize = newPoint(0, 0)
-  for c in 0..<128:
-    if FT_Load_Char(result.face, c.culong, FT_LOAD_RENDER).int != 0:
-      #LOG_WARN("ho->font", "Failed to load glyph `", c, "`")
-      continue
-    atlasSize.x += g.bitmap.width.cint + 1
-    atlasSize.y = max(atlasSize.y, g.bitmap.rows.cint)
-  
   glActiveTexture(GL_TEXTURE0)
-  glGenTextures(1, addr result.texture)
-  glBindTexture(GL_TEXTURE_2D, result.texture)
-  #glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE.GLint)
-  #glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE.GLint)
-  when not defined(fontaa):
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST.GLint)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
-  else:
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR.GLint)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR.GLint)
-  
+
+  result.textures &= newTexture(newVector2(FONT_TEX_SIZE, FONT_TEX_SIZE))
+  glBindTexture(GL_TEXTURE_2D, result.textures[^1].tex)
+
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
   glPixelStorei(GL_PACK_ALIGNMENT, 1)
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, atlasSize.x.GLsizei,
-      atlasSize.y.GLsizei, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
+  var ax = 0
+  var ay = 0
+  var rowHeight = 0
 
-  result.size = atlasSize.y
-
-  var x: cuint
-
-  for c in 0..<128:
+  for c in 0..<2560:
+    if FT_Get_Char_Index(result.face, c.culong) == 0:
+      continue
     if FT_Load_Char(result.face, c.culong, FT_LOAD_RENDER).int != 0:
       continue
+    var
+      x = ax
+      y = ay
     if g.bitmap.width != 0 and g.bitmap.rows != 0:
+      ax += g.bitmap.width.int + 1
+      if ax >= FONT_TEX_SIZE:
+        x = 0
+        ax = g.bitmap.width.int + 1
+        ay += rowHeight
+        rowHeight = g.bitmap.rows.int + 1
+      if ay + g.bitmap.rows.int + 1 >= FONT_TEX_SIZE:
+        y = 0
+        ay = 0
+
+        result.textures &= newTexture(newVector2(FONT_TEX_SIZE, FONT_TEX_SIZE))
+        glBindTexture(GL_TEXTURE_2D, result.textures[^1].tex)
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glPixelStorei(GL_PACK_ALIGNMENT, 1)
+      rowHeight = max(rowHeight, g.bitmap.rows.int + 1)
+      result.size = max(result.size, g.bitmap.rows.int)
+
       var tmpBuffer: seq[uint8]
       var idx: int = 0
       for x in 0..g.bitmap.width:
         for y in 0..g.bitmap.rows:
-          var d = cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
+          let d = cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
           when not defined(fontaa):
             if d > 128:
               tmpBuffer &= 255
@@ -137,75 +152,117 @@ proc finFont*(f: Font, size: int): Font =
           tmpBuffer &= 0
           idx += 1
 
-      glTexSubImage2D(GL_TEXTURE_2D, 0, x.GLint, 0, g.bitmap.width.GLsizei,
+      glTexSubImage2D(GL_TEXTURE_2D, 0, x.GLint, y.GLint, g.bitmap.width.GLsizei,
           g.bitmap.rows.GLsizei, GL_RGBA, GL_UNSIGNED_BYTE, addr tmpBuffer[0])
 
-    result.characters[c.int] = Character(
+    result.characters[c.Rune] = Character(
       size: newPoint(result.face.glyph.bitmap.width.cint,
           result.face.glyph.bitmap.rows.cint),
       bearing: newPoint(result.face.glyph.bitmap_left,
           result.face.glyph.bitmap_top),
       advance: result.face.glyph.advance.x,
+      tex: result.textures.len - 1,
       ay: result.face.glyph.advance.y,
-      tx: x.float32 / atlasSize.x.float32,
-      tw: g.bitmap.width.float32 / atlasSize.x.float32,
-      th: g.bitmap.rows.float32 / atlasSize.y.float32,
+      tx: x.float32 / FONT_TEX_SIZE.float32,
+      ty: y.float32 / FONT_TEX_SIZE.float32,
+      tw: g.bitmap.width.float32 / FONT_TEX_SIZE.float32,
+      th: g.bitmap.rows.float32 / FONT_TEX_SIZE.float32,
     )
-    x += g.bitmap.width + 1
-  glBindTexture(GL_TEXTURE_2D, 0)
+
+  result.lastRune = 65535.Rune
+
   discard FT_Done_Face(result.face)
+
+  for t in result.textures:
+    glBindTexture(GL_TEXTURE_2D, t.tex)
+    # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP.GLint)
+    # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP.GLint)
+    # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR.GLint)
+    # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+    
+    glGenerateMipmap(GL_TEXTURE_2D)
+    
 
 proc newFontMem*(data: cstring, dataSize: int64, size: int, spacing: int = 0): Font =
   if FT_New_Memory_Face(ft, data, cast[FT_Long](dataSize), 0, result.face).int != 0:
     LOG_ERROR("ho->font", "Failed to load font")
     quit(2)
-  LOG_DEBUG("ho->font", "Loaded font")
   result = finFont(result, size)
   result.spacing = spacing
+
+  LOG_DEBUG("ho->font", "Loaded font", result.textures.len , "Textures")
 
 proc newFont*(face: string, size: int, spacing: int = 0): Font =
   if FT_New_Face(ft, face, 0, result.face).int != 0:
     LOG_ERROR("ho->font", "Failed to load font")
     quit(2)
-  LOG_DEBUG("ho->font", "Loaded font")
   result = finFont(result, size)
   result.spacing = spacing
-
+  
+  LOG_DEBUG("ho->font", "Loaded font", result.textures.len , "Textures")
 
 proc draw*(font: Font, text: string, position: Vector2, color: Color, scale: float32 = 1, layer: range[0..500] = 0) =
   var pos = position
 
   var srect = newRect(0, 0, 1, 1)
-  for c in text:
-    if not font.characters.len > c.int: continue
-    var
-      ch = font.characters[c.int]
+  for c in text.runes:
+    if c in font.emojis:
+      let
+        ch = font.emojis[c.Rune]
+        w = (font.size.float32 * 0.8) * scale
+        h = (font.size.float32 * 0.8) * scale
+        xpos = pos.x + font.size.float32 * 0.1 * scale
+        ypos = pos.y + font.size.float32 * 0.1 * scale 
+
+      ch.draw(newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border,
+          h.float32 + 2 * font.border), layer = layer)
+      pos.x += font.size.float32 * scale
+      pos.x += font.spacing.float32 + (2 * font.border)
+
+      continue
+
+    if c notin font.characters: continue
+    let
+      ch = font.characters[c.Rune]
       w = (ch.size.x.float32 * scale)
       h = (ch.size.y.float32 * scale)
       xpos = pos.x + (ch.bearing.x).float32 * scale
       ypos = pos.y - (ch.bearing.y).float32 * scale + font.size.float32 * scale
     srect.x = ch.tx
+    srect.y = ch.ty
     srect.width = ch.tw
     srect.height = ch.th
 
     # render texture
-    var tex = Texture(tex: font.texture)
+    let
+      tex = font.textures[ch.tex]
     tex.draw(srect, newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border,
         h.float32 + 2 * font.border), addr fontProgram, color, layer = layer)
     pos.x += ((ch.advance shr 6).float32 * scale)
     pos.x += font.spacing.float32 + (2 * font.border)
+
+proc addEmoji*(font: var Font, sprite: Sprite): string =
+  result = $font.lastRune
+
+  font.emojis[font.lastRune] = sprite
+
+  font.lastRune = Rune(font.lastRune.int + 1)
 
 proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1, layer: range[0..500] = 0) {.deprecated.} =
   font.draw(text, position.toVector2(), color, scale, layer)
 
 proc sizeText*(font: Font, text: string, scale: float32 = 1): Vector2 =
   var ypos: float32 = 0 
-  for c in text:
-    if not font.characters.len > c.int: continue
-    var
-      ch = font.characters[c.int]
+  for c in text.runes:
+    if c in font.emojis:
+      result.x += font.size.float32 * scale
+      result.x += font.spacing.float32 + (2 * font.border)
+      continue
+
+    if c notin font.characters: continue
+    let ch = font.characters[c.Rune]
     ypos = (ch.bearing.y).float32 * scale
-    var height = ypos + ch.size.y.float32 * scale
+    let height = ypos + ch.size.y.float32 * scale
     result.x += ((ch.advance shr 6).float32 * scale)
     result.x += font.spacing.float32 + (2 * font.border).float32
     if height > result.y:

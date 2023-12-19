@@ -12,7 +12,7 @@ proc newSoundMem*(s: Stream): Sound =
   ## creates a new sound from a stream
 
   # read the wav file
-  var wav = readWav(s)
+  let wav = readWav(s)
   s.close()
 
   # create a buffer and add data
@@ -25,7 +25,7 @@ proc newSound*(file: string): Sound =
   ## creates a sound from file
   
   # create a stream
-  var s = newFileStream(file)
+  let s = newFileStream(file)
 
   # get data
   result = newSoundMem(s)

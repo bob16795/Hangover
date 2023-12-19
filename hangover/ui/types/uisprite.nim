@@ -14,13 +14,13 @@ import hangover/core/logging
 ## d | e | f
 ## --+---+--
 ## g | h | i
-## 
+##
 ## refered to later
 
 type
   UIFillMode* = enum
     FM_STRETCH ## fast, stretches the element to 9 quads
-    FM_TILE ## slow, repeats sprites to make the element cleaner
+    FM_TILE    ## slow, repeats sprites to make the element cleaner
   UISprite* = object of Sprite
     ## a ui sprite, renders in 8 elements
     renderSecs: array[0..2, array[0..2, Rect]]
@@ -31,18 +31,19 @@ type
 
 var
   uiSpriteScaleMult*: float32 = 1
+  uiScaleMult*: float32 = 1
   ## used to scale all uisprites further
 
 proc setCenter(sprite: var UISprite, center: Rect) =
   ## sets the center of the sprite
-  
+
   # set the center rect
   sprite.center = center
 
   # setup renderSecs
   for i in 0..2:
     # x and width
-    
+
     # x of a, d, and g
     sprite.renderSecs[0][i].x = sprite.sourceBounds.x
     # width of a, d, and g
@@ -78,7 +79,7 @@ proc setCenter(sprite: var UISprite, center: Rect) =
 proc newUISprite*(texture: Texture, sourceBounds,
         center: Rect): UISprite =
   ## creates a ui Sprite
-  
+
   # sets the texture
   result.texture = texture
 
@@ -104,11 +105,12 @@ proc scale*(sprite: UISprite, scale: Vector2): UISprite =
   result.scale = scale
 
 # TODO: round better
-proc drawSec(sprite: var UISprite, src: Point, dest: var Rect, c: Color, layer: range[0..500]) =
+proc drawSec(sprite: var UISprite, src: Point, dest: var Rect, c: Color,
+    layer: range[0..500]) =
   ## renders a section of sprite
-  
+
   # get the source bounds
-  var renderSec = sprite.renderSecs[src.x][src.y]
+  let renderSec = sprite.renderSecs[src.x][src.y]
 
   # get the dest
   var dest = dest.offset(newVector2(-1, -1))
@@ -124,24 +126,24 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
 
   # too small to draw a ui sprite
   var minSize = (sprite.sourceBounds.size - sprite.center.size)
-  minSize.x *= sprite.scale.x# * uiSpriteScaleMult
-  minSize.y *= sprite.scale.y# * uiSpriteScaleMult
+  minSize.x *= sprite.scale.x # * uiSpriteScaleMult
+  minSize.y *= sprite.scale.y # * uiSpriteScaleMult
   if renderRect.width <= minSize.x or renderRect.height <= minSize.y:
-    LOG_DEBUG("ho->uisprite", "bad size drawing normal")
-    sprite.draw(renderRect, 0, color = c, layer = layer)
+    #LOG_DEBUG("ho->uisprite", "bad size drawing normal")
+    #sprite.draw(renderRect, 0, color = c, layer = layer)
     return
-  
+
   # no center defined
   if sprite.center.width == 0 or sprite.center.height == 0:
     LOG_WARN("ho->uisprite", "no center defined not drawing sprite")
     return
-  
+
   # init vars for drawing
   var
-    destRect: Rect # a temp destination rect
-    tempDest: Rect # stores render rect for modifing TODO: remove
+    destRect: Rect     # a temp destination rect
+    tempDest: Rect     # stores render rect for modifing TODO: remove
     sideSizes: Vector2 # the size of the source rect minus the size of the center
-    aSize: Vector2 # the size of the a segment
+    aSize: Vector2     # the size of the a segment
 
   # setup vars for drawing
   tempDest = newRect(
@@ -151,9 +153,11 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
     renderRect.height.float32,
   )
 
-  sideSizes.x = (sprite.renderSecs[0][0].size + sprite.renderSecs[2][2].size).x * sprite.scale.x * uiSpriteScaleMult
-  sideSizes.y = (sprite.renderSecs[0][0].size + sprite.renderSecs[2][2].size).y * sprite.scale.y * uiSpriteScaleMult
-  
+  sideSizes.x = (sprite.renderSecs[0][0].size + sprite.renderSecs[2][
+      2].size).x * sprite.scale.x * uiSpriteScaleMult
+  sideSizes.y = (sprite.renderSecs[0][0].size + sprite.renderSecs[2][
+      2].size).y * sprite.scale.y * uiSpriteScaleMult
+
   aSize.x = sprite.renderSecs[0][0].size.x * sprite.scale.x * uiSpriteScaleMult
   aSize.y = sprite.renderSecs[0][0].size.y * sprite.scale.y * uiSpriteScaleMult
 
@@ -163,7 +167,7 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
   sprite.drawSec(newPoint(0, 0), destRect, c, layer)
-  
+
   # draw segment b
   destRect = sprite.renderSecs[1][0]
   destRect.location = newVector2(tempDest.x + aSize.x, tempDest.y)
@@ -213,8 +217,8 @@ proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
   # draw segment h
   destRect = sprite.renderSecs[2][2]
   destRect.location = newVector2((tempDest.x + tempDest.width) - sprite.renderSecs[2][
-          0].width * sprite.scale.x * uiSpriteScaleMult, (tempDest.y + tempDest.height) -
-              sprite.renderSecs[0][
+          0].width * sprite.scale.x * uiSpriteScaleMult, (tempDest.y +
+              tempDest.height) - sprite.renderSecs[0][
           2].height * sprite.scale.y * uiSpriteScaleMult)
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
