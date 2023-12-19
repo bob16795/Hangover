@@ -46,12 +46,63 @@ out vec4 color;
 
 uniform sampler2D text;
 
+const int mode = 3;
+const float intensity = 1.0;
+const float contrast = 1.0;
+
 void main()
 {
-    vec4 texel = tintColor * texture(text, texCoords);
-    if (texel.a < 0.5)
-        discard;
-    color = texel;
+    vec4 tex = tintColor * texture(text, texCoords);
+
+    float L = (17.8824 * tex.r) + (43.5161 * tex.g) + (4.11935 * tex.b);
+	float M = (3.45565 * tex.r) + (27.1554 * tex.g) + (3.86714 * tex.b);
+	float S = (0.0299566 * tex.r) + (0.184309 * tex.g) + (1.46709 * tex.b);
+
+    float l, m, s;
+    if (mode == 0) //Protanopia
+	{
+		l = 0.0 * L + 2.02344 * M + -2.52581 * S;
+		m = 0.0 * L + 1.0 * M + 0.0 * S;
+		s = 0.0 * L + 0.0 * M + 1.0 * S;
+	}
+    if (mode == 1) //Deuteranopia
+	{
+		l = 1.0 * L + 0.0 * M + 0.0 * S;
+    	m = 0.494207 * L + 0.0 * M + 1.24827 * S;
+    	s = 0.0 * L + 0.0 * M + 1.0 * S;
+	}
+	
+	if (mode == 2) //Tritanopia
+	{
+		l = 1.0 * L + 0.0 * M + 0.0 * S;
+    	m = 0.0 * L + 1.0 * M + 0.0 * S;
+    	s = -0.395913 * L + 0.801109 * M + 0.0 * S;
+	}
+
+    if (mode == 3) //Normal
+    {
+        l = L;
+        m = M;
+        s = S;
+    }
+
+    
+	vec4 error;
+	error.r = (0.0809444479 * l) + (-0.130504409 * m) + (0.116721066 * s);
+	error.g = (-0.0102485335 * l) + (0.0540193266 * m) + (-0.113614708 * s);
+	error.b = (-0.000365296938 * l) + (-0.00412161469 * m) + (0.693511405 * s);
+	error.a = 1.0;
+	vec4 diff = tex - error;
+	vec4 correction;
+	correction.r = 0.0;
+	correction.g =  (diff.r * 0.7) + (diff.g * 1.0);
+	correction.b =  (diff.r * 0.7) + (diff.b * 1.0);
+	correction = tex + correction;
+	correction.a = tex.a * intensity;
+
+	color = correction;
+    
+    //color = pow(abs(color * 2 - 1), vec4(1 / max(contrast, 0.0001))) * sign(color - 0.5) + 0.5;
 }
 """
 
@@ -64,10 +115,11 @@ type
   QueueEntry = object
     update: bool
     shader: Shader
-    texture: Texture
+    id: GLuint
     verts: seq[Vert]
     layer: range[0..500]
     params: seq[TextureParam]
+    scissor: Rect
 
 var
   textureProgram*: Shader
@@ -75,11 +127,13 @@ var
   queue: seq[QueueEntry]
   pqueue: seq[Hash]
   buffers: seq[GLUint]
+  textureScissor*: Rect
+  size*: Vector2
 
 proc hash(entry: QueueEntry): Hash =
   var h: Hash = 0
   h = h !& hash(entry.shader.id)
-  h = h !& hash(entry.texture.tex)
+  h = h !& hash(entry.id)
   h = h !& hash(entry.layer)
   for v in entry.verts:
     h = h !& hash(v)
@@ -87,7 +141,7 @@ proc hash(entry: QueueEntry): Hash =
   result = !$h
 
 proc rotated(pos: Vector2, center: Vector2, rotation: float32): Vector2 =
-  var
+  let
     p = pos - center
     s = sin(rotation)
     c = cos(rotation)
@@ -96,10 +150,11 @@ proc rotated(pos: Vector2, center: Vector2, rotation: float32): Vector2 =
 
 
 proc rotated(v: Vert, rotation: float32): Vert {.inline.} =
-  var center = newVector2((v[8] + v[10]) / 2, (v[9] + v[11]) / 2)
-  var pos1 = newvector2(v[0], v[1]).rotated(center, rotation)
-  var pos2 = newvector2(v[8], v[9]).rotated(center, rotation)
-  var pos3 = newvector2(v[10], v[11]).rotated(center, rotation)
+  let
+    center = newVector2((v[8] + v[10]) / 2, (v[9] + v[11]) / 2)
+    pos1 = newvector2(v[0], v[1]).rotated(center, rotation)
+    pos2 = newvector2(v[8], v[9]).rotated(center, rotation)
+    pos3 = newvector2(v[10], v[11]).rotated(center, rotation)
 
   result = v
   result[0] = pos1.x
@@ -109,14 +164,21 @@ proc rotated(v: Vert, rotation: float32): Vert {.inline.} =
   result[10] = pos3.x
   result[11] = pos3.y
 
-template verts(ds, de: Vector2, ss, se: Vector2, c: Color, rotation: float32): untyped =
+template verts(ds, de: Vector2, ss, se: Vector2, c: Color,
+    rotation: float32): untyped =
   @[
-    rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
-    rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
-    rotated([de.x, ds.y, se.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
-    rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
-    rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
-    rotated([ds.x, de.y, ss.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x, de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
+        de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
+        de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([de.x, ds.y, se.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
+        de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
+        de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
+        de.y, ss.x, ss.y, se.x, se.y], rotation),
+    rotated([ds.x, de.y, ss.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
+        de.y, ss.x, ss.y, se.x, se.y], rotation),
   ]
 
 proc addVBO*() =
@@ -126,10 +188,10 @@ proc addVBO*() =
 
 proc setVBOS*(count: int) =
   ## set the number of vbos
-  if count < len(buffers):
-    glDeleteBuffers((len(buffers) - count).GLsizei, addr buffers[count])
-    buffers = buffers[0..<count]
-  elif count > len(buffers):
+  # if count < len(buffers):
+  #   glDeleteBuffers((len(buffers) - count).GLsizei, addr buffers[count])
+  #   buffers = buffers[0..<count]
+  if count > len(buffers):
     while count > len(buffers):
       addVBO()
 
@@ -143,10 +205,10 @@ proc setupTexture*() =
 
 proc newTexture*(size: Vector2): Texture =
   ## creates a new texture with size
-  
+
   # create a texture
   result = Texture()
-  
+
   # generate the texture
   glGenTextures(1, addr result.tex)
   glBindTexture(GL_TEXTURE_2D, result.tex)
@@ -167,7 +229,7 @@ proc newTexture*(size: Vector2): Texture =
 
 proc newTextureMem*(image: pointer, imageSize: cint): Texture =
   ## creates a new texture from a pointer
-  
+
   # create a texture
   result = Texture()
 
@@ -178,14 +240,14 @@ proc newTextureMem*(image: pointer, imageSize: cint): Texture =
   # set the texture wrapping/filtering options
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-      GL_NEAREST.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR.GLint)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
 
   # load the texture
   var
     width, height, channels: cint
-    data: pointer = stbi_load_from_memory(cast[ptr char](image), imageSize, width, height, channels, 4)
+    data: pointer = stbi_load_from_memory(cast[ptr char](image), imageSize,
+        width, height, channels, 4)
   if data == nil:
     LOG_CRITICAL("ho->texture", "failed to load image")
     quit(2)
@@ -202,7 +264,7 @@ proc newTextureMem*(image: pointer, imageSize: cint): Texture =
 
 proc newTexture*(image: string): Texture =
   ## creates a new texture from a file
-  
+
   # create the textyre
   result = Texture()
 
@@ -213,8 +275,7 @@ proc newTexture*(image: string): Texture =
   # set the texture wrapping/filtering options
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-      GL_NEAREST.GLint)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR.GLint)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
 
   # load the texture
@@ -230,7 +291,7 @@ proc newTexture*(image: string): Texture =
 
   # cleanup
   stbi_image_free(data)
-  
+
   # set the size
   result.size = newVector2(width.float32, height.float32)
   LOG_DEBUG("ho->texture", "Loaded texture")
@@ -248,9 +309,9 @@ method draw*(texture: Texture,
              color = newColor(255, 255, 255, 255),
              rotation: float = 0,
              layer: range[0..500] = 0,
-             params: seq[TextureParam] = @[]) =
+             params: seq[TextureParam] = @[],
+             flip: array[2, bool] = [false, false]) =
   ## draws a texture
-  
   # check the program
   var program = shader
   if program == nil:
@@ -258,9 +319,16 @@ method draw*(texture: Texture,
 
   # calc the dest rectangle
   var dst = dstRect.offset(-1 * textureOffset)
+    
+  if flip[1]:
+    dst.y = dst.y + dst.height
+    dst.height = dst.height * - 1
+  if flip[0]:
+    dst.x = dst.x + dst.width
+    dst.width = dst.width * - 1
 
   # get the verts for the new rect
-  var vertices = verts(dst.location, dst.location + dst.size,
+  let vertices = verts(dst.location, dst.location + dst.size,
       srcRect.location, srcRect.location + srcRect.size, color, rotation)
 
   # if the queue is empty create it
@@ -268,46 +336,50 @@ method draw*(texture: Texture,
     queue &= QueueEntry(
       update: true,
       shader: program[],
-      texture: texture,
+      id: texture.tex,
       verts: vertices,
       layer: layer,
-      params: params
+      params: params,
+      scissor: textureScissor
     )
-  
+
   # attempt to add to the last queue item
   elif layer == queue[^1].layer and
-       texture.tex == queue[^1].texture.tex and
+       texture.tex == queue[^1].id and
        program[].id == queue[^1].shader.id and
-       params == queue[^1].params:
+       params == queue[^1].params and
+       textureScissor == queue[^1].scissor:
     queue[^1].verts &= vertices
-  
+
   # create a new queue item
   else:
     queue &= QueueEntry(
       update: true,
       shader: program[],
-      texture: texture,
+      id: texture.tex,
       verts: vertices,
       layer: layer,
-      params: params
+      params: params,
+      scissor: textureScissor
     )
 
 proc finishDraw*() =
   ## renders the texture queue
-    
+
   # gets the current program to reset later
   var startProg: GLint
   glGetIntegerv(GL_CURRENT_PROGRAM, addr startProg)
 
   # checks what items to redraw
-  if queue != @[]:
-    for i in 0..<len(queue):
-      if pqueue.len() > i and hash(queue[i]) == pqueue[i]: queue[i].update = false
+  #if queue != @[]:
+  #  for i in 0..<len(queue):
+  #    if pqueue.len() > i and hash(queue[i]) == pqueue[i]: queue[
+  #        i].update = false
 
   # set gl options
   glEnable(GL_BLEND)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-  
+
   # set texture
   glActiveTexture(GL_TEXTURE0)
 
@@ -319,6 +391,8 @@ proc finishDraw*() =
     # get the queue data
     var
       q = queue[i]
+
+    let
       layer: float32 = q.layer.float32
       vertices = q.verts
 
@@ -327,9 +401,19 @@ proc finishDraw*() =
     q.shader.setParam("layer", addr layer)
     for param in q.params:
       q.shader.setParam(param.name, param.data)
-  
+
+    if q.scissor.size.x == 0 or q.scissor.size.y == 0:
+      glDisable(GL_SCISSOR_TEST)
+    else:
+      glEnable(GL_SCISSOR_TEST)
+
+      glScissor(q.scissor.location.x.GLint,
+          size.y.GLint - (q.scissor.location.y.GLint + q.scissor.size.y.GLint),
+          q.scissor.size.x.GLint,
+          q.scissor.size.y.GLint)
+
     # bind the queue items texture
-    glBindTexture(GL_TEXTURE_2D, q.texture.tex)
+    glBindTexture(GL_TEXTURE_2D, q.id)
     glBindBuffer(GL_ARRAY_BUFFER, buffers[i])
 
     # update VBO
@@ -361,17 +445,18 @@ proc finishDraw*() =
 
   # unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0)
-  
+
   # reset shader
   glUseProgram(startProg.GLuint)
 
   # update pqueue
-  pqueue = @[]
-  for qe in queue:
-    pqueue &= hash(qe)
+  #pqueue = @[]
+  #for qe in queue:
+  #  pqueue &= hash(qe)
 
   # reset queue
   queue = @[]
+  textureScissor = Rect()
 
 proc isDefined*(texture: Texture): bool =
   ## check if a texture is defined

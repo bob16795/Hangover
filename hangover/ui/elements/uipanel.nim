@@ -29,11 +29,11 @@ method checkHover*(p: UIPanel, parentRect: Rect, mousePos: Vector2) =
 method draw*(p: UIPanel, parentRect: Rect) =
   if not p.isActive:
     return
-  var bounds = p.bounds.toRect(parentRect)
+  let bounds = p.bounds.toRect(parentRect)
   p.texture.draw(bounds, c = p.color)
 
 method update*(p: UIPanel, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not p.isActive:
     return
-  var bounds = p.bounds.toRect(parentRect)
+  let bounds = p.bounds.toRect(parentRect)

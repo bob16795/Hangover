@@ -1,9 +1,6 @@
 import hangover/core/types/vector2
-import hangover/core/types/point
-import hangover/core/types/color
 import hangover/core/types/rect
 import hangover/core/types/font
-import hangover/core/logging
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
 import sugar
@@ -20,6 +17,7 @@ type
     barSize*: float
     tmpVal: float
     update*: (v: float) -> void
+    release*: (v: float) -> void
     scrollSensitivity*: float
 
 method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2) =
@@ -79,10 +77,13 @@ method update*(s: UISlider, parentRect: Rect, mousePos: Vector2,
 
   var bounds = s.bounds.toRect(parentRect)
 
-method drag*(e: UISlider, button: int) =
+method drag*(e: UISlider, button: int, done: bool) =
   e.value = e.tmpVal
   if e.update != nil:
     e.update(e.value)
+  if done:
+    if e.release != nil:
+      e.release(e.value)
 
 method scroll*(e: UISlider, offset: Vector2) =
   if e.vertical:

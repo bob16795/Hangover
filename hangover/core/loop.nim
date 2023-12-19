@@ -64,12 +64,12 @@ proc update*(loop: var Loop, ctx: var GraphicsContext) =
     loop.currentTime = glfw.getTime()
   when defined(hangui) or defined(ginGLFM):
     loop.currentTime = cpuTime()
-  var delayed: bool
   if loop.lastTime != 0:
     loop.dt = loop.currentTime - loop.lastTime
+  loop.dt = clamp(loop.dt, 0, 1)
 
   # update the game
-  if loop.updateproc(loop.dt, delayed):
+  if loop.updateproc(loop.dt, false):
     loop.done = true
   
   # render the game
@@ -83,13 +83,12 @@ proc update*(loop: var Loop, ctx: var GraphicsContext, time: cdouble) =
     return
   loop.lastTime = loop.currentTime
   loop.currentTime = time
-  var delayed: bool
   if loop.lastTime != 0:
     loop.dt = loop.currentTime - loop.lastTime
   loop.dt = clamp(loop.dt, 0, 1)
 
   # update the game
-  if loop.updateproc(loop.dt, delayed):
+  if loop.updateproc(loop.dt, false):
     loop.done = true
 
   # render the game

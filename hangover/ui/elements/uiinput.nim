@@ -22,7 +22,7 @@ type
 var tmpText = ""
 
 proc onKey*(data: pointer): bool =
-  var c = cast[ptr string](data)[]
+  let c = cast[ptr string](data)[]
   tmpText = c
 
 createListener(EVENT_LINE_ENTER, onKey)
@@ -47,7 +47,7 @@ method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2) =
   if e.isDisabled != nil and e.isDisabled():
     return
 
-  var bounds = e.bounds.toRect(parentRect)
+  let bounds = e.bounds.toRect(parentRect)
   if (bounds.x < mousePos.x and bounds.x +
           bounds.width > mousePos.x) and
       (bounds.y < mousePos.y and bounds.y +
@@ -67,21 +67,25 @@ method click*(e: UIInput, button: int) =
 method draw*(e: UIInput, parentRect: Rect) =
   if not e.isActive:
     return
-  var bounds = e.bounds.toRect(parentRect)
+  let bounds = e.bounds.toRect(parentRect)
   if (e.text != ""):
     var text = e.text
     if e.active: text &= "|"
-    var h: float32 = sizeText(e.font[], e.text, e.fontMult * uiElemScale).y
-    var posy: float32 = bounds.y + ((bounds.height - h) / 2)
-    var posx: float32 = bounds.x + (bounds.width - sizeText(e.font[],
+    let
+      h: float32 = sizeText(e.font[], e.text, e.fontMult * uiElemScale).y
+      posx: float32 = bounds.x + (bounds.width - sizeText(e.font[],
         e.text, e.fontMult * uiElemScale).x) / 2
+    var
+      posy: float32 = bounds.y + ((bounds.height - h) / 2)
     e.font[].draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0), e.fontMult * uiElemScale)
     posy += sizeText(e.font[], text, e.fontMult * uiElemScale).y
   elif (e.hint != ""):
-    var text = e.hint
-    var h: float32 = sizeText(e.font[], text, e.fontMult * uiElemScale).y
-    var posy: float32 = bounds.y + ((bounds.height - h) / 2)
-    var posx: float32 = bounds.x + (bounds.width - sizeText(e.font[], text, e.fontMult * uiElemScale).x) / 2
+    let
+      text = e.hint
+      h: float32 = sizeText(e.font[], text, e.fontMult * uiElemScale).y
+    var
+      posy: float32 = bounds.y + ((bounds.height - h) / 2)
+      posx: float32 = bounds.x + (bounds.width - sizeText(e.font[], text, e.fontMult * uiElemScale).x) / 2
     e.font[].draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0, 150), e.fontMult * uiElemScale)
     if e.active:
       posx = bounds.x + (bounds.width - sizeText(e.font[], "|", e.fontMult * uiElemScale).x) / 2
@@ -95,10 +99,13 @@ method update*(b: UIInput, parentRect: Rect, mousePos: Vector2,
       sendEvent(EVENT_STOP_LINE_ENTER, nil)
       b.active = false
     return
-  var bounds = b.bounds.toRect(parentRect)
+  let bounds = b.bounds.toRect(parentRect)
 
   if b.active:
     if b.update != nil:
       b.text = b.update(tmpText)
     else:
       b.text = tmpText
+
+method focusable*(e: UIInput): bool =
+  return not(e.isDisabled != nil and e.isDisabled())

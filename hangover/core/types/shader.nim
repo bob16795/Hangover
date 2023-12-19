@@ -32,10 +32,11 @@ else:
     SHADER_HEADER = "#version 330 core\n"
 
 proc newShader*(vCode, gCode, fCode: string): Shader =
-  var
+  let
     vShaderCode = [(SHADER_HEADER & vCode).cstring]
     gShaderCode = [(SHADER_HEADER & gCode).cstring]
     fShaderCode = [(SHADER_HEADER & fCode).cstring]
+  var
     geometry, vertex, fragment: GLuint
     success: GLint
     infoLog: cstring = cast[cstring](alloc0(512))
@@ -93,8 +94,9 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
 
 
 proc newComputeShader*(cCode: string): Shader =
-  var
+  let
     cShaderCode = [cCode.cstring]
+  var
     compute: GLuint
     success: GLint
     infoLog: cstring = cast[cstring](alloc0(512))
@@ -126,9 +128,10 @@ proc newComputeShader*(cCode: string): Shader =
 
 proc newShader*(vCode, fCode: string): Shader =
   result = Shader()
-  var
+  let
     vShaderCode = [(SHADER_HEADER & vCode).cstring]
     fShaderCode = [(SHADER_HEADER & fCode).cstring]
+  var
     vertex, fragment: GLuint
     success: GLint
     infoLog: cstring = cast[cstring](alloc0(512))
@@ -184,7 +187,7 @@ proc registerParam*(s: var Shader, n: string, k: ShaderParamKind) =
       LOG_WARN("ho->shader", "duplicate shader param `" & $n & "`")
       return
 
-  var p = ShaderParam(name: n, kind: k)
+  let p = ShaderParam(name: n, kind: k)
   s.params[p] = false
 
 proc use*(s: Shader) =
@@ -194,7 +197,7 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
   for sp in s.params.keys:
     if p == sp.name:
       s.use()
-      var loc = s.id.glGetUniformLocation(sp.name.cstring)
+      let loc = s.id.glGetUniformLocation(sp.name.cstring)
       case sp.kind:
       of SPKFloat4: glUniform4fv(loc, 1, cast[ptr GLfloat](value))
       of SPKProj4:

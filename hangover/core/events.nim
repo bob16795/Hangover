@@ -36,7 +36,7 @@ when defined debug:
 
 template createEvent*(name: untyped, hide: bool = false): untyped =
   ## creates an event
-  var name = static: lastEventId
+  const name = static: lastEventId
   export name
 
   when defined(debug) and not hide:
@@ -108,3 +108,9 @@ proc setupEventCallbacks*(ctx: GraphicsContext) =
                    lineText = "")
   createListener(EVENT_SET_LINE_TEXT,
     setLineText)
+
+template eventListener*(name: untyped, varName: untyped, kind: type, body: untyped) =
+  proc name(d: pointer): bool =
+    when kind isnot void:
+      let varName = cast[kind](d)
+    body

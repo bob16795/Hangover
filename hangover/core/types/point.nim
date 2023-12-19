@@ -61,9 +61,9 @@ proc `-=`*(p: var Point, a: Point) =
 # utils
 
 proc distance*(a, b: Point): float =
-  var cx, cy: float32
-  cx = (a.x - b.x).float32
-  cy = (a.y - b.y).float32
+  let
+    cx = (a.x - b.x).float32
+    cy = (a.y - b.y).float32
   return sqrt(cx * cx + cy * cy)
 
 proc `angle=`*(p: var Point, radians: float32) =

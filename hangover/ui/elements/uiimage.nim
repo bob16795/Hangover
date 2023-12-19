@@ -22,7 +22,7 @@ method checkHover*(b: UIImage, parentRect: Rect, mousePos: Vector2) =
   if b.isDisabled != nil and b.isDisabled():
     return
 
-  var bounds = b.bounds.toRect(parentRect)
+  let bounds = b.bounds.toRect(parentRect)
 
 method click*(b: UIImage, button: int) =
   discard
@@ -33,8 +33,8 @@ method draw*(b: UIImage, parentRect: Rect) =
   
   var bounds = b.bounds.toRect(parentRect)
   if b.size.x != 0 and b.size.y != 0:
-    var scale = min(bounds.width / b.size.x, bounds.height / b.size.y)
-    var center = bounds.center
+    let scale = min(bounds.width / b.size.x, bounds.height / b.size.y)
+    let center = bounds.center
     bounds.size = b.size * scale
     bounds.location = center - bounds.size / 2
 

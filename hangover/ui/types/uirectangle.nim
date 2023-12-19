@@ -2,7 +2,7 @@ import hangover/core/types/rect
 
 
 type
-  UIRectangle* = object
+  UIRectangle* = ref object of RootObj
     ## a ui rectangle, allows you to set anchors based off ratios of a parent rectangle
     empty: bool
     XMin*, YMin*: float32 ## min offsets
@@ -10,11 +10,11 @@ type
     anchorXMin*, anchorYMin*: float32 ## min anchors
     anchorXMax*, anchorYMax*: float32 ## max anchor2
 
-proc toRect*(rect: UIRectangle, parent: Rect): Rect =
+method toRect*(rect: UIRectangle, parent: Rect): Rect {.base.} =
   ## converts the UIRectangle to a Rect
   
   # calculate anchored positions
-  var
+  let
     axmin = parent.x.float32 + (parent.width.float32 * rect.anchorXMin)
     aymin = parent.y.float32 + (parent.height.float32 * rect.anchorYMin)
     axmax = parent.x.float32 + (parent.width.float32 * rect.anchorXMax)
@@ -32,6 +32,7 @@ proc toRect*(rect: UIRectangle, parent: Rect): Rect =
 proc newUIRectangle*(XMin, YMin: float32, XMax, YMax: float32, anchorXMin,
     anchorYMin: float32, anchorXMax, anchorYMax: float32): UIRectangle =
   ## creates a new UIRectangle
+  result = UIRectangle()
 
   # set offsets
   result.Xmin = Xmin

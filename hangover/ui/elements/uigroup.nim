@@ -6,6 +6,7 @@ import hangover/core/types/font
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
 import hangover/core/logging
+import algorithm
 import sugar
 
 #TODO: comment
@@ -14,7 +15,8 @@ type
   UIGroup* = ref object of UIElement
     elements*: seq[UIElement]
     hasPopupAbove*: bool
-    dragProc*: proc()
+    dragProc*: proc(done: bool)
+    scissor*: bool
 
 proc newUIGroup*(bounds: UIRectangle): UIGroup =
   result = UIGroup()
@@ -34,7 +36,7 @@ method checkHover*(g: UIGroup, parentRect: Rect, mousePos: Vector2) =
   if g.isDisabled != nil and g.isDisabled():
     return
 
-  var bounds = g.bounds.toRect(parentRect)
+  let bounds = g.bounds.toRect(parentRect)
   for i in 0..<g.elements.len:
     g.elements[i].checkHover(bounds, mousePos)
     if g.elements[i].focused:
@@ -45,26 +47,34 @@ method click*(g: UIGroup, button: int) =
     if g.elements[i].focused:
       g.elements[i].click(button)
       capture i:
-        g.dragProc = proc() = g.elements[i].drag(button)
+        g.dragProc = proc(done: bool) = g.elements[i].drag(button, done)
 
 method draw*(g: UIGroup, parentRect: Rect) =
   if not g.isActive:
     return
-  var bounds = g.bounds.toRect(parentRect)
+  let
+    bounds = g.bounds.toRect(parentRect)
+    oldScissor = textureScissor
+
+  if g.scissor:
+    textureScissor = bounds.scale(uiScaleMult)
+
   for i in 0..<g.elements.len:
     g.elements[i].draw(bounds)
+
+  textureScissor = oldScissor
 
 method update*(g: UIGroup, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not g.isActive:
     return
-  var bounds = g.bounds.toRect(parentRect)
+  let bounds = g.bounds.toRect(parentRect)
   for i in 0..<g.elements.len:
     g.elements[i].update(bounds, mousePos, dt)
 
-method drag*(g: UIGroup, button: int) =
+method drag*(g: UIGroup, button: int, done: bool) =
   if g.dragProc != nil:
-    g.dragProc()
+    g.dragProc(done)
 
 method scroll*(g: UIGroup, offset: Vector2) =
   for i in 0..<g.elements.len:
@@ -73,6 +83,65 @@ method scroll*(g: UIGroup, offset: Vector2) =
 method `active=`*(g: UIGroup, value: bool) =
   g.isActive = value
   if not value:
-    g.focused = false
+    g.focus(false)
   for e in g.elements:
     e.active = value
+
+method focusable*(g: UIGroup): bool =
+  for e in g.elements:
+    if e.focusable:
+      return true
+
+method navigate*(g: UIGroup, dir: UIDir): bool =
+  if not g.focused:
+    return false
+
+  case dir:
+    of UISelect:
+      return false
+    of UINext:
+      var focusNext = false
+
+      for e in g.elements:
+        if not e.isActive: continue
+
+        if focusNext:
+          if e.focusable():
+            e.focus(true)
+            return true
+
+        if e.navigate(dir):
+          if e.focused: return true
+          focusNext = true
+
+      if focusNext: g.focus(false)
+      return true
+    of UIPrev:
+      var focusNext = false
+
+      for e in g.elements.reversed():
+        if not e.isActive: continue
+
+        if focusNext:
+          if e.focusable():
+            e.focus(true)
+            return true
+
+        if e.navigate(dir):
+          if e.focused: return true
+          focusNext = true
+
+      if focusNext: g.focus(false)
+      return true
+    else: discard
+
+method focus*(g: UIGroup, focus: bool) =
+  ## returns true if you can focus the element
+  g.focused = focus
+  for e in g.elements:
+    if not e.isActive: continue
+
+    if e.focusable():
+      e.focus(focus)
+      if focus:
+        return

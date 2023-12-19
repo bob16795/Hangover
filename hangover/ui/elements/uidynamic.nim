@@ -27,6 +27,6 @@ method update*(d: UIDynamic, parentRect: Rect, mousePos: Vector2,
     return
   if d.dynamicUpdate != nil and d.dynamicUpdate():
     d.elements = d.dynamicGenerate(d)
-  var bounds = d.bounds.toRect(parentRect)
+  let bounds = d.bounds.toRect(parentRect)
   for i in 0..<d.elements.len:
     d.elements[i].update(bounds, mousePos, dt)

@@ -74,7 +74,7 @@ proc distanceSq*(a, b: Vector2): float =
   let
     cx = (a.x - b.x).float32
     cy = (a.y - b.y).float32
-  return cx * cx + cy * cy
+  return abs(cx * cx + cy * cy)
 
 proc `angle=`*(p: var Vector2, radians: int | int16 | int32 | float | float32 | float64) =
   let mag = p.distance(newVector2(0, 0)).float32
@@ -86,6 +86,7 @@ proc angle*(p: Vector2): int | int16 | int32 | float | float32 | float64 =
   return arctan2(p.y.float32, p.x.float32)
 
 proc rotated*(p: Vector2, phi: int | int16 | int32 | float | float32 | float64): Vector2 =
+  result = p
   result.angle = phi.float32 + p.angle
 
 proc rotate*(p: var Vector2, phi: int | int16 | int32 | float | float32 | float64) =

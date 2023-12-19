@@ -1,6 +1,7 @@
 import sprite
 import tables
 import hangover/core/types/rect
+import hangover/core/types/color
 
 #TODO: comment
 #TODO: add fsm
@@ -42,5 +43,5 @@ proc update*(a: var Animation, dt: float32) =
       a.callback()
     a.frame = 0
 
-proc draw*(a: Animation, r: Rect, rotation: float32 = 0) =
-  getStateFrame(a).draw(r.location, rotation, r.size)
+proc draw*(a: Animation, r: Rect, rotation: float32 = 0, color: Color = newColor(255, 255, 255)) =
+  getStateFrame(a).draw(r.location, rotation, r.size, color)

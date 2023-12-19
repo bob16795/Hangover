@@ -15,7 +15,7 @@ type
   Logger* = object
     ## logs events
     priority: LogPriority
-    output*: Stream
+    output*: StreaM
     fileOutput: bool
 
 method enableFileOutput(l: var Logger) =
@@ -35,16 +35,23 @@ var
 method `priority=`*(l: var Logger, priority: LogPriority) =
   l.priority = priority
 
+proc `android_log_print`(st: cint, src: cstring, data: cstring) {.importc: "__android_log_print".}
+
 method log*(l: Logger, priority: LogPriority, file, message: string) =
-  var pString = case priority:
+  let pString = case priority:
     of lpTrace: "TRACE"
     of lpDebug: "DEBUG"
     of lpInfo:  "INFO"
     of lpWarn:  "WARN"
     of lpError: "ERROR"
     of lpCrit:  "CRITICAL"
+  when defined ginGLFM:
+    android_log_print 4, "HANGOVER", cstring(&"[{pString}] {file}: {message}")
+
+    return
   if priority >= l.priority:
     echo &"[{pString}] {file}: {message}"
+
   if l.fileOutput:
     l.output.write(&"[{pString}] {file}: {message}\n")
     l.output.flush()

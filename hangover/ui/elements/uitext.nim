@@ -41,7 +41,7 @@ method draw*(t: UIText, parentRect: Rect) =
   if not t.isActive:
     return
   if (t.text == nil or t.text[] == ""): return
-  var bounds = t.bounds.toRect(parentRect)
+  let bounds = t.bounds.toRect(parentRect)
   var h: float32 = 0
   for text in t.text[].split("\n"):
     h += t.font[].size.float32 * t.fontMult * uiElemScale
@@ -63,7 +63,7 @@ method update*(t: UIText, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not t.isActive:
     return
-  var bounds = t.bounds.toRect(parentRect)
+  let bounds = t.bounds.toRect(parentRect)
   if t.update != nil:
     if t.text == nil:
         t.text = string.new()

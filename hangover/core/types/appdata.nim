@@ -14,7 +14,7 @@ type
     color*: Color
 
 const
-  ginAppName {.strdefine.} = "Gin Game"
+  ginAppName {.strdefine.} = "Hangover Game"
 
 static:
   # get misc data
@@ -29,7 +29,7 @@ static:
   # create a res file and gen an icon
   when defined(windows):
     echo staticExec(&"mkdir -p {tmp}")
-    echo staticExec(&"/bin/bash {rcGen} 0-0-0-0 '{ginAppName}' '{ginIcon}' {tmpRc}")
+    echo staticExec(&"bash {rcGen} 0-0-0-0 '{ginAppName}' '{ginIcon}' {tmpRc}")
     when system.hostCPU == "i386":
       echo staticExec(&"i686-w64-mingw32-windres {tmpRc} -O coff {tmpRes32}")
       {.passl: tmpRes32.}
