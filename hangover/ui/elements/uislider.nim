@@ -17,6 +17,7 @@ type
     valueVis*: float
     handleSize*: float
     barSize*: float
+    default*: float
     tmpVal: float
     update*: (v: float) -> void
     release*: (v: float) -> void
@@ -115,12 +116,12 @@ method navigate*(s: UISlider, dir: UIDir, parent: Rect): bool =
   let bounds = s.bounds.toRect(parent)
   case dir:
     of UIRight:
-      s.value -= 0.05
+      s.value += 0.05
       if s.update != nil:
         s.update(s.value)
       return true
     of UILeft:
-      s.value += 0.05
+      s.value -= 0.05
       if s.update != nil:
         s.update(s.value)
       return true
@@ -133,3 +134,7 @@ method navigate*(s: UISlider, dir: UIDir, parent: Rect): bool =
 method focusable*(b: UISlider): bool =
   ## returns true if you can focus the element
   return true #not(b.isDisabled != nil and b.isDisabled())
+
+method center*(e: UISlider, parent: Rect): Vector2 =
+  ## returns true if you can focus the element
+  return e.bounds.toRect(parent).location + e.bounds.toRect(parent).size * e.default
