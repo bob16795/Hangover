@@ -17,6 +17,11 @@ export events
 export loop
 export logging
 
+when defined debug:
+  import hangover/core/console
+
+  export console
+
 # ui
 import hangover/ui/uimanager
 import hangover/ui/statemachine

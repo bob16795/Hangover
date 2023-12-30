@@ -6,6 +6,7 @@ import hangover/core/types/font
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
 import hangover/core/logging
+import options
 import algorithm
 import sugar
 
@@ -59,8 +60,16 @@ method draw*(g: UIGroup, parentRect: Rect) =
   if g.scissor:
     textureScissor = bounds.scale(uiScaleMult)
 
+  var postpone: Option[UIElement]
+
   for i in 0..<g.elements.len:
-    g.elements[i].draw(bounds)
+    if g.elements[i].focused:
+      postpone = some(g.elements[i])
+    else:
+      g.elements[i].draw(bounds)
+
+  if postpone.is_some():
+    postpone.get().draw(bounds)
 
   textureScissor = oldScissor
 
@@ -92,14 +101,16 @@ method focusable*(g: UIGroup): bool =
     if e.focusable:
       return true
 
-method navigate*(g: UIGroup, dir: UIDir): bool =
+method navigate*(g: UIGroup, dir: UIDir, parent: Rect): bool =
   if not g.focused:
     return false
+
+  let bounds = g.bounds.toRect(parent)
 
   case dir:
     of UISelect:
       return false
-    of UINext:
+    of UINext, UIDown, UIRight:
       var focusNext = false
 
       for e in g.elements:
@@ -110,13 +121,13 @@ method navigate*(g: UIGroup, dir: UIDir): bool =
             e.focus(true)
             return true
 
-        if e.navigate(dir):
+        if e.navigate(dir, bounds):
           if e.focused: return true
           focusNext = true
 
       if focusNext: g.focus(false)
       return true
-    of UIPrev:
+    of UIPrev, UIUp, UILeft:
       var focusNext = false
 
       for e in g.elements.reversed():
@@ -127,7 +138,7 @@ method navigate*(g: UIGroup, dir: UIDir): bool =
             e.focus(true)
             return true
 
-        if e.navigate(dir):
+        if e.navigate(dir, bounds):
           if e.focused: return true
           focusNext = true
 
@@ -145,3 +156,13 @@ method focus*(g: UIGroup, focus: bool) =
       e.focus(focus)
       if focus:
         return
+
+method center*(g: UIGroup, parent: Rect): Vector2 =
+  let bounds = g.bounds.toRect(parent)
+
+  ## returns true if you can focus the element
+  for e in g.elements:
+    if not e.isActive: continue
+
+    if e.focused:
+      return e.center(bounds)

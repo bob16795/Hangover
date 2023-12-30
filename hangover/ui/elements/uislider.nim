@@ -12,13 +12,16 @@ type
     font*: ptr Font
     vertical*: bool
     sprite*, handleSprite*: UISprite
+    focusedSprite*: UISprite
     value*: float
+    valueVis*: float
     handleSize*: float
     barSize*: float
     tmpVal: float
     update*: (v: float) -> void
     release*: (v: float) -> void
     scrollSensitivity*: float
+    smooth*: float32
 
 method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2) =
   s.focused = false
@@ -54,26 +57,37 @@ method draw*(s: UISlider, parentRect: Rect) =
     return
   var bounds = s.bounds.toRect(parentRect)
   if true:
+    var handleSprite = s.handleSprite
+    if s.focused:
+      handleSprite = s.focusedSprite
+
     var halfSize = s.handleSize / 2
     if s.vertical:
       var posy: float32 = ((bounds.y + halfSize) * (1 -
-          s.value)) + (bounds.y + bounds.height -
-          halfSize) * (s.value) - halfSize
+          s.valueVis)) + (bounds.y + bounds.height -
+          halfSize) * (s.valueVis) - halfSize
       var posx: float32 = bounds.x + (bounds.width) / 2
       s.sprite.draw(newRect(posx - s.barSize / 2, bounds.y, s.barSize, bounds.height))
-      s.handleSprite.draw(newRect(bounds.x, posy, bounds.width, s.handleSize))
+      handleSprite.draw(newRect(bounds.x, posy, bounds.width, s.handleSize))
     else:
       var posx: float32 = ((bounds.x + halfSize) * (1 -
-          s.value)) + (bounds.x + bounds.width -
-          halfSize) * (s.value) - halfSize
+          s.valueVis)) + (bounds.x + bounds.width -
+          halfSize) * (s.valueVis) - halfSize
       var posy: float32 = bounds.y + (bounds.height) / 2
       s.sprite.draw(newRect(bounds.x, posy - s.barSize / 2, bounds.width, s.barSize))
-      s.handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height))
+      handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height))
+
+proc lerp*(a, b: float, pc: float32): float =
+  return a + (b - a) * pc
 
 method update*(s: UISlider, parentRect: Rect, mousePos: Vector2,
     dt: float32) =
   if not s.isActive:
     return
+
+  s.value = clamp(s.value, 0, 1)
+
+  s.valueVis = lerp(s.valueVis, s.value, clamp(dt * s.smooth, 0, 1))
 
   var bounds = s.bounds.toRect(parentRect)
 
@@ -93,3 +107,29 @@ method scroll*(e: UISlider, offset: Vector2) =
   e.value = clamp(e.value, 0, 1)
   if e.update != nil:
     e.update(e.value)
+
+method navigate*(s: UISlider, dir: UIDir, parent: Rect): bool =
+  if not s.focused:
+    return false
+
+  let bounds = s.bounds.toRect(parent)
+  case dir:
+    of UIRight:
+      s.value -= 0.05
+      if s.update != nil:
+        s.update(s.value)
+      return true
+    of UILeft:
+      s.value += 0.05
+      if s.update != nil:
+        s.update(s.value)
+      return true
+    of UIUp, UIDown, UINext, UIPrev:
+      s.focus(false)
+      return true
+    else:
+      return false
+
+method focusable*(b: UISlider): bool =
+  ## returns true if you can focus the element
+  return true #not(b.isDisabled != nil and b.isDisabled())

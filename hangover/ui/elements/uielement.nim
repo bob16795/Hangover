@@ -79,8 +79,12 @@ method focusable*(e: UIElement): bool {.base.} =
   ## returns true if you can focus the element
   false
 
-method navigate*(e: UIElement, dir: UIDir): bool {.base.} =
+method navigate*(e: UIElement, dir: UIDir, parent: Rect): bool {.base.} =
   ## navigates to the next elem
   if e.focused:
     e.focus(false)
     return true
+
+method center*(e: UIElement, parent: Rect): Vector2 {.base.} =
+  ## returns true if you can focus the element
+  return e.bounds.toRect(parent).center

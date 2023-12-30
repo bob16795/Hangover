@@ -3,13 +3,15 @@ import streams
 import ../lib/readwav
 
 type
-  Sound* = object
+  Sound* = ref object
     ## stores a sound effect
     valid*: bool
     buffer*: ALuint ## the al buffer
 
 proc newSoundMem*(s: Stream): Sound =
   ## creates a new sound from a stream
+
+  result = Sound()
 
   # read the wav file
   let wav = readWav(s)
@@ -23,7 +25,7 @@ proc newSoundMem*(s: Stream): Sound =
 
 proc newSound*(file: string): Sound =
   ## creates a sound from file
-  
+
   # create a stream
   let s = newFileStream(file)
 

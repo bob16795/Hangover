@@ -420,7 +420,7 @@ proc finishDraw*() =
     if q.update:
       glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(len(vertices) *
           sizeof(vertices[0])),
-          addr(vertices[0]), GL_STREAM_DRAW)
+          addr(vertices[0]), GL_DYNAMIC_DRAW)
 
     # setup vertex attrib data
     glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(

@@ -115,3 +115,8 @@ proc `$`*(v: Vector2): string =
 
 proc lerp*(a, b: Vector2, pc: float): Vector2 =
   result = a + (b - a) * pc
+
+proc clampMag*(v: Vector2, min: float32, max: float32): Vector2 =
+  let length = distance(v, Vector2())
+  let mult = clamp(length, min, max) / length
+  return v * mult

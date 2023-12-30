@@ -14,7 +14,16 @@ template ifor*(variable: untyped, list: untyped, body: untyped): untyped =
     body
 
 const
-  MAX_PARTICLES = 1000
+  MAX_PARTICLES: uint = 1000
+
+var
+  reducedParticles*: bool = false
+
+proc maxParticles(): uint =
+  if reducedParticles:
+    return (MAX_PARTICLES.float * 0.5).uint
+  else:
+    return MAX_PARTICLES
 
 type
   ParticleProps* = object
@@ -30,9 +39,9 @@ type
     lifeTimeVariation*: float
 
   ParticleSystem* = object
-    ## a particle system, stores up to 5000 particles
+    ## a particle system, stores up to the max particles
     pool: array[MAX_PARTICLES, Particle]
-    idx: int
+    idx: uint
     texture*: Texture
 
   Particle = object
@@ -67,6 +76,7 @@ proc draw*(ps: ParticleSystem, offset: Vector2) =
   ## draws a particle system
   template lerp(a, b: untyped, pc: float): untyped =
     b.float + (a.float - b.float) * pc
+
   for p in ps.pool:
     if not p.isActive:
       continue
@@ -82,8 +92,8 @@ proc draw*(ps: ParticleSystem, offset: Vector2) =
                              newVector2(s, s))
     ps.texture.draw(newRect(0, 0, 1, 1), hitbox, color = c)
 
-proc randVector*(): Vector2 =
-  result = newVector2(0, sqrt(rand(0.float32..1.float32)))
+proc randVector*(size: float32): Vector2 {.inline.} =
+  result = newVector2(0, sqrt(rand(0.float32..size.float32 * size.float32)))
   result.angle = rand(0.float32..(2 * PI).float32)
 
 proc emit*(ps: var ParticleSystem, props: ParticleProps) =
@@ -91,19 +101,18 @@ proc emit*(ps: var ParticleSystem, props: ParticleProps) =
   var p = Particle()
   ps.idx += 1
 
+  if reducedParticles:
+    if ps.idx mod 2 == 0: return
+
   p.isActive = true
   p.position = props.position
   if props.positionVariation != newVector2(0, 0):
-    var pos = randVector()
-    pos.x *= rand(-props.positionVariation.x..props.positionVariation.x)
-    pos.y *= rand(-props.positionVariation.y..props.positionVariation.y)
+    let pos = randVector(props.positionVariation.x)
     p.position += pos
 
   p.velocity = props.velocity
   if props.velocityVariation != newVector2(0, 0):
-    var pos = randVector()
-    pos.x *= rand(-props.velocityVariation.x..props.velocityVariation.x)
-    pos.y *= rand(-props.velocityVariation.y..props.velocityVariation.y)
+    let pos = randVector(props.velocityVariation.x)
     p.velocity += pos
 
   p.startColor = props.startColor
@@ -116,7 +125,7 @@ proc emit*(ps: var ParticleSystem, props: ParticleProps) =
   p.startSize = props.startSize
   p.endSize = props.endSize
 
-  ps.pool[ps.idx mod MAX_PARTICLES] = p
+  ps.pool[ps.idx mod maxParticles()] = p
 
 proc tryEmit*(ps: var ParticleSystem, props: ParticleProps) =
   ## emits a particle if the next particle is free
