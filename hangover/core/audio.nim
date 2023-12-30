@@ -22,6 +22,7 @@ var
   nextSoundSource: int = 0
   loopBuffers: array[MAX_SONG_LAYERS, ALuint]
   alPaused: bool
+  framePlayed: seq[Sound]
 
   masterVol: float32 = 1.0
 
@@ -77,6 +78,7 @@ proc updateAudio*() =
   ## updates audio
   ## checks if music should loop
   ## checks for openAL errors
+  framePlayed = @[]
   if alPaused: return
   var sourceState: ALint
   alGetSourcei(musicSources[0], AL_SOURCE_STATE, addr sourceState)
@@ -128,12 +130,16 @@ proc setLayerVolume*(layer: range[0..MAX_SONG_LAYERS-1], vol: float32) =
 
 proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0), pitch: float32 = 1.0) =
   ## plays a sound, pos is for spacial sound
+  if sound in framePlayed:
+    return
+  framePlayed &= sound
   var sourceState: ALint
   alGetSourcei(soundSources[nextSoundSource], AL_SOURCE_STATE, addr sourceState)
   if sourceState != AL_PLAYING:
     alSourcef(soundSources[nextSoundSource], AL_PITCH, pitch)
     alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
     alSource3f(soundSources[nextSoundSource], AL_POSITION, pos.x, pos.y, 0)
+
     alSourcePlay(soundSources[nextSoundSource])
   nextSoundSource += 1
   if nextSoundSource == SOURCES:
@@ -141,6 +147,9 @@ proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0), pitch: float32 = 1.0) 
 
 proc playRand*(sound: Sound, rs, re: float32, pos: Vector2 = newVector2(0, 0)) =
   ## plays a sound at a random pitch
+  if sound in framePlayed:
+    return
+  framePlayed &= sound
   
   # set pitch, buffer and position
   alSourcef(soundSources[nextSoundSource], AL_PITCH, rand(rs..re).float32)

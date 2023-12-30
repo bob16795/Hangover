@@ -1,6 +1,5 @@
 import hangover/core/types/rect
 
-
 type
   UIRectangle* = ref object of RootObj
     ## a ui rectangle, allows you to set anchors based off ratios of a parent rectangle

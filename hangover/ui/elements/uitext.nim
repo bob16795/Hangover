@@ -56,7 +56,7 @@ method draw*(t: UIText, parentRect: Rect) =
         posx = bounds.x + bounds.width - sizeText(t.font[], text, t.fontMult * uiElemScale).x
       else: discard
     posx = max(posx, bounds.x)
-    t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color, t.fontMult * uiElemScale)
+    t.font[].draw(text, newPoint(posx.cint, posy.cint), t.color, t.fontMult * uiElemScale, wrap = bounds.width)
     posy += t.font[].size.float32 * t.fontMult * uiElemScale
 
 method update*(t: UIText, parentRect: Rect, mousePos: Vector2,

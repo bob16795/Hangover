@@ -10,6 +10,7 @@ import hangover/ui/elements/uiscroll
 import hangover/ui/elements/uitext
 import hangover/ui/types/uirectangle
 import hangover/ui/types/uitween
+import hangover/ui/types/uibobber
 import hangover/core/events
 import hangover/core/graphics
 import hangover/core/types/rect
@@ -23,6 +24,7 @@ import macros
 import sugar
 import opengl
 import math
+import options
 
 export uitext
 export uiinput
@@ -36,6 +38,7 @@ export uirectangle
 export uidynamic
 export uiscroll
 export uitween
+export uibobber
 
 type
   UIManager* {.acyclic.} = object
@@ -56,19 +59,21 @@ var
   dragProc*: proc(done: bool)
   uiTransparency*: float32
 
-prOc uiHeight*(): float32 =
+const TARG_HEIGHT = 1250
+
+proc uiHeight*(): float32 =
   result = um.size.y
 
-  if result < 300:
-    return 1000
+  if result < TARG_HEIGHT / 3:
+    return TARG_HEIGHT
 
-  if result > 1000:
-    result /= floor(result / 1000)
+  if result > TARG_HEIGHT:
+    result /= floor(result / TARG_HEIGHT)
   else:
-    result *= ceil(1000 / result)
+    result *= ceil(TARG_HEIGHT / result)
 
-  if result > 1500:
-    result -= 500
+  if result > TARG_HEIGHT / 2 * 3:
+    result -= TARG_HEIGHT / 2
 
 proc mouseMove(data: pointer): bool =
   ## processes a mouse move event
@@ -199,8 +204,15 @@ proc drawUI*() =
   glClearColor(0, 0, 0, 0)
   glClear(GL_COLOR_BUFFER_BIT)
 
+  var postpone: Option[UIElement]
+
   for e in um.elements:
-    e.draw(newRect(newVector2(0, 0), um.aSize))
+    if e.focused:
+      postpone = some(e)
+    else:
+      e.draw(newRect(newVector2(0, 0), um.aSize))
+  if postpone.is_some():
+    postpone.get().draw(newRect(newVector2(0, 0), um.aSize))
 
   finishDraw()
   glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -218,6 +230,8 @@ proc updateUI*(dt: float32) =
         um.mousePos, dt)
   for t in tweens:
     t.update(dt)
+  for b in bobbers:
+    b.update(dt, um.mousePos)
 
 proc setUIActive*(i: int, value: bool) =
   ## sets the ui element at index i to active
@@ -229,6 +243,14 @@ proc setUIActive*(i: int, value: bool) =
       t.reset()
 
 proc uiNavigate*(dir: UIDir) =
+  defer:
+    for e in um.elements:
+      if not e.isActive: continue
+      if e.focused:
+        um.mousePos = e.center(newRect(newVector2(0, 0), um.asize))
+        return
+
+  let bounds = newRect(newVector2(0, 0), um.asize)
   case dir:
     of UIScrollUp:
       let offset = newVector2(0, -10)
@@ -249,7 +271,7 @@ proc uiNavigate*(dir: UIDir) =
         if e.focused:
           e.click(1)
           return
-    of UINext:
+    of UINext, UIDown, UIRight:
       var focusNext = false
 
       for e in um.elements:
@@ -259,8 +281,9 @@ proc uiNavigate*(dir: UIDir) =
           if e.focusable():
             e.focus(true)
             return
-        if e.navigate(dir):
-          if e.focused: return
+        if e.navigate(dir, bounds):
+          if e.focused:
+            return
           focusNext = true
 
       for e in um.elements:
@@ -270,7 +293,7 @@ proc uiNavigate*(dir: UIDir) =
           e.focus(true)
           return
 
-    of UIPrev:
+    of UIPrev, UIUp, UILeft:
       var focusNext = false
 
       for e in um.elements.reversed():
@@ -280,8 +303,9 @@ proc uiNavigate*(dir: UIDir) =
           if e.focusable():
             e.focus(true)
             return
-        if e.navigate(dir):
-          if e.focused: return
+        if e.navigate(dir, bounds):
+          if e.focused:
+            return
           focusNext = true
 
       for e in um.elements.reversed():
@@ -292,6 +316,7 @@ proc uiNavigate*(dir: UIDir) =
           return
     else:
       discard
+
 
 proc isDashNode(n: NimNode): bool =
   n.kind == nnkPrefix and $n[0] == "-"

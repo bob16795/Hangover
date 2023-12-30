@@ -10,6 +10,11 @@ import hangover/ecs/types
 import hangover/ecs/entity
 import sugar
 import segfaults
+import asyncdispatch
+export asyncdispatch
+
+when defined debug:
+  import console
 
 ## templates:
 ## creates a game loop 
@@ -94,66 +99,80 @@ template Game*(body: untyped) =
 
         createListener(EVENT_RESIZE, UpdateSize)
 
-        template setPercent(perc: float): untyped =
-          pc = perc
-          drawLoading(pc, loadStatus, ctx, size)
-          when not defined(ginGLFM):
-            glfw.pollEvents()
-            if glfw.shouldClose(ctx.window):
-              quit()
-          finishDraw()
-          finishRender(ctx)
-        template setStatus(status: string): untyped =
-          loadStatus = status
-          drawLoading(pc, loadStatus, ctx, size)
-          LOG_DEBUG "ho->load", loadStatus
-          when not defined(ginGLFM):
-            glfw.pollEvents()
-            if glfw.shouldClose(ctx.window):
-              quit()
-          finishDraw()
-          finishRender(ctx)
         template noUI() = ui = false
         template drawUIEarly() =
           if ui:
             drawUI()
             ui = false
+          
+        template setPercent(perc: float): untyped =
+          pc = perc
+        template setStatus(status: string): untyped =
+          loadStatus = status
+          await sleepAsync(200)
 
         body
+
+        var done = false
+
+        proc drawLoadingAsync() {.async.} =
+          var ipc: float32
+          var istr: string
+          while not done:
+            drawLoading(pc, loadStatus, ctx, size)
+            when not defined(ginGLFM):
+              glfw.pollEvents()
+              if glfw.shouldClose(ctx.window):
+                quit()
+            finishDraw()
+            finishRender(ctx)
+            await sleepAsync(1.0 / 60.0)
+
+        proc load() {.async.} =
+          await Initialize(addr ctx)
+          done = true
 
         initAudio()
         initUIManager(data.size)
 
         setupEventCallbacks(ctx)
-
-        Initialize(ctx)
         
         var tmpSize: tuple[w, h: int32]
         tmpSize.w = size.x.int32
         tmpSize.h = size.y.int32
         sendEvent(EVENT_RESIZE, addr tmpSize)
+        
+        waitFor drawLoadingAsync() and load()
 
         deinitFT()
 
         createListener(EVENT_RESIZE, proc(p: pointer): bool = loop.forceDraw(ctx))
         #createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = loop.forceDraw(ctx))
-        
-
         loop.updateProc =
           proc (dt: float, delayed: bool): bool =
-            when not defined(ginGLFM):
-              glfw.pollEvents()
-              if glfw.shouldClose(ctx.window):
-                return true
-            updateUI(dt)
-            updateAudio()
-            return Update(dt, delayed)
+          when defined debug:
+            if debugConsole:
+              updateConsole()
+
+          when not defined(ginGLFM):
+            glfw.pollEvents()
+            if glfw.shouldClose(ctx.window):
+              return true
+
+          updateUI(dt)
+          updateAudio()
+          return Update(dt, delayed)
 
         loop.drawProc = proc (ctx: var GraphicsContext) =
           ui = true
           Draw(ctx)
           if ui:
             drawUI()
+
+          when defined debug:
+            if debugConsole:
+              drawConsole()
+
           finishrender(ctx)
 
         while not loop.done:

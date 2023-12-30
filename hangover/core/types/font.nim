@@ -201,7 +201,8 @@ proc newFont*(face: string, size: int, spacing: int = 0): Font =
   
   LOG_DEBUG("ho->font", "Loaded font", result.textures.len , "Textures")
 
-proc draw*(font: Font, text: string, position: Vector2, color: Color, scale: float32 = 1, layer: range[0..500] = 0) =
+proc draw*(font: Font, text: string, position: Vector2, color: Color,
+           scale: float32 = 1, wrap: float32 = 0, layer: range[0..500] = 0) =
   var pos = position
 
   var srect = newRect(0, 0, 1, 1)
@@ -212,7 +213,7 @@ proc draw*(font: Font, text: string, position: Vector2, color: Color, scale: flo
         w = (font.size.float32 * 0.8) * scale
         h = (font.size.float32 * 0.8) * scale
         xpos = pos.x + font.size.float32 * 0.1 * scale
-        ypos = pos.y + font.size.float32 * 0.1 * scale 
+        ypos = pos.y + font.size.float32 * 0.2 * scale
 
       ch.draw(newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border,
           h.float32 + 2 * font.border), layer = layer)
@@ -226,12 +227,22 @@ proc draw*(font: Font, text: string, position: Vector2, color: Color, scale: flo
       ch = font.characters[c.Rune]
       w = (ch.size.x.float32 * scale)
       h = (ch.size.y.float32 * scale)
+
+    var
       xpos = pos.x + (ch.bearing.x).float32 * scale
       ypos = pos.y - (ch.bearing.y).float32 * scale + font.size.float32 * scale
+
     srect.x = ch.tx
     srect.y = ch.ty
     srect.width = ch.tw
     srect.height = ch.th
+
+    # wrap the font if enabled
+    if wrap != 0 and wrap < xpos - position.x + w:
+      pos.x = position.x
+      pos.y += font.size.float32 * scale
+      xpos = pos.x + (ch.bearing.x).float32 * scale
+      ypos = pos.y - (ch.bearing.y).float32 * scale + font.size.float32 * scale
 
     # render texture
     let
@@ -241,15 +252,15 @@ proc draw*(font: Font, text: string, position: Vector2, color: Color, scale: flo
     pos.x += ((ch.advance shr 6).float32 * scale)
     pos.x += font.spacing.float32 + (2 * font.border)
 
+proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1, wrap: float32 = 0, layer: range[0..500] = 0) {.deprecated.} =
+  font.draw(text, position.toVector2(), color, scale, wrap, layer)
+
 proc addEmoji*(font: var Font, sprite: Sprite): string =
   result = $font.lastRune
 
   font.emojis[font.lastRune] = sprite
 
   font.lastRune = Rune(font.lastRune.int + 1)
-
-proc draw*(font: Font, text: string, position: Point, color: Color, scale: float32 = 1, layer: range[0..500] = 0) {.deprecated.} =
-  font.draw(text, position.toVector2(), color, scale, layer)
 
 proc sizeText*(font: Font, text: string, scale: float32 = 1): Vector2 =
   var ypos: float32 = 0 

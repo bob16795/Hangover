@@ -6,6 +6,7 @@ createEvent(EVENT_LINE_ENTER)
 createEvent(EVENT_START_LINE_ENTER)
 createEvent(EVENT_STOP_LINE_ENTER)
 createEvent(EVENT_SET_LINE_TEXT)
+createEvent(EVENT_CHAR)
 
 var
   lineInput = false
@@ -33,6 +34,10 @@ when not defined(ginGLFM):
       discard
   
   proc charCb*(win: Window, r: Rune) =
+    sendEvent(EVENT_CHAR, addr r)
+
+    if not lineInput: return
+
     lineText &= $r
     sendEvent(EVENT_LINE_ENTER, addr lineText)
   

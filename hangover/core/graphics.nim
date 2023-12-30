@@ -4,6 +4,7 @@ import types/vector2
 import types/shader
 import types/color
 import types/font
+import console
 import sequtils
 import events
 when defined(ginGLFM):
