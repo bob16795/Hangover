@@ -58,22 +58,30 @@ var
   ## The ui manager
   dragProc*: proc(done: bool)
   uiTransparency*: float32
+  uiWidthTarget*: float32
 
-const TARG_HEIGHT = 1250
+proc uiWidth*(): float32 =
+  return clamp(um.size.x, 2500, 3000)
 
 proc uiHeight*(): float32 =
-  result = um.size.y
+  let
+    uiAspect = um.size.y / um.size.x
+    uiscaledWidth = uiWidth() / um.scale
+  return uiAspect * uiScaledWidth
 
-  if result < TARG_HEIGHT / 3:
-    return TARG_HEIGHT
-
-  if result > TARG_HEIGHT:
-    result /= floor(result / TARG_HEIGHT)
-  else:
-    result *= ceil(TARG_HEIGHT / result)
-
-  if result > TARG_HEIGHT / 2 * 3:
-    result -= TARG_HEIGHT / 2
+#proc uiHeight*(): float32 =
+#  result = um.size.y
+#
+#  if result < TARG_HEIGHT / 3:
+#    return TARG_HEIGHT
+#
+#  if result > TARG_HEIGHT:
+#    result /= floor(result / TARG_HEIGHT)
+#  else:
+#    result *= ceil(TARG_HEIGHT / result)
+#
+#  if result > TARG_HEIGHT / 2 * 3:
+#    result -= TARG_HEIGHT / 2
 
 proc mouseMove(data: pointer): bool =
   ## processes a mouse move event
@@ -82,9 +90,9 @@ proc mouseMove(data: pointer): bool =
   var pos = cast[ptr tuple[x, y: float64]](data)[]
 
   let
-    uiAspect = um.size.x / um.size.y
-    uiscaledHeight = uiHeight() / um.scale
-    uiSize = newPoint((uiAspect * uiScaledHeight).int, uiScaledHeight.int)
+    uiAspect = um.size.y / um.size.x
+    uiscaledWidth = uiWidth() / um.scale
+    uiSize = newPoint(uiScaledWidth.int, (uiAspect * uiScaledWidth).int)
 
   pos.x /= um.size.x / uiSize.x.float32
   pos.y /= um.size.y / uiSize.y.float32
@@ -167,9 +175,9 @@ proc addUIElements*(elems: seq[UIElement]) =
 proc drawUI*() =
   ## draws the ui
   let
-    uiAspect = um.size.x / um.size.y
-    uiscaledHeight = uiHeight() / um.scale
-    uiSize = newPoint((uiAspect * uiScaledHeight).int, uiScaledHeight.int)
+    uiAspect = um.size.y / um.size.x
+    uiscaledWidth = uiWidth() / um.scale
+    uiSize = newPoint(uiScaledWidth.int, (uiAspect * uiScaledWidth).int)
 
   if uiSize != um.aSize.toPoint() and uiSize.toVector2().distanceSq(newVector2(0, 0)) > 128 * 128:
     try:
