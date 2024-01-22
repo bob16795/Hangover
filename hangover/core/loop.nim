@@ -40,8 +40,8 @@ proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
   loop.lastTime = loop.currentTime
   when not defined(ginGLFM):
     loop.currentTime = glfw.getTime()
-    when defined(hangui) or defined(ginGLFM):
-      loop.currentTime = cpuTime()
+  when defined(hangui) or defined(ginGLFM):
+    loop.currentTime = cpuTime()
   
   if loop.currentTime - loop.lastTime > loop.targetFPS:
     if loop.lastTime != 0:

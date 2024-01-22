@@ -45,8 +45,8 @@ in vec4 tintColor;
 out vec4 color;
 
 uniform sampler2D text;
+uniform int mode;
 
-const int mode = 3;
 const float intensity = 1.0;
 const float contrast = 1.0;
 
@@ -55,52 +55,53 @@ void main()
     vec4 tex = tintColor * texture(text, texCoords);
 
     float L = (17.8824 * tex.r) + (43.5161 * tex.g) + (4.11935 * tex.b);
-	float M = (3.45565 * tex.r) + (27.1554 * tex.g) + (3.86714 * tex.b);
-	float S = (0.0299566 * tex.r) + (0.184309 * tex.g) + (1.46709 * tex.b);
+    float M = (3.45565 * tex.r) + (27.1554 * tex.g) + (3.86714 * tex.b);
+    float S = (0.0299566 * tex.r) + (0.184309 * tex.g) + (1.46709 * tex.b);
 
     float l, m, s;
-    if (mode == 0) //Protanopia
-	{
-		l = 0.0 * L + 2.02344 * M + -2.52581 * S;
-		m = 0.0 * L + 1.0 * M + 0.0 * S;
-		s = 0.0 * L + 0.0 * M + 1.0 * S;
-	}
-    if (mode == 1) //Deuteranopia
-	{
-		l = 1.0 * L + 0.0 * M + 0.0 * S;
-    	m = 0.494207 * L + 0.0 * M + 1.24827 * S;
-    	s = 0.0 * L + 0.0 * M + 1.0 * S;
-	}
-	
-	if (mode == 2) //Tritanopia
-	{
-		l = 1.0 * L + 0.0 * M + 0.0 * S;
-    	m = 0.0 * L + 1.0 * M + 0.0 * S;
-    	s = -0.395913 * L + 0.801109 * M + 0.0 * S;
-	}
 
-    if (mode == 3) //Normal
+    if (mode == 0) //Normal
     {
         l = L;
         m = M;
         s = S;
     }
 
-    
-	vec4 error;
-	error.r = (0.0809444479 * l) + (-0.130504409 * m) + (0.116721066 * s);
-	error.g = (-0.0102485335 * l) + (0.0540193266 * m) + (-0.113614708 * s);
-	error.b = (-0.000365296938 * l) + (-0.00412161469 * m) + (0.693511405 * s);
-	error.a = 1.0;
-	vec4 diff = tex - error;
-	vec4 correction;
-	correction.r = 0.0;
-	correction.g =  (diff.r * 0.7) + (diff.g * 1.0);
-	correction.b =  (diff.r * 0.7) + (diff.b * 1.0);
-	correction = tex + correction;
-	correction.a = tex.a * intensity;
+    if (mode == 1) //Protanopia
+    {
+        l = 0.0 * L + 2.02344 * M + -2.52581 * S;
+        m = 0.0 * L + 1.0 * M + 0.0 * S;
+        s = 0.0 * L + 0.0 * M + 1.0 * S;
+    }
 
-	color = correction;
+    if (mode == 2) //Deuteranopia
+    {
+        l = 1.0 * L + 0.0 * M + 0.0 * S;
+        m = 0.494207 * L + 0.0 * M + 1.24827 * S;
+        s = 0.0 * L + 0.0 * M + 1.0 * S;
+    }
+
+    if (mode == 3) //Tritanopia
+    {
+        l = 1.0 * L + 0.0 * M + 0.0 * S;
+        m = 0.0 * L + 1.0 * M + 0.0 * S;
+        s = -0.395913 * L + 0.801109 * M + 0.0 * S;
+    }
+
+    vec4 error;
+    error.r = (0.0809444479 * l) + (-0.130504409 * m) + (0.116721066 * s);
+    error.g = (-0.0102485335 * l) + (0.0540193266 * m) + (-0.113614708 * s);
+    error.b = (-0.000365296938 * l) + (-0.00412161469 * m) + (0.693511405 * s);
+    error.a = 1.0;
+    vec4 diff = tex - error;
+    vec4 correction;
+    correction.r = 0.0;
+    correction.g =  (diff.r * 0.7) + (diff.g * 1.0);
+    correction.b =  (diff.r * 0.7) + (diff.b * 1.0);
+    correction = tex + correction;
+    correction.a = tex.a * intensity;
+
+    color = correction;
     
     //color = pow(abs(color * 2 - 1), vec4(1 / max(contrast, 0.0001))) * sign(color - 0.5) + 0.5;
 }
@@ -120,6 +121,7 @@ type
     layer: range[0..500]
     params: seq[TextureParam]
     scissor: Rect
+    mul: bool
 
 var
   textureProgram*: Shader
@@ -128,7 +130,11 @@ var
   pqueue: seq[Hash]
   buffers: seq[GLUint]
   textureScissor*: Rect
-  size*: Vector2
+  textureSize*: Vector2
+
+proc setColorblindMode*(mode: int) =
+  if mode <= 3:
+    textureProgram.setParam("mode", addr mode)
 
 proc hash(entry: QueueEntry): Hash =
   var h: Hash = 0
@@ -202,6 +208,7 @@ proc setupTexture*() =
   textureProgram.registerParam("projection", SPKProj4)
   textureProgram.registerParam("rotation", SPKFloat1)
   textureProgram.registerParam("layer", SPKFloat1)
+  textureProgram.registerParam("mode", SPKInt1)
 
 proc newTexture*(size: Vector2): Texture =
   ## creates a new texture with size
@@ -305,20 +312,26 @@ proc aabb*(a, b: Rect): bool =
 
 method draw*(texture: Texture,
              srcRect, dstRect: Rect,
-             shader: ptr Shader = nil,
+             shader: Shader = nil,
              color = newColor(255, 255, 255, 255),
              rotation: float = 0,
              layer: range[0..500] = 0,
              params: seq[TextureParam] = @[],
-             flip: array[2, bool] = [false, false]) =
+             flip: array[2, bool] = [false, false],
+             mul: bool = false) {.base.} =
   ## draws a texture
   # check the program
   var program = shader
   if program == nil:
-    program = addr textureProgram
+    program = textureProgram
+  if texture == nil:
+    return
 
   # calc the dest rectangle
   var dst = dstRect.offset(-1 * textureOffset)
+
+  if not dst.aabb(newRect(0, 0, textureSize.x, textureSize.y)):
+    return
     
   if flip[1]:
     dst.y = dst.y + dst.height
@@ -335,12 +348,13 @@ method draw*(texture: Texture,
   if queue == @[]:
     queue &= QueueEntry(
       update: true,
-      shader: program[],
+      shader: program,
       id: texture.tex,
       verts: vertices,
       layer: layer,
       params: params,
-      scissor: textureScissor
+      scissor: textureScissor,
+      mul: mul,
     )
 
   # attempt to add to the last queue item
@@ -348,6 +362,7 @@ method draw*(texture: Texture,
        texture.tex == queue[^1].id and
        program[].id == queue[^1].shader.id and
        params == queue[^1].params and
+       mul == queue[^1].mul and
        textureScissor == queue[^1].scissor:
     queue[^1].verts &= vertices
 
@@ -355,12 +370,13 @@ method draw*(texture: Texture,
   else:
     queue &= QueueEntry(
       update: true,
-      shader: program[],
+      shader: program,
       id: texture.tex,
       verts: vertices,
       layer: layer,
       params: params,
-      scissor: textureScissor
+      scissor: textureScissor,
+      mul: mul,
     )
 
 proc finishDraw*() =
@@ -378,7 +394,6 @@ proc finishDraw*() =
 
   # set gl options
   glEnable(GL_BLEND)
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
   # set texture
   glActiveTexture(GL_TEXTURE0)
@@ -408,9 +423,14 @@ proc finishDraw*() =
       glEnable(GL_SCISSOR_TEST)
 
       glScissor(q.scissor.location.x.GLint,
-          size.y.GLint - (q.scissor.location.y.GLint + q.scissor.size.y.GLint),
+          textureSize.y.GLint - (q.scissor.location.y.GLint + q.scissor.size.y.GLint),
           q.scissor.size.x.GLint,
           q.scissor.size.y.GLint)
+
+    if q.mul:
+      glBlendFunc(GL_DST_COLOR, GL_ZERO)
+    else:
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     # bind the queue items texture
     glBindTexture(GL_TEXTURE_2D, q.id)
@@ -457,6 +477,7 @@ proc finishDraw*() =
   # reset queue
   queue = @[]
   textureScissor = Rect()
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 proc isDefined*(texture: Texture): bool =
   ## check if a texture is defined

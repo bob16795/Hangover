@@ -40,8 +40,8 @@ proc setCameraSize*(w, h: int32) =
   textureProgram.setParam("projection", projection.caddr)
   for si in 0..<len shaders:
     shaders[si].setParam("projection", projection.caddr)
-  texture.size.x = w.float32
-  texture.size.y = h.float32
+  textureSize.x = w.float32
+  textureSize.y = h.float32
 
 proc resizeBuffer*(data: pointer): bool =
   ## called when window is resized
@@ -195,7 +195,7 @@ proc getBufferTexture*(t: Texture) =
     stride += (4 - stride mod 4)
   let bufferSize: GLsizei = stride * height
   var buffer: seq[uint8]
-  buffer = 0.uint8.repeat(bufferSize)
+  buffer = newSeq[uint8](bufferSize)
 
   # read to the buffer
   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, addr buffer[0])

@@ -16,3 +16,5 @@ tests/*
 gin2.deps
 docs/**
 *.deps
+
+tmp

@@ -11,6 +11,8 @@ import hangover/ecs/entity
 import sugar
 import segfaults
 import asyncdispatch
+import times
+
 export asyncdispatch
 
 when defined debug:
@@ -104,12 +106,16 @@ template Game*(body: untyped) =
           if ui:
             drawUI()
             ui = false
+
+        var lastTime = cpuTime()
           
-        template setPercent(perc: float): untyped =
+        template setStatus(perc: float32, status: string): untyped =
+          let newTime = cpuTime()
+          LOG_INFO "ho->templates", "Finished `" & loadStatus & "` in " & $int(1000 * (newTime - lastTime)) & "ms"
           pc = perc
-        template setStatus(status: string): untyped =
           loadStatus = status
           await sleepAsync(200)
+          lastTime = cpuTime()
 
         body
 
@@ -126,21 +132,19 @@ template Game*(body: untyped) =
                 quit()
             finishDraw()
             finishRender(ctx)
-            await sleepAsync(1.0 / 60.0)
+            updateAudio()
+            await sleepAsync(1000.0 / 60.0)
 
         proc load() {.async.} =
+          let time = cpuTime()
           await Initialize(addr ctx)
+          LOG_INFO "ho->templates", "Loaded in " & $int((cpuTime() - time) * 1000) & "ms"
           done = true
 
         initAudio()
         initUIManager(data.size)
 
         setupEventCallbacks(ctx)
-        
-        var tmpSize: tuple[w, h: int32]
-        tmpSize.w = size.x.int32
-        tmpSize.h = size.y.int32
-        sendEvent(EVENT_RESIZE, addr tmpSize)
         
         waitFor drawLoadingAsync() and load()
 
@@ -150,18 +154,18 @@ template Game*(body: untyped) =
         #createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = loop.forceDraw(ctx))
         loop.updateProc =
           proc (dt: float, delayed: bool): bool =
-          when defined debug:
-            if debugConsole:
-              updateConsole()
+            when defined hoConsole:
+              if debugConsole:
+                updateConsole()
 
-          when not defined(ginGLFM):
-            glfw.pollEvents()
-            if glfw.shouldClose(ctx.window):
-              return true
+            when not defined(ginGLFM):
+              glfw.pollEvents()
+              if glfw.shouldClose(ctx.window):
+                return true
 
-          updateUI(dt)
-          updateAudio()
-          return Update(dt, delayed)
+            updateUI(dt)
+            updateAudio()
+            return Update(dt, delayed)
 
         loop.drawProc = proc (ctx: var GraphicsContext) =
           ui = true
@@ -169,19 +173,23 @@ template Game*(body: untyped) =
           if ui:
             drawUI()
 
-          when defined debug:
+          when defined hoConsole:
             if debugConsole:
               drawConsole()
 
           finishrender(ctx)
 
-        while not loop.done:
-          loop.update(ctx)
-        gameClose()
+        try:
+          while not loop.done:
+            loop.update(ctx)
+        except Exception as ex:
+          LOG_ERROR "ho->main", ex.msg
+        finally:
+          gameClose()
         
       ginMain()
   else:
-    var nimInit* = true 
+    var nimInit* = true
     type
       GinApp* = object
         started*: bool

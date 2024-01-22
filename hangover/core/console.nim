@@ -12,8 +12,9 @@ type
 
 var
   debugConsole*: bool
-  consoleFont*: ptr Font
+  consoleFont*: Font
   consoleText: seq[string] = @[""]
+  consoleHeight*: float32
   consoleCommands*: Table[string, ConsoleCommand]
 
 proc updateConsole*() =
@@ -21,6 +22,7 @@ proc updateConsole*() =
 
 proc runConsole*() =
   let full_cmd = consoleText[^1].split(" ")
+  consoleText[^1] = ">>> " & consoleText[^1]
   let cmd = full_cmd[0]
   if cmd == "clear":
     consoleText = @[""]
@@ -51,7 +53,12 @@ proc consoleChar*(c: Rune) =
   consoleText[^1] &= c
 
 proc drawConsole*() =
-  var y = float(consoleText.len) * consoleFont.size.float
+  var y = min(float(consoleText.len) * consoleFont.size.float, consoleHeight - consoleFont.size.float)
+  var first = true
   for l in consoleText.reversed():
-    consoleFont[].draw(l, newVector2(20, y), newColor(255, 255, 255, 255))
+    if first:
+      consoleFont.draw(">>> " & l, newVector2(20, y), newColor(255, 255, 255, 255))
+      first = false
+    else:
+      consoleFont.draw(l, newVector2(20, y), newColor(255, 255, 255, 255))
     y -= consoleFont.size.float

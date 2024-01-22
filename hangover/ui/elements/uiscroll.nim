@@ -42,11 +42,11 @@ method draw*(s: UIScroll, parentRect: Rect) =
   if s.height > s.vpHeight:
     let
       value = s.scrollVis.y / (s.height - s.vpHeight)
-      posy: float32 = ((bounds.y + 50) * (1 - value)) + (bounds.y + bounds.height - 50) * (value) - 50
-      posx: float32 = bounds.x + bounds.width - 25
-    s.sprite.draw(newRect(posx - 25, bounds.y, 50, bounds.height))
-    s.handleSprite.draw(newRect(bounds.x + bounds.width - 50, posy, 50, 100))
-    bounds.width -= 50
+      posy: float32 = ((bounds.y + 80) * (1 - value)) + (bounds.y + bounds.height - 80) * value - 80
+      posx: float32 = bounds.x + bounds.width - 80 * 0.5
+    s.sprite.draw(newRect(posx - 80 * 0.5, bounds.y, 80, bounds.height))
+    s.handleSprite.draw(newRect(bounds.x + bounds.width - 80, posy, 80, 160))
+    bounds.width -= 80
 
   bounds.y = bounds.y - s.scrollVis.y
   bounds.x = bounds.x - s.scrollVis.x

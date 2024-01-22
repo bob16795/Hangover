@@ -1,4 +1,5 @@
-import strutils 
+import strutils
+import math
 
 #TODO: comment
 
@@ -45,3 +46,21 @@ proc `$`*(c: Color): string =
   result &= c.g.toHex(2)
   result &= c.b.toHex(2)
   result &= c.a.toHex(2)
+
+proc hue*(c: Color): float32 =
+  let
+    r = c.rf
+    g = c.gf
+    b = c.bf
+    mi = min(min(r, g), b)
+    ma = max(max(r, g), b)
+  if r > g and r > b:
+    result = ((g - b) / (ma - mi)) / 6.0
+  elif b > g:
+    result = (4.0 + (r - g) / (ma - mi)) / 6.0
+  else:
+    result = (2.0 + (b - r) / (ma - mi)) / 6.0
+  if result < 0:
+    result += 1.0
+  if result.classify == fcNaN:
+    return 0.66

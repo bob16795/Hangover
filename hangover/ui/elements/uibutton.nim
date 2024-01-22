@@ -15,7 +15,7 @@ import hangover/core/audio
 type
   UIButton* = ref object of UIElement
     ## A button element for ui
-    font*: ptr Font
+    font*: Font
     fontMult*: float32
     action*: UIAction
     text*: string
@@ -37,7 +37,7 @@ var
   buttonClickSound*: Sound
   buttonFailSound*: Sound
 
-proc newUIButton*(texture: Texture, font: var Font, bounds: UIRectangle,
+proc newUIButton*(texture: Texture, font: Font, bounds: UIRectangle,
         action: UIAction = nil, text = "", disableProc: proc(): bool = nil,
         sprite: Sprite = Sprite(), toggleSprite: Sprite = Sprite(),
         toggle: bool = false): UIButton =
@@ -50,7 +50,7 @@ proc newUIButton*(texture: Texture, font: var Font, bounds: UIRectangle,
   result.isDisabled = disableProc
 
   # set the font
-  result.font = addr font
+  result.font = font
 
   # setup texture data
   if texture.isDefined():
@@ -155,7 +155,7 @@ method draw*(b: UIButton, parentRect: Rect) =
   if (b.hasSprite):
     let iconSize = bounds.height * b.iconScale
     let posx = bounds.x + ((bounds.width - iconSize) -
-        sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
+        sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
     let posy = bounds.y + (bounds.height - iconSize) / 2
     b.sprite.draw(newVector2(posx, posy),
         0, newVector2(iconSize, iconSize), c = color)
@@ -165,19 +165,19 @@ method draw*(b: UIButton, parentRect: Rect) =
     if not b.toggle:
       if b.focused:
         let posx = (bounds.x) + ((bounds.width - bounds.height) -
-            sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
+            sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
         b.toggleSprite.draw(newVector2(posx, bounds.y),
             0, newVector2(bounds.height, bounds.height), c = newColor(255,
                 255, 255, 255))
     else:
       if b.pressed:
         let posx = (bounds.x) + ((bounds.width - bounds.height) -
-            sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
+            sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
         b.toggleSprite.draw(newVector2(posx, bounds.y),
             0, newVector2(bounds.height, bounds.height), c = color)
       if b.focused:
         let posx = (bounds.x) + ((bounds.width - bounds.height) -
-            sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
+            sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
         b.toggleSprite.draw(newVector2(posx, bounds.y),
             0, newVector2(bounds.height, bounds.height), c = newColor(255,
                 255, 255, 128))
@@ -185,14 +185,14 @@ method draw*(b: UIButton, parentRect: Rect) =
   # draw the buttons text centered
   if (b.text != ""):
     var posx: float32 = (bounds.x + ((
-                bounds.width - sizeText(b.font[],
+                bounds.width - sizeText(b.font,
                 b.text, b.fontMult * uiElemScale).x) / 2))
-    let posy: float32 = bounds.y + ((bounds.height - b.font[].sizeText(b.text,
+    let posy: float32 = bounds.y + ((bounds.height - b.font.sizeText(b.text,
         b.fontMult * uiElemScale).y.float32) / 2)
     if b.hasSprite:
       posx = (bounds.x + bounds.height + 10) + ((bounds.width - bounds.height) -
-          sizeText(b.font[], b.text, b.fontMult * uiElemScale).x) / 2
-    b.font[].draw(b.text, newPoint(posx.cint, posy.cint), textColor,
+          sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
+    b.font.draw(b.text, newPoint(posx.cint, posy.cint), textColor,
         b.fontMult * uiElemScale)
 
 method update*(b: UIButton, parentRect: Rect, mousePos: Vector2,

@@ -20,7 +20,7 @@ type
   ShaderParam* = object
     name: string
     kind: ShaderParamKind
-  Shader* = object
+  Shader* = ref object
     id*: GLuint
     params*: Table[ShaderParam, bool]
 
@@ -32,6 +32,8 @@ else:
     SHADER_HEADER = "#version 330 core\n"
 
 proc newShader*(vCode, gCode, fCode: string): Shader =
+  result = Shader()
+
   let
     vShaderCode = [(SHADER_HEADER & vCode).cstring]
     gShaderCode = [(SHADER_HEADER & gCode).cstring]
@@ -128,6 +130,7 @@ proc newComputeShader*(cCode: string): Shader =
 
 proc newShader*(vCode, fCode: string): Shader =
   result = Shader()
+
   let
     vShaderCode = [(SHADER_HEADER & vCode).cstring]
     fShaderCode = [(SHADER_HEADER & fCode).cstring]

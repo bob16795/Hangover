@@ -7,7 +7,7 @@ Game:
   var
     bg: Color
 
-  proc drawLoading(pc: float32, loadStatus: string, ctx: GraphicsContext) =
+  proc drawLoading(pc: float32, loadStatus: string, ctx: GraphicsContext, size: Point) =
     clearBuffer(ctx, bg)
 
   proc Setup(): AppData =
@@ -15,7 +15,7 @@ Game:
     result = newAppData()
     result.name = "Minimal Hangover Template"
 
-  proc Initialize(ctx: var GraphicsContext) =
+  proc Initialize(ctx: ptr GraphicsContext) {.async.} =
     discard
 
   proc Update(dt: float, delayed: bool): bool =
@@ -24,5 +24,5 @@ Game:
   proc Draw(ctx: var GraphicsContext) =
     clearBuffer(ctx, bg)
 
-  proc closeGame() =
+  proc gameClose() =
     discard

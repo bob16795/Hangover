@@ -7,7 +7,7 @@ import hangover/core/types/color
 #TODO: add fsm
 
 type
-  AnimationState* = object
+  AnimationState* = object of Sprite
     frames: seq[Sprite]
     frameTime*: float32
 

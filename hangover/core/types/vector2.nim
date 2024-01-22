@@ -42,7 +42,7 @@ proc `/`*(p: Vector2, i: int | int16 | int32 | float | float32 | float64): Vecto
   result.y /= i.float32
 
 proc `-`*(p: Vector2): Vector2 =
-  result = result * -1
+  result = p * -1
 
 # equals operators
 
@@ -102,6 +102,7 @@ proc toVector2*(p: Point): Vector2 =
 
 proc normal*(p: Vector2): Vector2 =
   let mag = p.distance(newVector2(0, 0)).float32
+  if mag == 0: return newVector2(0, 0)
   result.x = p.x / mag
   result.y = p.y / mag
   if result.x.isNaN: result.x = 0

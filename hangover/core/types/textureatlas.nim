@@ -1,6 +1,7 @@
 import hangover/core/types/texture
 import hangover/core/types/rect
 import hangover/core/types/vector2
+import hangover/core/types/point
 import hangover/core/types/color
 import hangover/core/types/shader
 import ../lib/stbi
@@ -12,8 +13,6 @@ import tables
 import hangover/ui/types/uirectangle
 
 # has to be a power of 2
-const TEXTURE_ATLAS_SIZE = 512
-
 type
   TextureAtlasData* = object
     size*: Vector2
@@ -24,9 +23,9 @@ type
   TextureAtlasEntry* = ref object of Texture
     source*: Texture
     bounds*: Rect
-    ta: TextureAtlas
+    parentSize: Point
 
-  TextureAtlas* = ref object
+  TextureAtlas* = object
     source*: Texture
     entrys*: Table[string, TextureAtlasEntry]
     target*: seq[TextureAtlasData]
@@ -60,7 +59,6 @@ proc newTextureDataMem*(image: pointer, imageSize: cint,
     quit(2)
 
 proc newTextureAtlas*(): TextureAtlas =
-  result = TextureAtlas()
   result.source = Texture()
 
 proc add*(ta: var TextureAtlas, e: TextureAtlasData) =
@@ -70,33 +68,43 @@ proc cmpTex(a, b: TextureAtlasData): int =
   return cmp(b.size.y, a.size.y)
 
 proc pack*(ta: var TextureAtlas) =
+  ta.source = Texture()
   glGenTextures(1, addr ta.source.tex)
   glBindTexture(GL_TEXTURE_2D, ta.source.tex)
 
   ta.target.sort(cmpTex)
 
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+  glPixelStorei(GL_PACK_ALIGNMENT, 1)
+
   var
-    size: GLsizei = 32
+    sizex: GLsizei = 32
+    sizey: GLsizei = 32
+    incx: bool = true
     done = false
 
   while not done:
     done = true
     var
-      x: float32  = 0
-      y: float32  = 0
+      x: float32 = 0
+      y: float32 = 0
       maxh: float32 = 0
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, size, size, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, sizex, sizey, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
 
     for tidx in 0..<len(ta.target):
       var
         targ = newRect(newVector2(0, 0), ta.target[tidx].size)
 
-      if x + targ.width > size.float32:
+      if x + targ.width > sizex.float32:
           y += maxh
           x = 0
           maxh = 0
-      if y + targ.height > size.float32 or targ.width > size.float32:
-          size *= 2
+      if y + targ.height > sizey.float32 or targ.width > sizex.float32:
+          if incx:
+            sizex *= 2
+          else:
+            sizey *= 2
+          incx = not incx
           done = false
           break
 
@@ -111,14 +119,16 @@ proc pack*(ta: var TextureAtlas) =
           ta.target[tidx].data)
       ta.entrys[ta.target[tidx].name] = TextureAtlasEntry(bounds: targ)
 
-  LOG_DEBUG "ho->atlas", "Packed Atlas " & $size & "x"
+  LOG_DEBUG "ho->atlas", "Packed Atlas " & $sizex & "x" & $sizey
 
   for tidx in 0..<len(ta.target):
     if ta.target[tidx].stbi:
       stbi_image_free(ta.target[tidx].data)
 
   for vi in ta.entrys.keys:
-    ta.entrys[vi].source = ta.source
+    ta.entrys[vi].parentSize = newPoint(sizex, sizey)
+    ta.entrys[vi].source = TextureAtlasEntry()
+    ta.entrys[vi].source[] = ta.source[]
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
@@ -127,20 +137,27 @@ proc pack*(ta: var TextureAtlas) =
   
   glGenerateMipmap(GL_TEXTURE_2D)
 
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 4)
+  glPixelStorei(GL_PACK_ALIGNMENT, 4)
+
 proc `[]`*(ta: TextureAtlas, idx: string): TextureAtlasEntry =
   return ta.entrys[idx]
 
 method draw*(e: TextureAtlasEntry,
            srcRect, dstRect: Rect,
-           shader: ptr Shader = nil,
+           shader: Shader = nil,
            color = newColor(255, 255, 255, 255),
            rotation: float = 0,
            layer: range[0..500] = 0,
            params: seq[TextureParam] = @[],
-           flip: array[2, bool] = [false, false]) =
-  let texSrc = newRect(e.bounds.location / TEXTURE_ATLAS_SIZE, e.bounds.size / TEXTURE_ATLAS_SIZE)
+           flip: array[2, bool] = [false, false],
+           mul: bool = false) =
+  let texSrc = newRect(e.bounds.x / e.parentSize.x.float32,
+                       e.bounds.y / e.parentSize.y.float32,
+                       e.bounds.width / e.parentSize.x.float32,
+                       e.bounds.height / e.parentSize.y.float32)
   let tmpSrcRect = newUIRectangle(0, 0, 0, 0, srcRect.x, srcRect.y,
                                   srcRect.x + srcRect.width,
                                   srcRect.y + srcRect.height)
   e.source.draw(tmpSrcRect.toRect(texSrc), dstRect, shader, color, rotation,
-      layer, params, flip)
+                layer, params, flip, mul)

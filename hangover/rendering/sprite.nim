@@ -10,7 +10,7 @@ type
     ## a sprite object stores a source rect and texture 
     texture*: Texture ## the texture
     sourceBounds*: Rect ## the source rect
-    shader*: ptr Shader ## the shader to use
+    shader*: Shader ## the shader to use
 
 proc newSprite*(texture: Texture, x, y, w, h: float32): Sprite =
   ## creates a new sprite from a texture
@@ -24,7 +24,7 @@ proc newSprite*(texture: Texture, bounds: Rect): Sprite =
   result.texture = texture
   result.sourceBounds = bounds
 
-proc setShader*(this: Sprite, shader: ptr Shader): Sprite =
+proc setShader*(this: Sprite, shader: Shader): Sprite =
   ## sets the sprites shader
   result = this
   result.shader = shader
@@ -35,7 +35,7 @@ proc draw*(sprite: Sprite,
            rotation: float32 = 0,
            color: Color = newColor(255, 255, 255),
            layer: range[0..500] = 0,
-           shader: ptr Shader = nil,
+           shader: Shader = nil,
            params: seq[TextureParam] = @[]) =
   ## draws a sprite at `target`
 

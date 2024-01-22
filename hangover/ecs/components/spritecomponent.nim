@@ -24,7 +24,7 @@ component SpriteComponent:
   proc construct(tex: Texture, source: Rect,
                  color: Color = newColor(255, 255, 255),
                  layer: range[0..500] = 0,
-                 shader: ptr Shader = nil) =
+                 shader: Shader = nil) =
     this.sprite = newSprite(tex, source).setShader(shader)
     this.color = color
     this.layer = layer

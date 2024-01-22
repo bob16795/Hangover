@@ -15,7 +15,7 @@ type
     text*: string
     update*: (string) -> string
     hint*: string
-    font*: ptr Font
+    font*: Font
     fontMult*: float32
     active*: bool
 
@@ -27,11 +27,11 @@ proc onKey*(data: pointer): bool =
 
 createListener(EVENT_LINE_ENTER, onKey)
 
-proc newUIInput*(font: var Font, bounds: UIRectangle, hint = "",
+proc newUIInput*(font: Font, bounds: UIRectangle, hint = "",
     disable: () -> bool = nil): UIInput =
   var r = UIInput()
 
-  r.font = addr font
+  r.font = font
 
   r.isActive = true
   r.bounds = bounds
@@ -72,25 +72,25 @@ method draw*(e: UIInput, parentRect: Rect) =
     var text = e.text
     if e.active: text &= "|"
     let
-      h: float32 = sizeText(e.font[], e.text, e.fontMult * uiElemScale).y
-      posx: float32 = bounds.x + (bounds.width - sizeText(e.font[],
+      h: float32 = sizeText(e.font, e.text, e.fontMult * uiElemScale).y
+      posx: float32 = bounds.x + (bounds.width - sizeText(e.font,
         e.text, e.fontMult * uiElemScale).x) / 2
     var
       posy: float32 = bounds.y + ((bounds.height - h) / 2)
-    e.font[].draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0), e.fontMult * uiElemScale)
-    posy += sizeText(e.font[], text, e.fontMult * uiElemScale).y
+    e.font.draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0), e.fontMult * uiElemScale)
+    posy += sizeText(e.font, text, e.fontMult * uiElemScale).y
   elif (e.hint != ""):
     let
       text = e.hint
-      h: float32 = sizeText(e.font[], text, e.fontMult * uiElemScale).y
+      h: float32 = sizeText(e.font, text, e.fontMult * uiElemScale).y
     var
       posy: float32 = bounds.y + ((bounds.height - h) / 2)
-      posx: float32 = bounds.x + (bounds.width - sizeText(e.font[], text, e.fontMult * uiElemScale).x) / 2
-    e.font[].draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0, 150), e.fontMult * uiElemScale)
+      posx: float32 = bounds.x + (bounds.width - sizeText(e.font, text, e.fontMult * uiElemScale).x) / 2
+    e.font.draw(text, newPoint(posx.cint, posy.cint), newColor(0, 0, 0, 150), e.fontMult * uiElemScale)
     if e.active:
-      posx = bounds.x + (bounds.width - sizeText(e.font[], "|", e.fontMult * uiElemScale).x) / 2
-      e.font[].draw("|", newPoint(posx.cint, posy.cint), newColor(0, 0, 0), e.fontMult * uiElemScale)
-    posy += sizeText(e.font[], text, e.fontMult * uiElemScale).y
+      posx = bounds.x + (bounds.width - sizeText(e.font, "|", e.fontMult * uiElemScale).x) / 2
+      e.font.draw("|", newPoint(posx.cint, posy.cint), newColor(0, 0, 0), e.fontMult * uiElemScale)
+    posy += sizeText(e.font, text, e.fontMult * uiElemScale).y
 
 method update*(b: UIInput, parentRect: Rect, mousePos: Vector2,
     dt: float32) =

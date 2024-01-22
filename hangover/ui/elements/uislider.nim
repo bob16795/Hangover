@@ -1,6 +1,7 @@
 import hangover/core/types/vector2
 import hangover/core/types/rect
 import hangover/core/types/font
+import hangover/core/types/color
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
 import sugar
@@ -9,7 +10,12 @@ import sugar
 
 type
   UISlider* = ref object of UIElement
-    font*: ptr Font
+    font*: Font
+    fontMult*: float32
+    valueMul*: float
+    valueAdd*: float
+    valueLabel*: string
+
     vertical*: bool
     sprite*, handleSprite*: UISprite
     focusedSprite*: UISprite
@@ -77,6 +83,13 @@ method draw*(s: UISlider, parentRect: Rect) =
       var posy: float32 = bounds.y + (bounds.height) / 2
       s.sprite.draw(newRect(bounds.x, posy - s.barSize / 2, bounds.width, s.barSize))
       handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height))
+      if s.font != nil:
+        let
+          handlePos = newRect(posx, bounds.y, s.handleSize, bounds.height).center()
+          text = $int(s.value * s.valueMul + s.valueAdd) & s.valueLabel
+          size = s.font.sizeText(text, s.fontMult * uiElemScale) * 0.5
+
+        s.font.draw(text, handlePos - size, newColor(0, 0, 0), s.fontMult * uiElemScale)
 
 proc lerp*(a, b: float, pc: float32): float =
   return a + (b - a) * pc

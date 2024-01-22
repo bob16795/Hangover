@@ -17,7 +17,7 @@ import hangover/rendering/sprite
 const FONT_TEX_SIZE = 256
 
 type
-  Font* = object
+  Font* = ref object
     face: FT_Face
     size*: int
     textures*: seq[Texture]
@@ -122,6 +122,7 @@ proc finFont*(f: Font, size: int): Font =
         x = 0
         ax = g.bitmap.width.int + 1
         ay += rowHeight
+        y += rowHeight
         rowHeight = g.bitmap.rows.int + 1
       if ay + g.bitmap.rows.int + 1 >= FONT_TEX_SIZE:
         y = 0
@@ -130,30 +131,28 @@ proc finFont*(f: Font, size: int): Font =
         result.textures &= newTexture(newVector2(FONT_TEX_SIZE, FONT_TEX_SIZE))
         glBindTexture(GL_TEXTURE_2D, result.textures[^1].tex)
 
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-        glPixelStorei(GL_PACK_ALIGNMENT, 1)
       rowHeight = max(rowHeight, g.bitmap.rows.int + 1)
       result.size = max(result.size, g.bitmap.rows.int)
 
-      var tmpBuffer: seq[uint8]
-      var idx: int = 0
-      for x in 0..g.bitmap.width:
-        for y in 0..g.bitmap.rows:
-          let d = cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
-          when not defined(fontaa):
-            if d > 128:
-              tmpBuffer &= 255
-            else:
-              tmpBuffer &= 0
-          else:
-            tmpBuffer &= d
-          tmpBuffer &= 0
-          tmpBuffer &= 0
-          tmpBuffer &= 0
-          idx += 1
-
       glTexSubImage2D(GL_TEXTURE_2D, 0, x.GLint, y.GLint, g.bitmap.width.GLsizei,
-          g.bitmap.rows.GLsizei, GL_RGBA, GL_UNSIGNED_BYTE, addr tmpBuffer[0])
+          g.bitmap.rows.GLsizei, GL_RED, GL_UNSIGNED_BYTE, addr g.bitmap.buffer[0])
+
+      #var tmpBuffer: seq[uint8]
+      #var idx: int = 0
+      #for x in 0..g.bitmap.width:
+      #  for y in 0..g.bitmap.rows:
+      #    let d = cast[ptr uint8]((addr g.bitmap.buffer[0]) + idx)[]
+      #    when not defined(fontaa):
+      #      if d > 128:
+      #        tmpBuffer &= 255
+      #      else:
+      #        tmpBuffer &= 0
+      #    else:
+      #      tmpBuffer &= d
+      #    idx += 1
+
+      #glTexSubImage2D(GL_TEXTURE_2D, 0, x.GLint, y.GLint, g.bitmap.width.GLsizei,
+      #    g.bitmap.rows.GLsizei, GL_RED, GL_UNSIGNED_BYTE, addr tmpBuffer[0])
 
     result.characters[c.Rune] = Character(
       size: newPoint(result.face.glyph.bitmap.width.cint,
@@ -169,7 +168,7 @@ proc finFont*(f: Font, size: int): Font =
       th: g.bitmap.rows.float32 / FONT_TEX_SIZE.float32,
     )
 
-  result.lastRune = 65535.Rune
+  result.lastRune = 2560.Rune
 
   discard FT_Done_Face(result.face)
 
@@ -179,27 +178,33 @@ proc finFont*(f: Font, size: int): Font =
     # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP.GLint)
     # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR.GLint)
     # glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
-    
+
     glGenerateMipmap(GL_TEXTURE_2D)
-    
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 4)
+  glPixelStorei(GL_PACK_ALIGNMENT, 4)
 
 proc newFontMem*(data: cstring, dataSize: int64, size: int, spacing: int = 0): Font =
+  result = Font()
+
   if FT_New_Memory_Face(ft, data, cast[FT_Long](dataSize), 0, result.face).int != 0:
     LOG_ERROR("ho->font", "Failed to load font")
     quit(2)
   result = finFont(result, size)
   result.spacing = spacing
 
-  LOG_DEBUG("ho->font", "Loaded font", result.textures.len , "Textures")
+  LOG_DEBUG("ho->font", "Loaded font", result.textures.len, "Textures")
 
 proc newFont*(face: string, size: int, spacing: int = 0): Font =
+  result = Font()
+
   if FT_New_Face(ft, face, 0, result.face).int != 0:
     LOG_ERROR("ho->font", "Failed to load font")
     quit(2)
   result = finFont(result, size)
   result.spacing = spacing
   
-  LOG_DEBUG("ho->font", "Loaded font", result.textures.len , "Textures")
+  LOG_DEBUG("ho->font", "Loaded font", result.textures.len, "Textures")
 
 proc draw*(font: Font, text: string, position: Vector2, color: Color,
            scale: float32 = 1, wrap: float32 = 0, layer: range[0..500] = 0) =
@@ -248,7 +253,7 @@ proc draw*(font: Font, text: string, position: Vector2, color: Color,
     let
       tex = font.textures[ch.tex]
     tex.draw(srect, newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border,
-        h.float32 + 2 * font.border), addr fontProgram, color, layer = layer)
+        h.float32 + 2 * font.border), fontProgram, color, layer = layer)
     pos.x += ((ch.advance shr 6).float32 * scale)
     pos.x += font.spacing.float32 + (2 * font.border)
 

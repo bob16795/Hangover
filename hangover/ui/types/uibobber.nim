@@ -55,11 +55,12 @@ proc update*(b: UIBobber, dt: float32, mouse: Vector2) =
   b.ampMult = clamp(b.ampMult, 0, 1)
 
   b.offset.y = sin(b.timer * 2 * PI / b.freq) * b.amp * b.ampMult * 0.5
+  b.offset.x = 0
 
   if mouse in b.pos and b.focusable:
     b.offset.y += clamp(mouse.y - b.pos.center.y, -b.pos.height, b.pos.height) / (b.pos.height / b.amp)
 
-    b.offset.x = clamp(mouse.x - b.pos.center.x, -b.pos.width, b.pos.width) / (b.pos.width / b.amp) 
+    b.offset.x += clamp(mouse.x - b.pos.center.x, -b.pos.width, b.pos.width) / (b.pos.width / b.amp)
 
   b.voffset = lerp(b.voffset, b.offset, clamp(dt * 5, 0, 1))
 

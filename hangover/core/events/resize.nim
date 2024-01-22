@@ -1,5 +1,6 @@
 createEvent(EVENT_RESIZE)
 createEvent(EVENT_RESIZE_FRAMEBUFFER)
+createEvent(EVENT_FOCUS)
 
 let
   EVENT_RESIZE_DONE* {.deprecated.} = EVENT_RESIZE_FRAMEBUFFER
@@ -9,9 +10,10 @@ let
 when not defined(ginGLFM):
   proc sizeCB*(win: Window, res: tuple[w, h: int32]) =
     ## Called when the window is resized
-    var r = res
-    sendEvent(EVENT_RESIZE, addr r)
+    sendEvent(EVENT_RESIZE, addr res)
   
   proc resizeCB*(win: Window, res: tuple[w, h: int32]) =
-    var r = res
-    sendEvent(EVENT_RESIZE_DONE, addr r)
+    sendEvent(EVENT_RESIZE_DONE, addr res)
+
+  proc focusCB*(win: Window, focused: bool) =
+    sendEvent(EVENT_FOCUS, addr focused)

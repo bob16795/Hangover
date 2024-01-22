@@ -2,6 +2,7 @@ import openal
 import streams
 import options
 import ../lib/readwav
+import ../lib/vorbis
 import hangover/core/logging
 
 # TODO: comment
@@ -21,8 +22,12 @@ type
 template `+`(p: pointer, off: int): pointer =
   cast[pointer](cast[ByteAddress](p) +% off * sizeof(uint8))
 
-proc newSongMem*(s: Stream, loopPoint: float32 = 0): Song =
-  let wav = readWav(s)
+proc newSongMem*(s: Stream, loopPoint: float32 = 0, ogg = false): Song =
+  let wav = if ogg:
+              loadVorbis(s.readAll())
+            else:
+              readWav(s)
+
   var baseLayer: SongLayer
 
   if loopPoint != 0:
@@ -69,6 +74,6 @@ proc addLayer*(song: var Song, s: Stream, idx: range[0..MAX_SONG_LAYERS - 1]) =
 
   s.close()
 
-proc newSong*(file: string, loopPoint: float32 = 0): Song =
+proc newSong*(file: string, loopPoint: float32 = 0, ogg = false): Song =
   let s = newFileStream(file)
-  result = newSongMem(s)
+  result = newSongMem(s, loopPoint, ogg)
