@@ -14,10 +14,6 @@ type
     temp_memory_required: cuint
     max_frame_size: cint
 
-proc c_malloc(size: csize_t): pointer {.importc: "malloc",
-    header: "<stdlib.h>".}
-proc c_free(p: pointer) {.importc: "free", header: "<stdlib.h>".}
-
 proc stb_vorbis_open_memory(
   data: pointer,
   len: cint,

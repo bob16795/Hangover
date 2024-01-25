@@ -1,6 +1,7 @@
 import openal
 import streams
 import ../lib/readwav
+import hangover/core/logging
 
 type
   Sound* = ref object
@@ -22,6 +23,10 @@ proc newSoundMem*(s: Stream): Sound =
   alBufferData(result.buffer, AL_FORMAT_MONO16, wav.data, ALsizei wav.size,
       ALsizei wav.freq)
   result.valid = true
+
+  let e = alGetError()
+  if e != AL_NO_ERROR:
+    LOG_ERROR("ho->sfx", "openAl error", $e)
 
 proc newSound*(file: string): Sound =
   ## creates a sound from file

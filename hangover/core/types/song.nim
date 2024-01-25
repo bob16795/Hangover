@@ -49,6 +49,10 @@ proc newSongMem*(s: Stream, loopPoint: float32 = 0, ogg = false): Song =
 
   s.close()
 
+  let e = alGetError()
+  if e != AL_NO_ERROR:
+    LOG_ERROR("ho->song", "openAl error", $e)
+
 proc addLayer*(song: var Song, s: Stream, idx: range[0..MAX_SONG_LAYERS - 1]) =
   let wav = readWav(s)
   var baseLayer: SongLayer

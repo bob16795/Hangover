@@ -16,7 +16,7 @@ proc getContentDir*(): string =
     return $glfmBundleDir()
   return getConfigDir() / APPNAME
 
-proc getFullFilePath*(file: string): string =
+proc hoPath*(file: string): string =
   ## expands a file path
   if not file.contains("://"):
     var e: ref OSError
@@ -35,3 +35,6 @@ proc getFullFilePath*(file: string): string =
   new(e)
   e.msg = &"Invalid File Path '{file}'"
   raise e
+
+proc getFullFilePath*(file: string): string {.deprecated.} =
+  file.hoPath

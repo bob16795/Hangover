@@ -122,8 +122,6 @@ template Game*(body: untyped) =
         var done = false
 
         proc drawLoadingAsync() {.async.} =
-          var ipc: float32
-          var istr: string
           while not done:
             drawLoading(pc, loadStatus, ctx, size)
             when not defined(ginGLFM):
@@ -183,7 +181,11 @@ template Game*(body: untyped) =
           while not loop.done:
             loop.update(ctx)
         except Exception as ex:
-          LOG_ERROR "ho->main", ex.msg
+          when defined debug:
+            gameClose()
+            raise ex
+          else:
+            LOG_ERROR "ho->templates", ex.msg
         finally:
           gameClose()
         

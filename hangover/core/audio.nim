@@ -19,14 +19,13 @@ var
   musicVols: array[MAX_SONG_LAYERS, float32]
   soundSources: array[SOURCES, ALuint]
 
-  nextSoundSource: int = 0
+  nextSoundSource: uint = 0
   loopBuffers: array[MAX_SONG_LAYERS, ALuint]
   alPaused: bool
   framePlayed: seq[Sound]
 
   masterVol: float32 = 1.0
   audioSize*: Vector2 = newVector2(1.0, 1.0)
-
 
 proc initAudio*() {.exportc, cdecl, dynlib.} =
   ## sets up the audio system
@@ -139,32 +138,31 @@ proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0), pitch: float32 = 1.0) 
     return
   framePlayed &= sound
   var sourceState: ALint
-  alGetSourcei(soundSources[nextSoundSource], AL_SOURCE_STATE, addr sourceState)
+  alGetSourcei(soundSources[nextSoundSource mod SOURCES], AL_SOURCE_STATE, addr sourceState)
   if sourceState != AL_PLAYING:
-    alSourcef(soundSources[nextSoundSource], AL_PITCH, pitch)
-    alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
-    alSource3f(soundSources[nextSoundSource], AL_POSITION, pos.x / audioSize.x.float32, pos.y / audioSize.y.float32, 0)
+    alSourcef(soundSources[nextSoundSource mod SOURCES], AL_PITCH, pitch)
+    alSourcei(soundSources[nextSoundSource mod SOURCES], AL_BUFFER, Alint sound.buffer)
+    alSource3f(soundSources[nextSoundSource mod SOURCES], AL_POSITION, pos.x / audioSize.x.float32, pos.y / audioSize.y.float32, 0)
 
-    alSourcePlay(soundSources[nextSoundSource])
+    alSourcePlay(soundSources[nextSoundSource mod SOURCES])
   nextSoundSource += 1
-  if nextSoundSource == SOURCES:
-    nextSoundSource = 0
 
-proc playRand*(sound: Sound, rs, re: float32, pos: Vector2 = newVector2(0, 0)) =
+proc playRand*(sound: Sound, r: HSlice[float32, float32], pos: Vector2 = newVector2(0, 0)) =
   ## plays a sound at a random pitch
   if sound in framePlayed:
     return
   framePlayed &= sound
   
   # set pitch, buffer and position
-  alSourcef(soundSources[nextSoundSource], AL_PITCH, rand(rs..re).float32)
-  alSourcei(soundSources[nextSoundSource], AL_BUFFER, Alint sound.buffer)
-  alSource3f(soundSources[nextSoundSource], AL_POSITION, -pos.x / audioSize.x.float32, pos.y / audioSize.y.float32, 0)
+  alSourcef(soundSources[nextSoundSource mod SOURCES], AL_PITCH, rand(r).float32)
+  alSourcei(soundSources[nextSoundSource mod SOURCES], AL_BUFFER, Alint sound.buffer)
+  alSource3f(soundSources[nextSoundSource mod SOURCES], AL_POSITION, -pos.x / audioSize.x.float32, pos.y / audioSize.y.float32, 0)
   
   # play the sound
-  alSourcePlay(soundSources[nextSoundSource])
+  alSourcePlay(soundSources[nextSoundSource mod SOURCES])
   
   # loop the source
   nextSoundSource += 1
-  if nextSoundSource == SOURCES:
-    nextSoundSource = 0
+
+proc playRand*(sound: Sound, rs, re: float32, pos: Vector2 = newVector2(0, 0)) {.deprecated.} =
+  playRand(sound, rs..re, pos)
