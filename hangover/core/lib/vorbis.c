@@ -494,7 +494,7 @@ enum STBVorbisError {
 //     stb_vorbis precomputes the result of the scalar residue decoding
 //     that would otherwise require a divide per chunk. you can trade off
 //     space for time by defining this symbol.
-// #define STB_VORBIS_DIVIDES_IN_RESIDUE
+#define STB_VORBIS_DIVIDES_IN_RESIDUE
 
 // STB_VORBIS_DIVIDES_IN_CODEBOOK
 //     vorbis VQ codebooks can be encoded two ways: with every case explicitly
@@ -504,7 +504,7 @@ enum STBVorbisError {
 //     because otherwise an integer divide-per-vector-element is required to
 //     unpack the index. If you define STB_VORBIS_DIVIDES_IN_CODEBOOK, you can
 //     trade off storage for speed.
-// #define STB_VORBIS_DIVIDES_IN_CODEBOOK
+#define STB_VORBIS_DIVIDES_IN_CODEBOOK
 
 #ifdef STB_VORBIS_CODEBOOK_SHORTS
 #error                                                                         \

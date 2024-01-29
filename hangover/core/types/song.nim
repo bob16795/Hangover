@@ -4,14 +4,15 @@ import options
 import ../lib/readwav
 import ../lib/vorbis
 import hangover/core/logging
+import async
 
 # TODO: comment
 const MAX_SONG_LAYERS* = 5
 
 type
   SongLayer* = object
-      loopBuffer*: ALuint
-      introBuffer*: ALuint
+    loopBuffer*: ALuint
+    introBuffer*: ALuint
 
   Song* = object
     hasIntro*: bool
@@ -31,11 +32,12 @@ proc newSongMem*(s: Stream, loopPoint: float32 = 0, ogg = false): Song =
   var baseLayer: SongLayer
 
   if loopPoint != 0:
+    let start = ((wav.size.float32 / 32) * clamp(loopPoint, 0, 1)).int * 32
+
     result.hasIntro = true
     alGenBuffers(ALsizei 1, addr baseLayer.introbuffer)
-    alBufferData(baseLayer.introbuffer, AL_FORMAT_STEREO16, wav.data, ALsizei wav.size,
+    alBufferData(baseLayer.introbuffer, AL_FORMAT_STEREO16, wav.data, ALsizei start,
         ALsizei wav.freq)
-    let start = ((wav.size.float32 / 32) * clamp(loopPoint, 0, 1)).int * 32
     alGenBuffers(ALsizei 1, addr baseLayer.loopBuffer)
     alBufferData(baseLayer.loopBuffer, AL_FORMAT_STEREO16, wav.data + start, ALsizei((wav.size - start).int),
         ALsizei wav.freq)

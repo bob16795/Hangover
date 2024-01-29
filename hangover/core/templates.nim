@@ -114,16 +114,19 @@ template Game*(body: untyped) =
           LOG_INFO "ho->templates", "Finished `" & loadStatus & "` in " & $int(1000 * (newTime - lastTime)) & "ms"
           pc = perc
           loadStatus = status
+          lastTime = newTime
           await sleepAsync(200)
-          lastTime = cpuTime()
 
         body
 
         var done = false
 
         proc drawLoadingAsync() {.async.} =
-          while not done:
-            drawLoading(pc, loadStatus, ctx, size)
+          while true:
+            if drawLoading(pc, loadStatus, ctx, size) and done:
+              finishDraw()
+              finishRender(ctx)
+              break
             when not defined(ginGLFM):
               glfw.pollEvents()
               if glfw.shouldClose(ctx.window):
@@ -137,13 +140,14 @@ template Game*(body: untyped) =
           let time = cpuTime()
           await Initialize(addr ctx)
           LOG_INFO "ho->templates", "Loaded in " & $int((cpuTime() - time) * 1000) & "ms"
+          await sleepAsync(500)
           done = true
 
         initAudio()
         initUIManager(data.size)
 
         setupEventCallbacks(ctx)
-        
+
         waitFor drawLoadingAsync() and load()
 
         deinitFT()

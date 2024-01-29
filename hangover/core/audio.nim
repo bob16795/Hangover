@@ -9,6 +9,12 @@ import options
 const
   SOURCES = 30
 
+type
+  SongQueueEntry = ref object
+    song: Song
+    force: bool
+    skip: bool
+
 var
   device: ALCdevice
   audioCtx: ALCcontext
@@ -26,6 +32,7 @@ var
 
   masterVol: float32 = 1.0
   audioSize*: Vector2 = newVector2(1.0, 1.0)
+  songQueue: seq[SongQueueEntry]
 
 proc initAudio*() {.exportc, cdecl, dynlib.} =
   ## sets up the audio system
@@ -74,33 +81,37 @@ proc setVolume*(vol: float32, music: bool) =
     for s in soundSources:
       alSourcef(s, AL_GAIN, ALfloat vol)
 
-proc updateAudio*() =
-  ## updates audio
-  ## checks if music should loop
-  ## checks for openAL errors
-  framePlayed = @[]
-  if alPaused: return
-  var sourceState: ALint
-  alGetSourcei(musicSources[0], AL_SOURCE_STATE, addr sourceState)
-  if sourceState != AL_PLAYING:
-    for idx in 0..<len musicSources:
-      if not musicActive[idx]: continue
-      if loopBuffers[idx] == 0: continue
-      alSourcei(musicSources[idx], AL_BUFFER, Alint loopBuffers[idx])
-      alSourcei(musicSources[idx], AL_LOOPING, 1)
-      alSourcePlay(musicSources[idx])
-  let e = alGetError()
-  if e != AL_NO_ERROR:
-    LOG_ERROR("ho->audio", "openAl error", $e)
+proc getSongLooping*(): bool =
+  # gets how many songs are queued
+  var looping, playing: ALint
+  alGetSourcei(musicSources[0], AL_LOOPING, addr looping)
+  return looping != 0
 
-proc play*(song: Song, force: bool = false) =
+proc getSongQueueSize*(): int =
+  # gets how many songs are queued
+  result = songQueue.len
+
+proc play*(song: Song, force: bool = false, skip: bool = false) =
   ## plays a song
   if not force and song.layers[0].get().loopBuffer == loopBuffers[0]: return
 
-  for source in musicSources:
-    alSourceStop(source)
+  var looping, playing: ALint
+  alGetSourcei(musicSources[0], AL_LOOPING, addr looping)
+  alGetSourcei(musicSources[0], AL_SOURCE_STATE, addr playing)
+  if not force and skip and looping == 0 and playing == AL_PLAYING:
+    songQueue &= SongQueueEntry(
+      song: song,
+      force: force,
+      skip: skip,
+    )
+    return
 
   for idx in 0..<musicSources.len:
+    var offset: ALfloat
+
+    alGetSourcef(musicSources[idx], AL_SEC_OFFSET, addr offset)
+    alSourceStop(musicSources[idx])
+
     musicActive[idx] = false
     alSourcef(musicSources[idx], AL_PITCH, 1.0.float32)
     loopBuffers[idx] = 0
@@ -117,11 +128,14 @@ proc play*(song: Song, force: bool = false) =
     else:
       alSourcei(musicSources[idx], AL_BUFFER, Alint song.layers[idx].get().loopBuffer)
       alSourcei(musicSources[idx], AL_LOOPING, 1)
-    loopBuffers[idx] = song.layers[idx].get().loopBuffer
 
-  for idx in 0..<musicSources.len:
     alSourcef(musicSources[idx], AL_GAIN, ALfloat masterVol * musicVols[idx])
     alSourcePlay(musicSources[idx])
+
+    if skip:
+      alSourcef(musicSources[idx], AL_SEC_OFFSET, offset)
+
+    loopBuffers[idx] = song.layers[idx].get().loopBuffer
 
 proc setLayerVolume*(layer: range[0..MAX_SONG_LAYERS-1], vol: float32) =
   if not musicActive[layer]: return
@@ -166,3 +180,27 @@ proc playRand*(sound: Sound, r: HSlice[float32, float32], pos: Vector2 = newVect
 
 proc playRand*(sound: Sound, rs, re: float32, pos: Vector2 = newVector2(0, 0)) {.deprecated.} =
   playRand(sound, rs..re, pos)
+
+proc updateAudio*() =
+  ## updates audio
+  ## checks if music should loop
+  ## checks for openAL errors
+  framePlayed = @[]
+  if alPaused: return
+  var sourceState: ALint
+  alGetSourcei(musicSources[0], AL_SOURCE_STATE, addr sourceState)
+  if sourceState != AL_PLAYING:
+    for idx in 0..<len musicSources:
+      if not musicActive[idx]: continue
+      if loopBuffers[idx] == 0: continue
+      if songQueue.len > 0:
+        let q = songQueue[0]
+        songQueue.delete(0)
+        q.song.play(true, true)
+      else:
+        alSourcei(musicSources[idx], AL_BUFFER, Alint loopBuffers[idx])
+        alSourcei(musicSources[idx], AL_LOOPING, 1)
+        alSourcePlay(musicSources[idx])
+  let e = alGetError()
+  if e != AL_NO_ERROR:
+    LOG_ERROR("ho->audio", "openAl error", $e)
