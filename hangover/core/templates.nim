@@ -232,17 +232,12 @@ template Game*(body: untyped) =
         var pc: float32
         var loadStatus: string
 
-        template setPercent(perc: float): untyped =
+        template setStatus(perc: float, status: string): untyped =
           pc = perc
-          drawLoading(pc, loadStatus, ctx, app.size)
-          finishDraw()
-          finishRender(ctx)
-          display.glfmForceDraw()
-        template setStatus(status: string): untyped =
           loadStatus = status
-          drawLoading(pc, loadStatus, ctx, app.size)
+          discard drawLoading(pc, loadStatus, ctx[], app.size)
           finishDraw()
-          finishRender(ctx)
+          finishRender(ctx[])
           display.glfmForceDraw()
         template drawUIEarly() =
           if app.ui:
@@ -251,7 +246,7 @@ template Game*(body: untyped) =
         
         body
 
-        Initialize(app.ctx)
+        waitFor Initialize(addr app.ctx)
 
         app.loop.updateProc =
           proc (dt: float, delayed: bool): bool =
@@ -287,8 +282,7 @@ template Game*(body: untyped) =
         sendEvent(EVENT_RESIZE, addr tmpResize)
     
     proc onCreate*(display: ptr GLFMDisplay, w, h: cint)  {.exportc, cdecl} =
-        let tmpSize: tuple[w, h: int32]
-        tmpSize = (w.int32, h.int32)
+        let tmpSize = (w.int32, h.int32)
         app.size = newPoint(w.int, h.int)
         sendEvent(EVENT_RESIZE, addr tmpSize)
         um.size = newVector2(w.float32, h.float32)
