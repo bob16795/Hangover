@@ -105,7 +105,7 @@ proc scale*(sprite: UISprite, scale: Vector2): UISprite =
   result.scale = scale
 
 # TODO: round better
-proc drawSec(sprite: var UISprite, src: Point, dest: var Rect, c: Color,
+proc drawSec(sprite: UISprite, src: Point, dest: var Rect, c: Color,
     layer: range[0..500]) =
   ## renders a section of sprite
 
@@ -120,7 +120,7 @@ proc drawSec(sprite: var UISprite, src: Point, dest: var Rect, c: Color,
   dest.height += 2
   sprite.texture.draw(renderSec, dest, color = c, layer = layer)
 
-proc draw*(sprite: var UISprite, renderRect: Rect, c: Color = newColor(255, 255,
+proc draw*(sprite: UISprite, renderRect: Rect, c: Color = newColor(255, 255,
            255, 255), layer: range[0..500] = 0) =
   ## draws the UISprite
 

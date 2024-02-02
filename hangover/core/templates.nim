@@ -107,15 +107,17 @@ template Game*(body: untyped) =
             drawUI()
             ui = false
 
-        var lastTime = cpuTime()
+        when defined debug:
+          var lastTime = cpuTime()
           
         template setStatus(perc: float32, status: string): untyped =
-          let newTime = cpuTime()
-          LOG_INFO "ho->templates", "Finished `" & loadStatus & "` in " & $int(1000 * (newTime - lastTime)) & "ms"
           pc = perc
           loadStatus = status
-          lastTime = newTime
-          await sleepAsync(200)
+          when defined debug:
+            let newTime = cpuTime()
+            LOG_INFO "ho->templates", "Finished `" & loadStatus & "` in " & $int(1000 * (newTime - lastTime)) & "ms"
+            lastTime = newTime
+          await sleepAsync(30)
 
         body
 

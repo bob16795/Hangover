@@ -10,6 +10,10 @@ type
 
 # const
 
+proc newVector2*(x: int | int16 | int32 | float | float32 | float64): Vector2 =
+  result.x = x.float32
+  result.y = x.float32
+
 proc newVector2*(x, y: int | int16 | int32 | float | float32 | float64): Vector2 =
   result.x = x.float32
   result.y = y.float32
