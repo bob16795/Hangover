@@ -158,10 +158,6 @@ template Game*(body: untyped) =
         #createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = loop.forceDraw(ctx))
         loop.updateProc =
           proc (dt: float, delayed: bool): bool =
-            when defined hoConsole:
-              if debugConsole:
-                updateConsole()
-
             when not defined(ginGLFM):
               glfw.pollEvents()
               if glfw.shouldClose(ctx.window):
@@ -176,10 +172,6 @@ template Game*(body: untyped) =
           Draw(ctx)
           if ui:
             drawUI()
-
-          when defined hoConsole:
-            if debugConsole:
-              drawConsole()
 
           finishrender(ctx)
 
