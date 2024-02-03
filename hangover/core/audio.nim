@@ -12,12 +12,11 @@ const
 type
   SongQueueEntry = ref object
     song: Song
-    force: bool
     skip: bool
 
 var
   device: ALCdevice
-  audioCtx: ALCcontext
+  audioCtx: ALCcontexT
 
   # sources
   musicSources: array[MAX_SONG_LAYERS, ALuint]
@@ -91,20 +90,22 @@ proc getSongQueueSize*(): int =
   # gets how many songs are queued
   result = songQueue.len
 
-proc play*(song: Song, force: bool = false, skip: bool = false) =
+proc play*(song: Song, force: bool = false, skip: bool = false, inQueue: bool = false) =
   ## plays a song
   if not force and song.layers[0].get().loopBuffer == loopBuffers[0]: return
 
   var looping, playing: ALint
   alGetSourcei(musicSources[0], AL_LOOPING, addr looping)
   alGetSourcei(musicSources[0], AL_SOURCE_STATE, addr playing)
-  if not force and skip and looping == 0 and playing == AL_PLAYING:
+  if not inQueue and not force and skip and looping == 0 and playing == AL_PLAYING:
     songQueue &= SongQueueEntry(
       song: song,
-      force: force,
       skip: skip,
     )
     return
+
+  if force:
+    songQueue = @[]
 
   for idx in 0..<musicSources.len:
     var offset: ALfloat
@@ -196,7 +197,7 @@ proc updateAudio*() =
       if songQueue.len > 0:
         let q = songQueue[0]
         songQueue.delete(0)
-        q.song.play(true, true)
+        q.song.play(q.skip, inQueue = true)
       else:
         alSourcei(musicSources[idx], AL_BUFFER, Alint loopBuffers[idx])
         alSourcei(musicSources[idx], AL_LOOPING, 1)

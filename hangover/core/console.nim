@@ -17,7 +17,7 @@ type
   DebugConsole* = object
     show*: bool
     font*: Font
-    text: seq[string] = @[""]
+    text*: seq[string]
     bounds*: Rect
     commands*: Table[string, ConsoleCommand]
 
@@ -62,7 +62,9 @@ proc add*(console: var DebugConsole, c: Rune) =
   console.text[^1] &= c
 
 proc draw*(console: DebugConsole) =
-  drawRectFill(console.bounds, newColor(0, 0, 0))
+  if not console.show: return
+
+  drawRectFill(console.bounds, newColor(0, 0, 0, 200))
   var y = min(float(console.text.len) * console.font.size.float, console.bounds.height - console.font.size.float)
   var first = true
   for l in console.text.reversed():
