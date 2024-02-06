@@ -7,7 +7,7 @@ import hangover/core/logging
 import options
 
 const
-  SOURCES = 30
+  SOURCES = 60
 
 type
   SongQueueEntry = ref object
@@ -159,6 +159,11 @@ proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0), pitch: float32 = 1.0) 
     alSourcei(soundSources[nextSoundSource mod SOURCES], AL_BUFFER, Alint sound.buffer)
     alSource3f(soundSources[nextSoundSource mod SOURCES], AL_POSITION, pos.x / audioSize.x.float32, pos.y / audioSize.y.float32, 0)
 
+    let e = alGetError()
+    if e != AL_NO_ERROR:
+      LOG_ERROR("ho->audio", "openAl error playRand", $e)
+      return
+
     alSourcePlay(soundSources[nextSoundSource mod SOURCES])
   nextSoundSource += 1
 
@@ -167,14 +172,22 @@ proc playRand*(sound: Sound, r: HSlice[float32, float32], pos: Vector2 = newVect
   if sound in framePlayed:
     return
   framePlayed &= sound
+
+  var sourceState: ALint
   
   # set pitch, buffer and position
-  alSourcef(soundSources[nextSoundSource mod SOURCES], AL_PITCH, rand(r).float32)
-  alSourcei(soundSources[nextSoundSource mod SOURCES], AL_BUFFER, Alint sound.buffer)
-  alSource3f(soundSources[nextSoundSource mod SOURCES], AL_POSITION, -pos.x / audioSize.x.float32, pos.y / audioSize.y.float32, 0)
+  alGetSourcei(soundSources[nextSoundSource mod SOURCES], AL_SOURCE_STATE, addr sourceState)
+  if sourceState != AL_PLAYING:
+    alSourcef(soundSources[nextSoundSource mod SOURCES], AL_PITCH, rand(r).float32)
+    alSourcei(soundSources[nextSoundSource mod SOURCES], AL_BUFFER, Alint sound.buffer)
+    alSource3f(soundSources[nextSoundSource mod SOURCES], AL_POSITION, -pos.x / audioSize.x.float32, pos.y / audioSize.y.float32, 0)
+    let e = alGetError()
+    if e != AL_NO_ERROR:
+      LOG_ERROR("ho->audio", "openAl error playRand", $e)
+      return
   
-  # play the sound
-  alSourcePlay(soundSources[nextSoundSource mod SOURCES])
+    # play the sound
+    alSourcePlay(soundSources[nextSoundSource mod SOURCES])
   
   # loop the source
   nextSoundSource += 1
