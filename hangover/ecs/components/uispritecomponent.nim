@@ -20,7 +20,7 @@ component UISpriteComponent:
   proc eventDraw(data: void): bool =
     var rect = parent[RectComponentData]
 
-    this.sprite.draw(newRect(rect.position, rect.size), c = this.color)
+    this.sprite.draw(newRect(rect.position, rect.size), color = this.color)
 
   proc construct(tex: Texture,
                  source, center: Rect,

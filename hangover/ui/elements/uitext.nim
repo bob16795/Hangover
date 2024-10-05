@@ -16,38 +16,50 @@ type
   UIText* = ref object of UIElement
     font*: Font
     fontMult*: float32
-    text*: ref string
+    text*: UIField[string]
     inactive*: bool
-    update*: UIUpdate
-    align*: UITextAlign
     underline*: bool
-    color*: Color
-
-proc newUIText*(font: Font, bounds: UIRectangle, update: UIUpdate,
-    align = ACenter, ina: bool = false, ul: bool = false, color = newColor(0, 0, 0, 255)): UIText =
-  result = UIText()
-
-  result.isActive = true
-  result.font = font
-  result.bounds = bounds
-  result.update = update
-  result.align = align
-  result.inactive = ina
-  result.underline = ul
-  result.color = color
-  result.text = string.new()
+    align*: UITextAlign
+    color*: UIField[Color]
+    cutoff*: bool
 
 method draw*(t: UIText, parentRect: Rect) =
-  if not t.isActive:
-    return
-  if (t.text == nil or t.text[] == ""): return
+  if not t.isActive: return
+  if t.text.value == "": return
+
   let bounds = t.bounds.toRect(parentRect)
   var h: float32 = 0
-  for text in t.text[].split("\n"):
+  for text in t.text.value.split("\n"):
     h += t.font.size.float32 * t.fontMult * uiElemScale
   var posy: float32 = bounds.y + (bounds.height - h) / 2
   posy = max(posy, bounds.y)
-  for text in t.text[].split("\n"):
+
+  if "\n" notin t.text.value and t.cutoff:
+    let size = sizeText(t.font, t.text.value, t.fontMult * uiElemScale)
+    if size.x < bounds.width:
+      var posx: float32 = bounds.x
+      case t.align:
+        of ACenter:
+          posx = bounds.x + (bounds.width - size.x) / 2
+        of ARight:
+          posx = bounds.x + bounds.width - size.x
+        else: discard
+      t.font.draw(t.text.value, newVector2(posx, posy), t.color.value, t.fontMult * uiElemScale, wrap = bounds.width)
+      return
+
+    var last = "..."
+    for i in 0..t.text.value.high:
+      var text = t.text.value[0..i] & "..."
+      var size = sizeText(t.font, text, t.fontMult * uiElemScale).x
+      if size > bounds.width:
+        var posx: float32 = bounds.x
+        t.font.draw(last, newVector2(posx, posy), t.color.value, t.fontMult * uiElemScale, wrap = bounds.width)
+        return
+      last = text
+    return
+
+  var line = 0
+  for text in t.text.value.split("\n"):
     var posx: float32 = bounds.x
     case t.align:
       of ACenter:
@@ -56,15 +68,5 @@ method draw*(t: UIText, parentRect: Rect) =
         posx = bounds.x + bounds.width - sizeText(t.font, text, t.fontMult * uiElemScale).x
       else: discard
     posx = max(posx, bounds.x)
-    t.font.draw(text, newPoint(posx.cint, posy.cint), t.color, t.fontMult * uiElemScale, wrap = bounds.width)
-    posy += t.font.size.float32 * t.fontMult * uiElemScale
-
-method update*(t: UIText, parentRect: Rect, mousePos: Vector2,
-    dt: float32) =
-  if not t.isActive:
-    return
-  let bounds = t.bounds.toRect(parentRect)
-  if t.update != nil:
-    if t.text == nil:
-        t.text = string.new()
-    t.text[] = t.update()
+    t.font.draw(text, newVector2(posx, posy), t.color.value, t.fontMult * uiElemScale, wrap = bounds.width)
+    posy += t.font.sizeText(text, t.fontMult * uiElemScale, wrap = bounds.width).y

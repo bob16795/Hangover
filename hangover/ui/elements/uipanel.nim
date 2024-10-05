@@ -5,6 +5,7 @@ import hangover/core/types/rect
 import hangover/core/types/font
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
+import options
 
 #TODO: comment
 
@@ -12,7 +13,7 @@ type
   UIPanel* = ref object of UIElement
     texture*: UISprite
     popup*: bool
-    color*: Color
+    color*: UIField[Color]
 
 proc newUIPanel*(sprite: UISprite, bounds: UIRectangle,
     popup: bool): UIPanel =
@@ -30,10 +31,4 @@ method draw*(p: UIPanel, parentRect: Rect) =
   if not p.isActive:
     return
   let bounds = p.bounds.toRect(parentRect)
-  p.texture.draw(bounds, c = p.color)
-
-method update*(p: UIPanel, parentRect: Rect, mousePos: Vector2,
-    dt: float32) =
-  if not p.isActive:
-    return
-  let bounds = p.bounds.toRect(parentRect)
+  p.texture.draw(bounds, color = p.color.value, fg = some(false))

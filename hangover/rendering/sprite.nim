@@ -4,23 +4,26 @@ import hangover/core/types/color
 import hangover/core/types/point
 import hangover/core/types/rect
 import hangover/core/types/shader
+import options
 
 type
-  Sprite* = object of RootObj
-    ## a sprite object stores a source rect and texture 
-    texture*: Texture ## the texture
+  Sprite* = ref object of RootObj
+    ## a sprite object stores a source rect and texture
+    texture*: Texture   ## the texture
     sourceBounds*: Rect ## the source rect
-    shader*: Shader ## the shader to use
+    shader*: Shader     ## the shader to use
 
 proc newSprite*(texture: Texture, x, y, w, h: float32): Sprite =
   ## creates a new sprite from a texture
   ## bounds are uv coords
+  result = Sprite()
   result.texture = texture
   result.sourceBounds = newRect(x, y, w, h)
 
 proc newSprite*(texture: Texture, bounds: Rect): Sprite =
   ## creates a new sprite from a texture
   ## bounds are uv coords
+  result = Sprite()
   result.texture = texture
   result.sourceBounds = bounds
 
@@ -30,13 +33,17 @@ proc setShader*(this: Sprite, shader: Shader): Sprite =
   result.shader = shader
   return result
 
-proc draw*(sprite: Sprite,
-           target: Rect,
-           rotation: float32 = 0,
-           color: Color = newColor(255, 255, 255),
-           layer: range[0..500] = 0,
-           shader: Shader = nil,
-           params: seq[TextureParam] = @[]) =
+method draw*(
+  sprite: Sprite,
+  target: Rect,
+  rotation: float32 = 0,
+  color: Color = newColor(255, 255, 255),
+  layer: range[0..500] = 0,
+  shader: Shader = nil,
+  params: seq[TextureParam] = @[],
+  rotation_center = newVector2(0.5),
+  fg: Option[bool] = some(true),
+) {.base.} =
   ## draws a sprite at `target`
 
   # get target bounds
@@ -45,12 +52,37 @@ proc draw*(sprite: Sprite,
   # if the size is 0, get the origonal bounds
   if target.size == newVector2(0, 0):
     trgSize = sprite.sourceBounds.size
-  
-  # draw
-  sprite.texture.draw(sprite.sourceBounds, newRect(target.location,
-                        trgSize), shader = if shader == nil: sprite.shader else: shader, color = color, rotation = rotation, layer = 0, params = params)
 
-proc draw*(sprite: Sprite, position: Vector2, rotation: float32,
-    size: Vector2 = newVector2(0, 0), c: Color = newColor(255, 255, 255, 255)) {.deprecated: "Use targetRect instead".} =
+  # draw
+  sprite.texture.draw(
+    sprite.sourceBounds,
+    newRect(target.location, trgSize),
+    shader = if shader == nil:
+      sprite.shader
+    else:
+      shader,
+    color = color,
+    rotation = rotation,
+    layer = 0,
+    params = params,
+    rotation_center = rotation_center,
+    fg = fg,
+  )
+
+method draw*(
+  sprite: Sprite,
+  position: Vector2,
+  rotation: float32,
+  size: Vector2 = newVector2(0, 0),
+  color: Color = newColor(255, 255, 255, 255),
+  rotation_center = newVector2(0.5),
+  fg: Option[bool] = some(true),
+) {.deprecated: "Use targetRect instead", base.} =
   ## old sprite draw proc
-  draw(sprite, newRect(position, size), rotation, c)
+  sprite.draw(
+    newRect(position, size),
+    rotation,
+    color,
+    rotation_center = rotation_center,
+    fg = fg
+  )

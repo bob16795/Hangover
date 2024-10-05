@@ -1,17 +1,26 @@
 import hangover/core/types/rect
+import hangover/core/types/vector2
 
 type
   UIRectangle* = ref object of RootObj
     ## a ui rectangle, allows you to set anchors based off ratios of a parent rectangle
     empty: bool
-    XMin*, YMin*: float32 ## min offsets
-    XMax*, YMax*: float32 ## max offsets
+    XMin*, YMin*: float32             ## min offsets
+    XMax*, YMax*: float32             ## max offsets
     anchorXMin*, anchorYMin*: float32 ## min anchors
     anchorXMax*, anchorYMax*: float32 ## max anchor2
 
-method toRect*(rect: UIRectangle, parent: Rect): Rect {.base.} =
+    lastCenter*: Vector2
+
+var 
+  rectUpdate* = false
+
+method setup*(rect: UIRectangle) {.base.} =
+  discard
+
+method toRect*(rect: var UIRectangle, parent: Rect): Rect {.base.} =
   ## converts the UIRectangle to a Rect
-  
+
   # calculate anchored positions
   let
     axmin = parent.x.float32 + (parent.width.float32 * rect.anchorXMin)
@@ -27,6 +36,9 @@ method toRect*(rect: UIRectangle, parent: Rect): Rect {.base.} =
 
   # fix rect
   result = result.fix()
+
+  if rectUpdate:
+    rect.lastCenter = result.center
 
 proc newUIRectangle*(XMin, YMin: float32, XMax, YMax: float32, anchorXMin,
     anchorYMin: float32, anchorXMax, anchorYMax: float32): UIRectangle =

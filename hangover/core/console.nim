@@ -3,28 +3,40 @@ import types/rect
 import types/font
 import types/vector2
 import types/color
-import opengl
 import algorithm
 import strutils
 import unicode
 import tables
-import graphics
+import sequtils
+import hangover/core/logging
+import options
 
 type
-  ConsoleCommand = proc(s: seq[string]): string
+  ConsoleCommand* = proc(s: seq[string]): string
 
 type
-  DebugConsole* = object
+  DebugConsole* = ref object of LoggerConsole
     show*: bool
     font*: Font
     text*: seq[string]
     bounds*: Rect
     commands*: Table[string, ConsoleCommand]
 
+method log*(console: var DebugConsole, text: string) =
+  let
+    last = console.text[^1]
+  console.text = console.text[0..^2]
+  console.text &= text
+  console.text &= last
+
+proc newDebugConsole*(): DebugConsole =
+  result = DebugConsole()
+
 proc enter*(console: var DebugConsole) =
   if not console.show: return
 
-  let full_cmd = console.text[^1].split(" ")
+  var full_cmd = console.text[^1].split(" ")
+  full_cmd.keepItIf(it.len > 0)
   console.text[^1] = ">>> " & console.text[^1]
   let cmd = full_cmd[0]
   if cmd == "clear":
@@ -64,7 +76,7 @@ proc add*(console: var DebugConsole, c: Rune) =
 proc draw*(console: DebugConsole) =
   if not console.show: return
 
-  drawRectFill(console.bounds, newColor(0, 0, 0, 200))
+  drawRectFill(console.bounds, newColor(0, 0, 0, 200), fg = some(false))
   var y = min(float(console.text.len) * console.font.size.float, console.bounds.height - console.font.size.float)
   var first = true
   for l in console.text.reversed():

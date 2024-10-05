@@ -20,7 +20,7 @@ component TextComponent:
 
   proc eventDraw(data: void): bool =
     var rect = parent[RectComponentData]
-    
+
     if rect != nil and this != nil:
       var
         h: float32
@@ -33,7 +33,7 @@ component TextComponent:
         var
           size = this.font[].sizeText(text)
         pos.x = (rect.position + (rect.size - size) / 2).x
-        this.font[].draw(text, pos.toPoint, this.color, this.scale, layer = 5)
+        this.font[].draw(text, pos, this.color, this.scale, layer = 5)
         pos.y += this.font[].size.float32 * this.scale
 
   proc construct(text: string,

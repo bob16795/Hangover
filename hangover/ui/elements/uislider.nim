@@ -4,6 +4,7 @@ import hangover/core/types/font
 import hangover/core/types/color
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
+import options
 import sugar
 
 #TODO: comment
@@ -45,7 +46,7 @@ method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2) =
 
   if not s.isActive:
     return
-  if s.isDisabled != nil and s.isDisabled():
+  if s.disabled.value:
     return
 
   if (bounds.x < mousePos.x and bounds.x +
@@ -55,6 +56,9 @@ method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2) =
       s.focused = true
 
 method click*(s: UISlider, button: int) =
+  if not s.focused:
+    return
+
   s.value = s.tmpVal
   if s.update != nil:
     s.update(s.value)
@@ -74,36 +78,34 @@ method draw*(s: UISlider, parentRect: Rect) =
           s.valueVis)) + (bounds.y + bounds.height -
           halfSize) * (s.valueVis) - halfSize
       var posx: float32 = bounds.x + (bounds.width) / 2
-      s.sprite.draw(newRect(posx - s.barSize / 2, bounds.y, s.barSize, bounds.height))
-      handleSprite.draw(newRect(bounds.x, posy, bounds.width, s.handleSize))
+      s.sprite.draw(newRect(posx - s.barSize / 2, bounds.y, s.barSize, bounds.height), fg = some(true))
+      handleSprite.draw(newRect(bounds.x, posy, bounds.width, s.handleSize), fg = some(true))
     else:
       var posx: float32 = ((bounds.x + halfSize) * (1 -
           s.valueVis)) + (bounds.x + bounds.width -
           halfSize) * (s.valueVis) - halfSize
       var posy: float32 = bounds.y + (bounds.height) / 2
-      s.sprite.draw(newRect(bounds.x, posy - s.barSize / 2, bounds.width, s.barSize))
-      handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height))
+      s.sprite.draw(newRect(bounds.x, posy - s.barSize / 2, bounds.width, s.barSize), fg = some(true))
+      handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height), fg = some(true))
       if s.font != nil:
         let
           handlePos = newRect(posx, bounds.y, s.handleSize, bounds.height).center()
           text = $int(s.value * s.valueMul + s.valueAdd) & s.valueLabel
           size = s.font.sizeText(text, s.fontMult * uiElemScale) * 0.5
 
-        s.font.draw(text, handlePos - size, newColor(0, 0, 0), s.fontMult * uiElemScale)
+        s.font.draw(text, handlePos - size, newColor(0, 0, 0), s.fontMult * uiElemScale, fg = some(false))
 
 proc lerp*(a, b: float, pc: float32): float =
   return a + (b - a) * pc
 
 method update*(s: UISlider, parentRect: Rect, mousePos: Vector2,
-    dt: float32) =
-  if not s.isActive:
-    return
-
+    dt: float32, active: bool) =
   s.value = clamp(s.value, 0, 1)
 
-  s.valueVis = lerp(s.valueVis, s.value, clamp(dt * s.smooth, 0, 1))
-
-  var bounds = s.bounds.toRect(parentRect)
+  if s.isActive and active:
+    s.valueVis = lerp(s.valueVis, s.value, clamp(dt * s.smooth, 0, 1))
+  else:
+    s.valueVis = s.value
 
 method drag*(e: UISlider, button: int, done: bool) =
   e.value = e.tmpVal
@@ -138,9 +140,6 @@ method navigate*(s: UISlider, dir: UIDir, parent: Rect): bool =
       if s.update != nil:
         s.update(s.value)
       return true
-    of UIUp, UIDown, UINext, UIPrev:
-      s.focus(false)
-      return true
     else:
       return false
 
@@ -150,4 +149,7 @@ method focusable*(b: UISlider): bool =
 
 method center*(e: UISlider, parent: Rect): Vector2 =
   ## returns true if you can focus the element
-  return e.bounds.toRect(parent).location + e.bounds.toRect(parent).size * e.default
+  return e.bounds.toRect(parent).location + newVector2(
+    e.bounds.toRect(parent).size.x * e.value,
+    e.bounds.toRect(parent).size.y * 1.0
+  )

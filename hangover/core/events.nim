@@ -12,7 +12,6 @@ when not defined(ginGLFM):
 when defined debug:
   import macros
 
-
 type
   EventId* = distinct uint8
     ## an event id
@@ -39,7 +38,7 @@ template createEvent*(name: untyped, hide: bool = false): untyped =
   const name = static: lastEventId
   export name
 
-  when defined(debug) and not hide:
+  when defined(debug):# and not hide:
     debugNames[name] = getDbgName(name)
   static:
     lastEventId = lastEventId + 1.EventId

@@ -1,10 +1,13 @@
 import hangover/rendering/sprite
+import hangover/core/types/shader
 import hangover/core/types/texture
 import hangover/core/types/point
 import hangover/core/types/vector2
 import hangover/core/types/color
 import hangover/core/types/rect
 import hangover/core/logging
+import hangover/rendering/shapes
+import options
 
 ## a 9 part sprite
 ##
@@ -21,7 +24,7 @@ type
   UIFillMode* = enum
     FM_STRETCH ## fast, stretches the element to 9 quads
     FM_TILE    ## slow, repeats sprites to make the element cleaner
-  UISprite* = object of Sprite
+  UISprite* = ref object of Sprite
     ## a ui sprite, renders in 8 elements
     renderSecs: array[0..2, array[0..2, Rect]]
     center: Rect
@@ -32,6 +35,7 @@ type
 var
   uiSpriteScaleMult*: float32 = 1
   uiScaleMult*: float32 = 1
+  uiDebug*: bool
   ## used to scale all uisprites further
 
 proc setCenter(sprite: var UISprite, center: Rect) =
@@ -79,6 +83,7 @@ proc setCenter(sprite: var UISprite, center: Rect) =
 proc newUISprite*(texture: Texture, sourceBounds,
         center: Rect): UISprite =
   ## creates a ui Sprite
+  result = UISprite()
 
   # sets the texture
   result.texture = texture
@@ -105,12 +110,25 @@ proc scale*(sprite: UISprite, scale: Vector2): UISprite =
   result.scale = scale
 
 # TODO: round better
-proc drawSec(sprite: UISprite, src: Point, dest: var Rect, c: Color,
-    layer: range[0..500]) =
+proc drawSec(
+  sprite: UISprite,
+  src: Point,
+  dest: var Rect,
+  color: Color,
+  layer: range[0..500],
+  hflip: bool,
+  fg: Option[bool],
+) =
   ## renders a section of sprite
 
   # get the source bounds
-  let renderSec = sprite.renderSecs[src.x][src.y]
+  var renderSec = sprite.renderSecs[src.x][src.y]
+
+  var flip: array[2, bool]
+
+  if hflip:
+    renderSec = sprite.renderSecs[2 - src.x][src.y]
+    flip[0] = true
 
   # get the dest
   var dest = dest.offset(newVector2(-1, -1))
@@ -118,10 +136,17 @@ proc drawSec(sprite: UISprite, src: Point, dest: var Rect, c: Color,
   # add 2 to fix tearing
   dest.width += 2
   dest.height += 2
-  sprite.texture.draw(renderSec, dest, color = c, layer = layer)
+  sprite.texture.draw(renderSec, dest, color = color, flip = flip, layer = layer, fg = fg)
 
-proc draw*(sprite: UISprite, renderRect: Rect, c: Color = newColor(255, 255,
-           255, 255), layer: range[0..500] = 0) =
+
+proc drawUISprite*(
+  sprite: UISprite,
+  renderRect: Rect,
+  color: Color = newColor(255, 255, 255, 255),
+  layer: range[0..500] = 0,
+  hflip: bool = false,
+  fg: Option[bool] = some(true),
+) =
   ## draws the UISprite
 
   # too small to draw a ui sprite
@@ -166,14 +191,14 @@ proc draw*(sprite: UISprite, renderRect: Rect, c: Color = newColor(255, 255,
   destRect.location = newVector2(tempDest.x, tempDest.y)
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
-  sprite.drawSec(newPoint(0, 0), destRect, c, layer)
+  sprite.drawSec(newPoint(0, 0), destRect, color, layer, hflip, fg)
 
   # draw segment b
   destRect = sprite.renderSecs[1][0]
   destRect.location = newVector2(tempDest.x + aSize.x, tempDest.y)
   destRect.width = tempDest.width - sideSizes.x
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
-  sprite.drawSec(newPoint(1, 0), destRect, c, layer)
+  sprite.drawSec(newPoint(1, 0), destRect, color, layer, hflip, fg)
 
   # draw segment c
   destRect = sprite.renderSecs[2][0]
@@ -181,14 +206,14 @@ proc draw*(sprite: UISprite, renderRect: Rect, c: Color = newColor(255, 255,
           0].width * sprite.scale.x * uiSpriteScaleMult, tempDest.y)
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
-  sprite.drawSec(newPoint(2, 0), destRect, c, layer)
+  sprite.drawSec(newPoint(2, 0), destRect, color, layer, hflip, fg)
 
   # draw segment d
   destRect = sprite.renderSecs[0][1]
   destRect.location = newVector2(tempDest.x, tempDest.y + aSize.y)
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height = tempDest.height - sideSizes.y
-  sprite.drawSec(newPoint(0, 1), destRect, c, layer)
+  sprite.drawSec(newPoint(0, 1), destRect, color, layer, hflip, fg)
 
   # draw segment f
   destRect = sprite.renderSecs[2][1]
@@ -196,7 +221,7 @@ proc draw*(sprite: UISprite, renderRect: Rect, c: Color = newColor(255, 255,
           0].width * sprite.scale.x * uiSpriteScaleMult, tempDest.y + aSize.y)
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height = tempDest.height - sideSizes.y
-  sprite.drawSec(newPoint(2, 1), destRect, c, layer)
+  sprite.drawSec(newPoint(2, 1), destRect, color, layer, hflip, fg)
 
   # draw segment f
   destRect = sprite.renderSecs[0][2]
@@ -204,7 +229,7 @@ proc draw*(sprite: UISprite, renderRect: Rect, c: Color = newColor(255, 255,
           2].height * sprite.scale.y * uiSpriteScaleMult)
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
-  sprite.drawSec(newPoint(0, 2), destRect, c, layer)
+  sprite.drawSec(newPoint(0, 2), destRect, color, layer, hflip, fg)
 
   # draw segment g
   destRect = sprite.renderSecs[1][2]
@@ -212,7 +237,7 @@ proc draw*(sprite: UISprite, renderRect: Rect, c: Color = newColor(255, 255,
           2].height * sprite.scale.y * uiSpriteScaleMult)
   destRect.width = tempDest.width - sideSizes.x
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
-  sprite.drawSec(newPoint(1, 2), destRect, c, layer)
+  sprite.drawSec(newPoint(1, 2), destRect, color, layer, hflip, fg)
 
   # draw segment h
   destRect = sprite.renderSecs[2][2]
@@ -222,11 +247,27 @@ proc draw*(sprite: UISprite, renderRect: Rect, c: Color = newColor(255, 255,
           2].height * sprite.scale.y * uiSpriteScaleMult)
   destRect.width *= sprite.scale.x * uiSpriteScaleMult
   destRect.height *= sprite.scale.y * uiSpriteScaleMult
-  sprite.drawSec(newPoint(2, 2), destRect, c, layer)
+  sprite.drawSec(newPoint(2, 2), destRect, color, layer, hflip, fg)
 
   # draw segment e
   destRect = sprite.renderSecs[1][1]
   destRect.location = newVector2(tempDest.x + aSize.x, tempDest.y + aSize.y)
   destRect.width = tempDest.width - sideSizes.x
   destRect.height = tempDest.height - sideSizes.y
-  sprite.drawSec(newPoint(1, 1), destRect, c, layer)
+  sprite.drawSec(newPoint(1, 1), destRect, color, layer, hflip, fg)
+
+  if uiDebug:
+    drawRectFill(destRect, COLOR_MAGENTA.withAlpha(128))
+
+method draw*(
+  sprite: UISprite,
+  target: Rect,
+  rotation: float32 = 0,
+  color: Color = newColor(255, 255, 255),
+  layer: range[0..500] = 0,
+  shader: Shader = nil,
+  params: seq[TextureParam] = @[],
+  rotation_center = newVector2(0.5),
+  fg: Option[bool] = some(true),
+) =
+  sprite.drawUISprite(target, color, layer, false, fg)

@@ -1,7 +1,7 @@
 when defined(ginGLFM):
   import glfm
 else:
-  import glfw
+  from glfw import pollEvents, shouldClose
   import audio
 import hangover/core/types/font
 import hangover/core/loop
@@ -12,6 +12,9 @@ import sugar
 import segfaults
 import asyncdispatch
 import times
+import locks
+
+export loop
 
 export asyncdispatch
 
@@ -19,7 +22,7 @@ when defined debug:
   import console
 
 ## templates:
-## creates a game loop 
+## creates a game loop
 
 createEvent(EVENT_UPDATE, true)
 createEvent(EVENT_DRAW, true)
@@ -30,10 +33,13 @@ createEvent(EVENT_CLOSE)
 
 proc NimMain() {.importc.}
 
+var
+  mainLoop*: Loop
+
 template Game*(body: untyped) =
   ## the main loop of a game
-  ## make sure to set `Setup`, `Initialize`, `Update`, `Draw` and `gameClose`
-  
+  ## make sure to set `setup`, `initialize`, `Update`, `Draw` and `gameClose`
+
   when not defined(ginGLFM):
     when defined(hangui):
       body
@@ -46,148 +52,164 @@ template Game*(body: untyped) =
           sendEvent(id, addr dat)
           return
         sendEvent(id, data)
-      
+
       proc libGetEntities*(): seq[EntityEntry] {.exportc, cdecl, dynlib.} =
         return entityList
-      
+
       proc libInit*(): GraphicsContext {.exportc, cdecl, dynlib.} =
         result = GraphicsContext()
         try:
-            NimMain()
+          NimMain()
         except:
-            discard
+          discard
         loadExtensions()
-        let data = Setup()
+        let data = setup()
         result.color = data.color
         setupTexture()
         initFT()
         initAudio()
         initUIManager(newPoint(400, 300))
-        Initialize(result)
+        initialize(result)
         createListener(EVENT_RESIZE, resizeBuffer)
 
-      
       proc libUpdate*(dt: float32): bool {.exportc, cdecl, dynlib.} =
         updateUI(dt)
-        updateAudio()
-        return Update(dt, false)
+        updateAudio(dt)
+        return update(dt, false)
 
       proc libDraw*(ctx: GraphicsContext) {.exportc, cdecl, dynlib.} =
         let color = ctx.color
         glClearColor(color.rf, color.gf, color.bf, color.af)
         glClear(GL_COLOR_BUFFER_BIT)
-        Draw(ctx)
+        drawGame(ctx)
         finishDraw()
         #glFlush()
 
     else:
-      proc ginMain() =
-        proc Setup(): AppData
+      # proc ginMain() =
+      proc setup(): AppData
 
-        var
-          pc: float
-          loadStatus: string
-          ui: bool
-          data = Setup()
-          loop = newLoop(60)
-          size = data.size
-          ctx: GraphicsContext
-        
-        ctx = initGraphics(data)
+      var
+        pc: float
+        loadStatus: string
+        ui: bool
+        data = setup()
+        size = data.size
+        ctx: GraphicsContext
 
-        proc UpdateSize(data: pointer): bool =
-          let res = cast[ptr tuple[w, h: int32]](data)[]
-          size = newPoint(res.w.cint, res.h.cint)
+      mainLoop = newLoop(60)
 
-        createListener(EVENT_RESIZE, UpdateSize)
+      ctx = initGraphics(data)
 
-        template noUI() = ui = false
-        template drawUIEarly() =
-          if ui:
-            drawUI()
-            ui = false
+      proc updateSize(data: pointer): bool =
+        let res = cast[ptr tuple[w, h: int32]](data)[]
+        size = newPoint(res.w.cint, res.h.cint)
 
+      createListener(EVENT_RESIZE, updateSize)
+
+      template noUI() = ui = false
+      template drawUIEarly() =
+        if ui:
+          drawUI()
+          ui = false
+
+      when defined debug:
+        var lastTime = cpuTime()
+
+      template setStatus(perc: float32, status: string): untyped =
+        pc = perc
+        loadStatus = status
         when defined debug:
-          var lastTime = cpuTime()
-          
-        template setStatus(perc: float32, status: string): untyped =
-          pc = perc
-          loadStatus = status
-          when defined debug:
-            let newTime = cpuTime()
-            LOG_INFO "ho->templates", "Finished `" & loadStatus & "` in " & $int(1000 * (newTime - lastTime)) & "ms"
-            lastTime = newTime
-          await sleepAsync(30)
+          let newTime = cpuTime()
+          LOG_INFO "ho->templates", "Finished `" & loadStatus & "` in " & $int(1000 * (newTime - lastTime)) & "ms"
+          lastTime = newTime
 
-        body
+      body
 
-        var done = false
+      var loadLock: Lock
 
-        proc drawLoadingAsync() {.async.} =
-          while true:
-            if drawLoading(pc, loadStatus, ctx, size) and done:
-              finishDraw()
-              finishRender(ctx)
-              break
-            when not defined(ginGLFM):
-              glfw.pollEvents()
-              if glfw.shouldClose(ctx.window):
-                quit()
+      loadLock.initLock()
+
+      proc drawLoadingAsync() {.async.} =
+        while true:
+          if drawLoading(pc, loadStatus, ctx, size) and tryAcquire(loadLock):
             finishDraw()
             finishRender(ctx)
-            updateAudio()
-            await sleepAsync(1000.0 / 60.0)
+            loadLock.release()
+            break
+          when not defined(ginGLFM):
+            glfw.pollEvents()
+            if glfw.shouldClose(ctx.window):
+              quit()
+          finishDraw()
+          finishRender(ctx)
+          updateAudio(1.0 / 60.0)
+          await sleepAsync(1000.0 / 60.0)
 
-        proc load() {.async.} =
+      proc initThread() {.thread.} =
+        {.cast(gcsafe).}:
+          initialize()
+
+      proc load() {.async.} =
+        withLock loadLock:
           let time = cpuTime()
-          await Initialize(addr ctx)
+          var tmp: Thread[void]
+          createThread(tmp, initThread)
+          while tmp.running:
+            await sleepAsync(100)
+
+          # await initialize(addr ctx)
           LOG_INFO "ho->templates", "Loaded in " & $int((cpuTime() - time) * 1000) & "ms"
-          await sleepAsync(500)
-          done = true
 
-        initAudio()
-        initUIManager(data.size)
+      initFT()
+      initAudio()
+      initUIManager(data.size)
 
-        setupEventCallbacks(ctx)
+      setupEventCallbacks(ctx)
 
-        waitFor drawLoadingAsync() and load()
+      waitFor drawLoadingAsync() and load()
 
+      createListener(EVENT_RESIZE, proc(p: pointer): bool = mainLoop.forceDraw(ctx))
+      #createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = mainLoop.forceDraw(ctx))
+      mainLoop.fixedUpdateProc =
+        proc (dt: float): bool =
+          return fixedUpdate(dt)
+
+      mainLoop.updateProc =
+        proc (dt: float, delayed: bool): bool =
+          when not defined(ginGLFM):
+            glfw.pollEvents()
+            if glfw.shouldClose(ctx.window):
+              return true
+
+          updateUI(dt)
+          updateAudio(dt)
+          return update(dt, delayed)
+
+      mainLoop.drawProc = proc (ctx: var GraphicsContext, dt: float32) =
+        ui = true
+        drawGame(ctx, dt)
+        if ui:
+          drawUI()
+
+        finishrender(ctx)
+
+      try:
+        proc mainLoopProc() {.cdecl, exportc.} =
+          while not mainLoop.done:
+            mainLoop.update(ctx)
+        mainLoopProc()
+      except CatchableError as ex:
+        when defined debug:
+          raise ex
+        else:
+          LOG_ERROR "ho->templates", ex.msg
+      finally:
         deinitFT()
+        gameClose()
+      quit()
 
-        createListener(EVENT_RESIZE, proc(p: pointer): bool = loop.forceDraw(ctx))
-        #createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = loop.forceDraw(ctx))
-        loop.updateProc =
-          proc (dt: float, delayed: bool): bool =
-            when not defined(ginGLFM):
-              glfw.pollEvents()
-              if glfw.shouldClose(ctx.window):
-                return true
-
-            updateUI(dt)
-            updateAudio()
-            return Update(dt, delayed)
-
-        loop.drawProc = proc (ctx: var GraphicsContext) =
-          ui = true
-          Draw(ctx)
-          if ui:
-            drawUI()
-
-          finishrender(ctx)
-
-        try:
-          while not loop.done:
-            loop.update(ctx)
-        except Exception as ex:
-          when defined debug:
-            gameClose()
-            raise ex
-          else:
-            LOG_ERROR "ho->templates", ex.msg
-        finally:
-          gameClose()
-        
-      ginMain()
+      # ginMain()
   else:
     var nimInit* = true
     type
@@ -203,26 +225,26 @@ template Game*(body: untyped) =
         display: ptr GLFMDisplay
 
     var app: GinApp
-    
+
     template noUI() = app.ui = false
 
     proc glfmForceDraw(display: ptr GLFMDisplay){.importc.}
 
     proc showKeyboard*(val: bool) =
-        app.display.glfmSetKeyboardVisible(val)
+      app.display.glfmSetKeyboardVisible(val)
 
-    proc onFrame*(display: ptr GLFMDisplay; frameTime: cdouble) {.exportc, cdecl} =
+    proc onFrame*(display: ptr GLFMDisplay; frameTime: cdouble) {.exportc, cdecl.} =
       if not app.init:
-        proc Setup(): AppData
+        proc setup(): AppData
 
-        app.data = Setup()
+        app.data = setup()
         app.ctx = initGraphics(app.data)
 
         initUIManager(app.size)
 
         app.loop = newLoop(60)
         app.ctx.window = display
-        
+
         var pc: float32
         var loadStatus: string
 
@@ -237,19 +259,19 @@ template Game*(body: untyped) =
           if app.ui:
             drawUI()
           app.ui = false
-        
+
         body
 
-        waitFor Initialize(addr app.ctx)
+        waitFor initialize(addr app.ctx)
 
         app.loop.updateProc =
           proc (dt: float, delayed: bool): bool =
             updateUI(dt)
-            return Update(dt, delayed)
+            return update(dt, delayed)
 
         app.loop.drawProc = proc (ctx: var GraphicsContext) =
           app.ui = true
-          Draw(ctx)
+          drawGame(ctx)
           if app.ui:
             drawUI()
           finishrender(ctx)
@@ -264,38 +286,38 @@ template Game*(body: untyped) =
         quit()
 
       try:
-        updateAudio()
+        updateAudio(dt)
         clearBuffer(app.ctx, app.ctx.color)
         app.loop.update(app.ctx, frameTime)
       except Exception as ex:
         LOG_ERROR $ex[]
 
-    proc onResize*(display: ptr GLFMDisplay, w, h: cint)  {.exportc, cdecl}  =
-        let tmpResize = (w.int32, h.int32)
-        app.size = newPoint(w.int, h.int)
-        sendEvent(EVENT_RESIZE, addr tmpResize)
-    
-    proc onCreate*(display: ptr GLFMDisplay, w, h: cint)  {.exportc, cdecl} =
-        let tmpSize = (w.int32, h.int32)
-        app.size = newPoint(w.int, h.int)
-        sendEvent(EVENT_RESIZE, addr tmpSize)
-        um.size = newVector2(w.float32, h.float32)
-        
+    proc onResize*(display: ptr GLFMDisplay, w, h: cint) {.exportc, cdecl.} =
+      let tmpResize = (w.int32, h.int32)
+      app.size = newPoint(w.int, h.int)
+      sendEvent(EVENT_RESIZE, addr tmpResize)
+
+    proc onCreate*(display: ptr GLFMDisplay, w, h: cint) {.exportc, cdecl.} =
+      let tmpSize = (w.int32, h.int32)
+      app.size = newPoint(w.int, h.int)
+      sendEvent(EVENT_RESIZE, addr tmpSize)
+      um.size = newVector2(w.float32, h.float32)
+
     proc onTouch*(display: ptr GLFMDisplay; touch: cint; phase: GLFMTouchPhase; x: cdouble;
-             y: cdouble): bool  {.exportc, cdecl} =
+             y: cdouble): bool {.exportc, cdecl.} =
       let data = (x.float64, y.float64, touch)
       sendEvent(EVENT_MOUSE_MOVE, addr data)
       if phase == GLFMTouchPhaseBegan:
         sendEvent(EVENT_MOUSE_CLICK, unsafeAddr touch)
       elif phase == GLFMTouchPhaseEnded:
         sendEvent(EVENT_MOUSE_RELEASE, unsafeAddr touch)
-    
+
     proc onChar(display: ptr GLFMDisplay, str: cstring, mods: cint) {.exportc, cdecl.} =
       app.lineText &= $str
       sendEvent(EVENT_LINE_ENTER, addr app.lineText)
 
     proc onKey*(display: ptr GLFMDisplay; keyCode: Key; action: KeyAction;
-           modifiers: cint): bool  {.exportc, cdecl} =
+           modifiers: cint): bool {.exportc, cdecl.} =
       case action:
         of keyActionPressed:
           sendEvent(EVENT_PRESS_KEY, unsafeAddr keyCode)
@@ -304,7 +326,7 @@ template Game*(body: untyped) =
         else:
           discard
 
-    proc onDestroy*(display: ptr GLFMDisplay)  {.exportc, cdecl} =
+    proc onDestroy*(display: ptr GLFMDisplay) {.exportc, cdecl.} =
       sendEvent(EVENT_CLOSE, nil)
 
     proc glfmMain*(display: ptr GLFMDisplay) {.exportc, cdecl.} =
@@ -328,27 +350,27 @@ template Game*(body: untyped) =
       glfmSetKeyFunc(display, onKey)
       glfmSetMultitouchEnabled(display, true)
 
-    
+
 template GameECS*(name: string, body: untyped) =
   ## creates a ec based game loop
   Game:
     body
 
-    proc Initialize(ctx: GraphicsContext) = 
+    proc initialize(ctx: var GraphicsContext) =
       setupEntities()
       let tmpCtx = ctx
       sendEvent(EVENT_INIT, addr tmpCtx)
       sendEvent(EVENT_LOADED, nil)
 
-    proc Update(dt: float32, delayed: bool): bool =
+    proc update(dt: float32, delayed: bool): bool =
       let tmpDt = dt
       sendEvent(EVENT_UPDATE, addr tmpDt)
 
-    proc Draw(ctx: GraphicsContext) =
+    proc drawGame(ctx: var GraphicsContext) =
       let tmpCtx = ctx
       sendEvent(EVENT_DRAW, addr tmpCtx)
       finishDraw()
       sendEvent(EVENT_DRAW_UI, addr tmpCtx)
-    
+
     proc gameClose() =
       sendEvent(EVENT_CLOSE, nil)

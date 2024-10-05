@@ -49,7 +49,7 @@ component UIComponent:
     var rect = parent[RectComponentData]
     var dest = newRect(rect.position, rect.size)
     this.element.update(dest,
-        this.mousePos, dt)
+        this.mousePos, dt, true)
 
   proc eventResize(data: void): bool =
     var rect = parent[RectComponentData]

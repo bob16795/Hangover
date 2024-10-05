@@ -57,6 +57,8 @@ proc update*(t: UITween, dt: float32) =
 proc reset*(t: UITween) =
   t.timeLeft = t.totalTime
 
-method toRect*(t: UITween, parent: Rect): Rect =
+method toRect*(t: var UITween, parent: Rect): Rect =
   var pc = 1.0 - (t.timeLeft / t.totalTime)
-  result = t.interpolate(t.startRect, t.endRect, pc).toRect(parent)
+  var tmp = t.interpolate(t.startRect, t.endRect, pc)
+  result = tmp.toRect(parent)
+  t.lastCenter = tmp.lastCenter

@@ -9,6 +9,7 @@ import hangover/core/types/sfx
 import hangover/core/types/song
 import hangover/core/types/shader
 import hangover/core/types/textureatlas
+#import hangover/core/types/framebuffer
 
 export appData
 export texture
@@ -21,3 +22,4 @@ export sfx
 export song
 export shader
 export textureatlas
+#export framebuffer

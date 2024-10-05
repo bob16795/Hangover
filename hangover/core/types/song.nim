@@ -55,14 +55,17 @@ proc newSongMem*(s: Stream, loopPoint: float32 = 0, ogg = false): Song =
   if e != AL_NO_ERROR:
     LOG_ERROR("ho->song", "openAl error", $e)
 
-proc addLayer*(song: var Song, s: Stream, idx: range[0..MAX_SONG_LAYERS - 1]) =
-  let wav = readWav(s)
+proc addLayer*(song: var Song, s: Stream, idx: range[0..MAX_SONG_LAYERS - 1], ogg = false) =
+  let wav = if ogg:
+              loadVorbis(s.readAll())
+            else:
+              readWav(s)
   var baseLayer: SongLayer
 
   if wav.size != song.baseLen:
-    LOG_ERROR "ho->song", "could not add incorrectly sized layer to song"
+    LOG_WARN "ho->song", "could not add incorrectly sized layer to song"
 
-    return
+    # return
 
   if song.loopPoint != 0:
     alGenBuffers(ALsizei 1, addr baseLayer.introbuffer)
@@ -83,3 +86,10 @@ proc addLayer*(song: var Song, s: Stream, idx: range[0..MAX_SONG_LAYERS - 1]) =
 proc newSong*(file: string, loopPoint: float32 = 0, ogg = false): Song =
   let s = newFileStream(file)
   result = newSongMem(s, loopPoint, ogg)
+
+proc freeSong*(self: Song) =
+  for l in self.layers:
+    if l.isSome:
+      if self.hasIntro:
+        alDeleteBuffers(ALsizei 1, addr l.get.introBuffer)
+      alDeleteBuffers(ALsizei 1, addr l.get.loopBuffer)

@@ -2,6 +2,7 @@ import sprite
 import tables
 import hangover/core/types/rect
 import hangover/core/types/color
+import options
 
 #TODO: comment
 #TODO: add fsm
@@ -11,37 +12,45 @@ type
     frames: seq[Sprite]
     frameTime*: float32
 
-  Animation* = object
+  Animation*[T] = object
     states*: Table[string, AnimationState]
     state*: string
-    frame: int
+    frame*: int
     counter: float32
-    callback: proc()
+    callback: proc(a: T)
+    data: T
 
-proc addState*(a: var Animation, name: string, speed: float32, sprites: seq[Sprite]) =
+proc addState*[T](a: var Animation[T], name: string, speed: float32, sprites: seq[Sprite]) =
   a.states[name] = AnimationState(frames: sprites, frameTime: speed)
 
-proc setState*(a: var Animation, name: string, callback: proc() = nil) =
+proc setState*[T](a: var Animation[T], name: string, callback: proc(a: T) = nil, data: T = default(T)) =
   if a.states.hasKey(name):
     a.frame = 0
     a.counter = 0
     a.state = name
     a.callback = callback
+    a.data = data
 
-proc getStateFrame*(a: Animation): Sprite =
+proc getStateFrame*[T](a: Animation[T]): Sprite =
   let state = a.states[a.state].frames
   return state[a.frame mod len(state)]
 
-proc update*(a: var Animation, dt: float32) =
+proc update*[T](a: var Animation[T], dt: float32) =
   let stateTime = a.states[a.state].frameTime
   a.counter += dt
   while a.counter > stateTime:
     a.frame += 1
     a.counter -= stateTime
   if a.frame >= len(a.states[a.state].frames):
-    if not a.callback.isNil:
-      a.callback()
     a.frame = 0
+    if not a.callback.isNil:
+      a.callback(a.data)
 
-proc draw*(a: Animation, r: Rect, rotation: float32 = 0, color: Color = newColor(255, 255, 255)) =
-  getStateFrame(a).draw(r.location, rotation, r.size, color)
+proc draw*[T](
+  a: Animation[T],
+  r: Rect,
+  rotation: float32 = 0,
+  color: Color = newColor(255, 255, 255),
+  fg: Option[bool] = some(true),
+) =
+  getStateFrame(a).draw(r.location, rotation, r.size, color, fg = fg)

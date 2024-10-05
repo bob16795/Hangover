@@ -1,28 +1,30 @@
 import openal
 import streams
 import ../lib/readwav
+import ../lib/vorbis
 import hangover/core/logging
 
 type
   Sound* = ref object
     ## stores a sound effect
-    valid*: bool
     buffer*: ALuint ## the al buffer
 
-proc newSoundMem*(s: Stream): Sound =
+proc newSoundMem*(s: Stream, ogg: bool = false): Sound =
   ## creates a new sound from a stream
 
   result = Sound()
 
   # read the wav file
-  let wav = readWav(s)
+  let wav = if ogg:
+              loadVorbis(s.readAll())
+            else:
+              readWav(s)
   s.close()
 
   # create a buffer and add data
   alGenBuffers(ALsizei 1, addr result.buffer)
   alBufferData(result.buffer, AL_FORMAT_MONO16, wav.data, ALsizei wav.size,
       ALsizei wav.freq)
-  result.valid = true
 
   let e = alGetError()
   if e != AL_NO_ERROR:
@@ -36,3 +38,6 @@ proc newSound*(file: string): Sound =
 
   # get data
   result = newSoundMem(s)
+
+proc freeSound*(s: Sound) =
+  alDeleteBuffers(ALsizei 1, addr s.buffer)

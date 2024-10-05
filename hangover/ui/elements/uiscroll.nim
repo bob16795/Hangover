@@ -7,6 +7,8 @@ import hangover/core/logging
 import hangover/ui/elements/uielement
 import hangover/ui/elements/uigroup
 import hangover/ui/types/uisprite
+import hangover/ui/types/uifield
+import hangover/rendering/shapes
 import options
 import algorithm
 import sugar
@@ -20,179 +22,200 @@ type
     smooth*: float32
 
     height*: float32
-    scrollPos*: Vector2
+    scrollPos*: UIField[Vector2]
     scrollVis*: Vector2
     sprite*, handleSprite*: UISprite
     scrollSensitivity*: float
     onScroll*: (Vector2) -> void
     scrollFocus: bool
+    inside: bool
 
 method draw*(s: UIScroll, parentRect: Rect) =
   if not s.isActive:
     return
 
-  let
-    vp = s.bounds.toRect(parentRect)
-    oldScissor = textureScissor
   var
-    bounds = s.bounds.toRect(parentRect)
+    parent_rect_moved = parent_rect
+
+  parent_rect_moved.x -= s.scrollVis.x
+  parent_rect_moved.y -= s.scrollVis.y
+
+  let
+    oldScissor = textureScissor
+
+  var
+    vp = s.bounds.toRect(parent_rect)
+    bounds = s.bounds.toRect(parent_rect_moved)
+    scrollBounds = bounds
 
   s.vpHeight = vp.height * uiScaleMult
 
   if s.height > s.vpHeight:
     let
       value = s.scrollVis.y / (s.height - s.vpHeight)
-      posy: float32 = ((bounds.y + 80) * (1 - value)) + (bounds.y + bounds.height - 80) * value - 80
-      posx: float32 = bounds.x + bounds.width - 80 * 0.5
-    s.sprite.draw(newRect(posx - 80 * 0.5, bounds.y, 80, bounds.height))
-    s.handleSprite.draw(newRect(bounds.x + bounds.width - 80, posy, 80, 160))
-    bounds.width -= 80
+      posy: float32 = ((vp.y + 80) * (1 - value)) + (vp.y + vp.height - 80) * value - 80
+      posx: float32 = vp.x + vp.width - 80 * 0.5
+    s.sprite.draw(newRect(posx - 80 * 0.5, vp.y, 80, vp.height), fg = some(true))
+    s.handleSprite.draw(newRect(vp.x + vp.width - 80, posy, 80, 160), fg = some(true))
 
-  bounds.y = bounds.y - s.scrollVis.y
-  bounds.x = bounds.x - s.scrollVis.x
-
+  # slider size
+  bounds.width -= 80
   textureScissor = vp.scale(uiScaleMult)
 
-  var postpone: Option[UIElement]
+  var postpone: seq[UIElement]
 
   for i in 0..<s.elements.len:
     if s.elements[i].focused:
-      postpone = some(s.elements[i])
+      postpone &= s.elements[i]
     else:
       s.elements[i].draw(bounds)
 
-  if postpone.is_some():
-    postpone.get().draw(bounds)
+  for p in postpone:
+    p.draw(bounds)
 
   textureScissor = oldScissor
 
-method navigate*(s: UIScroll, dir: UIDir, parent: Rect): bool =
-  if not s.focused:
-    return false
+method navigate*(s: UIScroll, dir: UIDir, parent_rect: Rect): bool =
+  var
+    parent_rect_moved = parent_rect
 
-  let bounds = s.bounds.toRect(parent)
+  parent_rect_moved.x -= s.scrollVis.x
+  parent_rect_moved.y -= s.scrollVis.y
+
+  var bounds = s.bounds.toRect(parent_rect_moved)
+
+  bounds.width -= 80
 
   case dir:
-    of UISelect:
-      return false
-    of UINext, UIDown, UIRight:
-      var focusNext = false
+  of UIPrev, UINext:
+    for e in s.elements:
+      let tmp = e.navigate(dir, bounds)
+      result = result or tmp
+  else: discard
 
-      for e in s.elements:
-        if not e.isActive: continue
-
-        if focusNext:
-          if e.focusable():
-            s.scrollPos.y = (e.bounds.toRect(newRect(0, 0, 0, s.vpHeight)).y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0))
-            if s.onScroll != nil:
-              s.onScroll(s.scrollPos)
-            e.focus(true)
-            return true
-
-        if e.navigate(dir, bounds):
-          if e.focused:
-            return true
-          focusNext = true
-
-      if focusNext: s.focus(false)
-      return true
-    of UIPrev, UIUp, UILeft:
-      var focusNext = false
-
-      for e in s.elements.reversed():
-        if not e.isActive: continue
-
-        if focusNext:
-          if e.focusable():
-            s.scrollPos.y = (e.bounds.toRect(newRect(0, 0, 0, s.vpHeight)).y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0))
-            if s.onScroll != nil:
-              s.onScroll(s.scrollPos)
-            e.focus(true)
-            return true
-
-        if e.navigate(dir, bounds):
-          if e.focused: return true
-          focusNext = true
-
-      if focusNext: s.focus(false)
-      return true
-    else: discard
-
-method checkHover*(s: UIScroll, parentRect: Rect, mousePos: Vector2) =
+method checkHover*(s: UIScroll, parent_rect: Rect, mousePos: Vector2) =
   s.focused = false
-  
-  var bounds = s.bounds.toRect(parentRect)
-
-  s.tmpVal = (1 - ((bounds.y - 15 + bounds.height -
-      mousePos.y) / (bounds.height - 30)).clamp(0, 1)) * max(s.height - s.vpHeight, 0) 
-  s.scrollFocus = mousePos.x > bounds.x + bounds.width - 50 and mousePos.x < bounds.x + bounds.width
-
+  s.inside = false
   if not s.isActive:
     return
-  if s.isDisabled != nil and s.isDisabled():
+  if s.disabled.value:
     return
 
-  if s.scrollFocus:
-    s.focused = true
+  var
+    parent_rect_moved = parent_rect
 
-  bounds.width -= 50
-  bounds.y = bounds.y - s.scrollVis.y
-  bounds.x = bounds.x - s.scrollVis.x
+  parent_rect_moved.x -= s.scrollVis.x
+  parent_rect_moved.y -= s.scrollVis.y
+
+  var
+    vp = s.bounds.toRect(parent_rect)
+    bounds = s.bounds.toRect(parent_rect_moved)
+    scroll_bounds = vp
+
+  scroll_bounds.x += scrollBounds.width - 80
+  scroll_bounds.width = 80
+  vp.width -= 80
+
+  bounds.width -= 80
+
+  s.tmpVal = ((mousePos.y - scroll_bounds.y) / scroll_bounds.height).clamp(0, 1)
+  s.scrollFocus = mousePos in scroll_bounds
+
+  s.inside = mousePos in vp
+
+  if not s.inside: 
+    return
 
   for i in 0..<s.elements.len:
     s.elements[i].checkHover(bounds, mousePos)
-    if s.elements[i].focused:
+    if s.elements[i].focused and s.inside:
       s.focused = true
 
 method click*(s: UIScroll, button: int) =
-  s.scrollClick = s.scrollFocus
   if s.scrollFocus:
-    s.scrollPos.y = s.tmpVal
+    s.scrollClick = true
+    s.scrollPos.value = newVector2(
+      s.scrollPos.value.x,
+      s.tmpVal * max(0, s.height - s.vpHeight),
+    )
+
     if s.onScroll != nil:
-      s.onScroll(s.scrollPos)
+      s.onScroll(s.scrollPos.value)
     return
 
   for i in 0..<s.elements.len:
-    if s.elements[i].focused:
-      s.elements[i].click(button)
+    s.elements[i].click(button)
+    if s.elements[i].propagate():
       capture i:
         s.dragProc = proc(done: bool) = s.elements[i].drag(button, done)
 
 method scroll*(s: UIScroll, offset: Vector2) =
   if not s.isActive:
     return
-  s.scrollPos.y = (s.scrollPos.y + s.scrollSensitivity * offset.y).clamp(0, max(s.height - s.vpHeight, 0))
+
+  s.scrollPos.value = newVector2(
+    s.scrollPos.value.x,
+    s.scrollPos.value.y + s.scrollSensitivity * offset.y,
+  )
+
   if s.onScroll != nil:
-    s.onScroll(s.scrollPos)
+    s.onScroll(s.scrollPos.value)
 
 method drag*(s: UIScroll, button: int, done: bool) =
   if s.scrollClick:
-    s.scrollPos.y = s.tmpVal
+    s.scrollPos.value = newVector2(
+      s.scrollPos.value.x,
+      s.tmpVal * max(0, s.height - s.vpHeight),
+    )
     if s.onScroll != nil:
-      s.onScroll(s.scrollPos)
+      s.onScroll(s.scrollPos.value)
   elif s.dragProc != nil:
     s.dragProc(done)
+
+  if done:
+    s.scrollClick = false
 
 method focus*(s: UIScroll, focus: bool) =
   ## returns true if you can focus the element
   s.focused = focus
+  s.inside = focus
   for e in s.elements:
     if not e.isActive: continue
 
     if e.focusable():
       e.focus(focus)
+
       if focus:
-        s.scrollPos.y = (e.bounds.toRect(newRect(0, 0, 0, s.vpHeight)).y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0))
+        let
+          min_y = e.bounds.YMin + e.bounds.anchorYMin * s.vpHeight
+          max_y = e.bounds.YMax + e.bounds.anchorYMax * s.vpHeight
+
+          y = (min_y + max_y) / 2
+        
+          diff = s.scrollPos.value.y -
+            (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0))
+  
+        for j in 0..<s.elements.len:
+          s.elements[j].bounds.lastCenter.y += diff
+
+        s.scrollPos.value = newVector2(
+          s.scrollPos.value.x,
+          (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0)),
+        )
         if s.onScroll != nil:
-          s.onScroll(s.scrollPos)
+          s.onScroll(s.scrollPos.value)
         return
 
-method center*(s: UIScroll, parent: Rect): Vector2 =
-  var bounds = s.bounds.toRect(parent)
+method center*(s: UIScroll, parent_rect: Rect): Vector2 =
+  var
+    parent_rect_moved = parent_rect
+  
+  parent_rect_moved.x -= s.scrollPos.value.x
+  parent_rect_moved.y -= s.scrollPos.value.y
 
-  bounds.width -= 50
-  bounds.y = bounds.y - s.scrollPos.y
-  bounds.x = bounds.x - s.scrollPos.x
+  var bounds = s.bounds.toRect(parent_rect_moved)
+
+  bounds.width -= 80
 
   ## returns true if you can focus the element
   for e in s.elements:
@@ -201,12 +224,101 @@ method center*(s: UIScroll, parent: Rect): Vector2 =
     if e.focused:
       return e.center(bounds)
 
-method update*(s: UIScroll, parentRect: Rect, mousePos: Vector2,
-    dt: float32) =
-  if not s.isActive:
-    return
-  s.scrollVis = lerp(s.scrollVis, s.scrollPos, clamp(dt * s.smooth, 0, 1))
+method update*(s: UIScroll, parentRect: Rect, mousePos: Vector2, dt: float32, active: bool) =
+  if active and s.isActive:
+    s.scrollPos.value = newVector2(
+      clamp(s.scrollPos.value.x, 0, max(s.height - s.vpHeight, 0.0)),
+      clamp(s.scrollPos.value.y, 0, max(s.height - s.vpHeight, 0.0)),
+    )
+    s.scrollVis = lerp(s.scrollVis, s.scrollPos.value, clamp(dt * s.smooth, 0, 1))
+    s.scrollVis.y = clamp(s.scrollVis.y, 0.0, s.height)
+  else:
+    s.scrollVis = s.scrollPos.value
+    s.scrollVis.y = clamp(s.scrollVis.y, 0.0, s.height)
 
-  let bounds = s.bounds.toRect(parentRect)
+  var parent_rect_moved = parent_rect
+
+  parent_rect_moved.x -= s.scrollVis.x
+  parent_rect_moved.y -= s.scrollVis.y
+
+  var bounds = s.bounds.toRect(parent_rect_moved)
+
+  bounds.width -= 80
   for i in 0..<s.elements.len:
-    s.elements[i].update(bounds, mousePos, dt)
+    s.elements[i].update(bounds, mousePos, dt, s.isActive and active and mousePos in bounds)
+
+method propagate*(s: UIScroll): bool =
+  if s.scrollClick:
+    return true
+
+  for i in 0..<s.elements.len:
+    if s.elements[i].propagate():
+      template e: untyped = s.elements[i]
+
+      let
+        min_y = e.bounds.YMin + e.bounds.anchorYMin * s.vpHeight
+        max_y = e.bounds.YMax + e.bounds.anchorYMax * s.vpHeight
+
+        y = (min_y + max_y) / 2
+
+        diff = s.scrollVis.y -
+          (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0))
+  
+      for j in 0..<s.elements.len:
+        s.elements[j].moveCenter(newVector2(0, diff))
+
+      s.scrollPos.value = newVector2(
+        s.scrollPos.value.x,
+        (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0)),
+      )
+      if s.onScroll != nil:
+        s.onScroll(s.scrollPos.value)
+      result = true
+
+method updateTooltip*(s: UIScroll, dt: float32) =
+  for e in s.elements:
+    if s.inside == false:
+      e.tooltipTimer = 0.0
+    else:
+      e.updateTooltip(dt)
+
+method drawDebug*(s: UIScroll, parent_rect: Rect) =
+  var
+    parent_rect_moved = parent_rect
+
+  parent_rect_moved.x -= s.scrollVis.x
+  parent_rect_moved.y -= s.scrollVis.y
+
+  let vp = s.bounds.toRect(parent_rect)
+
+  var bounds = s.bounds.toRect(parent_rect_moved)
+
+  bounds.width -= 80
+
+  if s.scrollFocus:
+    drawRectOutline(
+      newRect(
+        vp.x + vp.width - 80.0,
+        vp.y,
+        80.0,
+        vp.height,
+      ),
+      5,
+      COLOR_GREEN,
+    )
+  if s.inside:
+    drawRectOutline(
+      vp,
+      5,
+      COLOR_BLUE,
+    )
+  else:
+    drawRectOutline(
+      vp,
+      5,
+      COLOR_RED,
+    )
+
+  for e in s.elements:
+    if e.isActive:
+      e.drawDebug(bounds)

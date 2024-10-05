@@ -5,10 +5,13 @@ createEvent(EVENT_FSM_CHANGE)
 
 type
   StateMachine*[S] = object
-    ## A state machine 
+    ## A state machine
     currentState: S
     ## The current state machine state
     states: array[S, StateMachineState[S]]
+    ## the next flag to trigger on update
+    flag: Option[int]
+
   StateMachineState*[S] = object
     conds: seq[Flag[S]]
   Flag*[S] = object
@@ -24,9 +27,10 @@ proc newFlag*[S](id: int, next: S): Flag[S] =
   result.id = id
   result.nextState = next
 
-proc newState*[S](flags: seq[Flag[S]]): StateMachineState[S] =
+proc newState*[S](flags: varargs[Flag[S]]): StateMachineState[S] =
   ## Inits a state machine state
-  result.conds = flags
+  for flag in flags:
+    result.conds &= flag
 
 proc newStateMachine*[S](states: array[S, StateMachineState[S]]): StateMachine[S] =
   ## Creates a state machine
@@ -57,18 +61,25 @@ proc checkCondsNext[S](sms: StateMachineState[S]): Option[S] =
   return none[S]()
 
 proc setFlag*(sm: var StateMachine, id: int) =
-  ## triggerss a state machine flag
-  var data = [sm.currentState, sm.currentState]
-  for i in 0..<sm.states[sm.currentState].conds.len:
-    if sm.states[sm.currentState].conds[i].id == id:
-      sm.states[sm.currentState].conds[i].value = true
-  if sm.states[sm.currentState].checkConds():
-    sm.currentState = sm.states[sm.currentState].checkCondsNext().get
-  for i in 0..<sm.states[sm.currentState].conds.len:
-    sm.states[sm.currentState].conds[i].value = false
-  if sm.currentState != data[1]:
-    data[1] = sm.currentState
-    sendEvent(EVENT_FSM_CHANGE, addr data)
+  sm.flag = some(id)
+
+proc update*(sm: var StateMachine) =
+  if sm.flag.isSome():
+    ## triggerss a state machine flag
+    var id = sm.flag.get()
+    sm.flag = none[int]()
+
+    var data = [sm.currentState, sm.currentState]
+    for i in 0..<sm.states[sm.currentState].conds.len:
+      if sm.states[sm.currentState].conds[i].id == id:
+        sm.states[sm.currentState].conds[i].value = true
+    if sm.states[sm.currentState].checkConds():
+      sm.currentState = sm.states[sm.currentState].checkCondsNext().get
+    for i in 0..<sm.states[sm.currentState].conds.len:
+      sm.states[sm.currentState].conds[i].value = false
+    if sm.currentState != data[1]:
+      data[1] = sm.currentState
+      sendEvent(EVENT_FSM_CHANGE, addr data)
 
 proc contains*[S](states: set[S], sm: StateMachine[S]): bool =
   sm.currentState in states

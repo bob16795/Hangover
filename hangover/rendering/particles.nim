@@ -4,6 +4,7 @@ import hangover/core/types/Color
 import hangover/core/types/Rect
 import random
 import math
+import sequtils
 
 #TODO: comment
 #TODO: add scale
@@ -13,23 +14,16 @@ template ifor*(variable: untyped, list: untyped, body: untyped): untyped =
     template variable(): untyped = list[i]
     body
 
-const
-  MAX_PARTICLES: uint = 1000
-
-var
-  reducedParticles*: bool = false
-
-proc maxParticles(): uint =
-  if reducedParticles:
-    return (MAX_PARTICLES.float * 0.5).uint
-  else:
-    return MAX_PARTICLES
+var particleDensity*: float32 = 1.0
 
 type
   ParticleProps* = object
     ## particle properties
     position*, positionVariation*: Vector2
     velocity*, velocityVariation*: Vector2
+
+    rotation*: float32
+    rotationVel*: float32
 
     startColor*, endColor*: Color
 
@@ -40,13 +34,17 @@ type
 
   ParticleSystem* = object
     ## a particle system, stores up to the max particles
-    pool: array[MAX_PARTICLES, Particle]
+    pool: seq[Particle]
     idx: uint
     texture*: Texture
+    pc: float32
 
   Particle = object
     position*: Vector2
     velocity*: Vector2
+
+    rotation*: float32
+    rotationVel*: float32
 
     startColor*, endColor*: Color
 
@@ -71,6 +69,7 @@ proc update*(ps: var ParticleSystem, dt: float32) =
       continue
     part.lifeRemaining -= dt
     part.position = part.position + part.velocity * dt
+  ps.pool.keepItIf(it.isActive)
 
 proc draw*(ps: ParticleSystem, offset: Vector2) =
   ## draws a particle system
@@ -96,38 +95,38 @@ proc randVector*(size: float32): Vector2 {.inline.} =
   result = newVector2(0, sqrt(rand(0.float32..size.float32 * size.float32)))
   result.angle = rand(0.float32..(2 * PI).float32)
 
-proc emit*(ps: var ParticleSystem, props: ParticleProps) =
+proc emit*(ps: var ParticleSystem, props: ParticleProps, dt: float32) =
   ## creates a new particle
   var p = Particle()
-  ps.idx += 1
 
-  if reducedParticles:
-    if ps.idx mod 2 == 0: return
+  ps.pc += particleDensity * dt
 
-  p.isActive = true
-  p.position = props.position
-  if props.positionVariation != newVector2(0, 0):
-    let pos = randVector(props.positionVariation.x)
-    p.position += pos
+  while ps.pc > 0:
+    ps.idx += 1
 
-  p.velocity = props.velocity
-  if props.velocityVariation != newVector2(0, 0):
-    let pos = randVector(props.velocityVariation.x)
-    p.velocity += pos
+    p.isActive = true
+    p.position = props.position
+    if props.positionVariation != newVector2(0, 0):
+      let pos = randVector(props.positionVariation.x)
+      p.position += pos
 
-  p.startColor = props.startColor
-  p.endColor = props.endColor
+    p.velocity = props.velocity
+    if props.velocityVariation != newVector2(0, 0):
+      let pos = randVector(props.velocityVariation.x)
+      p.velocity += pos
 
-  p.lifeTime = props.lifeTime
-  p.lifeTime += rand(-props.lifeTimeVariation..props.lifeTimeVariation)
-  p.lifeRemaining = p.lifeTime
+    p.startColor = props.startColor
+    p.endColor = props.endColor
 
-  p.startSize = props.startSize
-  p.endSize = props.endSize
+    p.lifeTime = props.lifeTime
+    p.lifeTime += rand(-props.lifeTimeVariation..props.lifeTimeVariation)
+    p.lifeRemaining = p.lifeTime
 
-  ps.pool[ps.idx mod maxParticles()] = p
+    p.rotation = props.rotation
+    p.rotationVel = props.rotationVel
 
-proc tryEmit*(ps: var ParticleSystem, props: ParticleProps) =
-  ## emits a particle if the next particle is free
-  if not ps.pool[(ps.idx + 1) mod MAX_PARTICLES].isActive:
-    ps.emit(props)
+    p.startSize = props.startSize
+    p.endSize = props.endSize
+
+    ps.pool &= p
+    ps.pc -= 1.0

@@ -2,6 +2,7 @@ import opengl
 import point
 import tables
 import hangover/core/logging
+import hangover/core/loop
 
 # TODO: comment
 
@@ -43,56 +44,57 @@ proc newShader*(vCode, gCode, fCode: string): Shader =
     success: GLint
     infoLog: cstring = cast[cstring](alloc0(512))
 
-  # vertex Shader
-  vertex = glCreateShader(GL_VERTEX_SHADER)
-  glShaderSource(vertex, 1, cast[cstringArray](addr vShaderCode), nil)
-  glCompileShader(vertex)
-  # print compile errors if any
-  glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
-  if success == 0:
-    glGetShaderInfoLog(vertex, 512, nil, infoLog)
-    LOG_CRITICAL("ho->shader", infoLog)
-    quit(2)
+  withGraphics:
+    # vertex Shader
+    vertex = glCreateShader(GL_VERTEX_SHADER)
+    glShaderSource(vertex, 1, cast[cstringArray](addr vShaderCode), nil)
+    glCompileShader(vertex)
+    # print compile errors if any
+    glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
+    if success == 0:
+      glGetShaderInfoLog(vertex, 512, nil, infoLog)
+      LOG_CRITICAL("ho->shader", infoLog)
+      quit(2)
 
-  # geometry Shader
-  geometry = glCreateShader(GL_GEOMETRY_SHADER)
-  glShaderSource(geometry, 1, cast[cstringArray](addr gShaderCode), nil)
-  glCompileShader(geometry)
-  # print compile errors if any
-  glGetShaderiv(geometry, GL_COMPILE_STATUS, addr success)
-  if success == 0:
-    glGetShaderInfoLog(geometry, 512, nil, infoLog)
-    LOG_CRITICAL("ho->shader", infoLog)
-    quit(2)
+    # geometry Shader
+    geometry = glCreateShader(GL_GEOMETRY_SHADER)
+    glShaderSource(geometry, 1, cast[cstringArray](addr gShaderCode), nil)
+    glCompileShader(geometry)
+    # print compile errors if any
+    glGetShaderiv(geometry, GL_COMPILE_STATUS, addr success)
+    if success == 0:
+      glGetShaderInfoLog(geometry, 512, nil, infoLog)
+      LOG_CRITICAL("ho->shader", infoLog)
+      quit(2)
 
-  # fragment Shader
-  fragment = glCreateShader(GL_FRAGMENT_SHADER)
-  glShaderSource(fragment, 1, cast[cstringArray](addr fShaderCode), nil)
-  glCompileShader(fragment)
-  # print compile errors if any
-  glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
-  if success == 0:
-    glGetShaderInfoLog(fragment, 512, nil, infoLog)
-    LOG_CRITICAL("ho->shader", infoLog)
-    quit(2)
+    # fragment Shader
+    fragment = glCreateShader(GL_FRAGMENT_SHADER)
+    glShaderSource(fragment, 1, cast[cstringArray](addr fShaderCode), nil)
+    glCompileShader(fragment)
+    # print compile errors if any
+    glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
+    if success == 0:
+      glGetShaderInfoLog(fragment, 512, nil, infoLog)
+      LOG_CRITICAL("ho->shader", infoLog)
+      quit(2)
 
-  # shader program
-  result.id = glCreateProgram()
-  glAttachShader(result.id, vertex)
-  glAttachShader(result.id, geometry)
-  glAttachShader(result.id, fragment)
-  glLinkProgram(result.id)
-  # print linking errors if any
-  glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
-  if success == 0:
-    glGetProgramInfoLog(result.id, 512, nil, infoLog)
-    LOG_CRITICAL("ho->shader", infoLog)
-    quit(2)
+    # shader program
+    result.id = glCreateProgram()
+    glAttachShader(result.id, vertex)
+    glAttachShader(result.id, geometry)
+    glAttachShader(result.id, fragment)
+    glLinkProgram(result.id)
+    # print linking errors if any
+    glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
+    if success == 0:
+      glGetProgramInfoLog(result.id, 512, nil, infoLog)
+      LOG_CRITICAL("ho->shader", infoLog)
+      quit(2)
 
-  # delete the shaders as they're linked into our program now and no longer necessary
-  glDeleteShader(vertex)
-  glDeleteShader(geometry)
-  glDeleteShader(fragment)
+    # delete the shaders as they're linked into our program now and no longer necessary
+    glDeleteShader(vertex)
+    glDeleteShader(geometry)
+    glDeleteShader(fragment)
 
 
 proc newComputeShader*(cCode: string): Shader =
@@ -129,53 +131,54 @@ proc newComputeShader*(cCode: string): Shader =
   glDeleteShader(compute)
 
 proc newShader*(vCode, fCode: string): Shader =
-  result = Shader()
+  withGraphics:
+    result = Shader()
 
-  let
-    vShaderCode = [(SHADER_HEADER & vCode).cstring]
-    fShaderCode = [(SHADER_HEADER & fCode).cstring]
-  var
-    vertex, fragment: GLuint
-    success: GLint
-    infoLog: cstring = cast[cstring](alloc0(512))
+    let
+      vShaderCode = [(SHADER_HEADER & vCode).cstring]
+      fShaderCode = [(SHADER_HEADER & fCode).cstring]
+    var
+      vertex, fragment: GLuint
+      success: GLint
+      infoLog: cstring = cast[cstring](alloc0(512))
 
-  # vertex Shader
-  vertex = glCreateShader(GL_VERTEX_SHADER)
-  glShaderSource(vertex, 1, cast[cstringArray](addr vShaderCode), nil)
-  glCompileShader(vertex)
-  # print compile errors if any
-  glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
-  if success <= 0:
-    glGetShaderInfoLog(vertex, 512, nil, infoLog)
-    LOG_CRITICAL("ho->shader", infoLog)
-    quit(2)
+    # vertex Shader
+    vertex = glCreateShader(GL_VERTEX_SHADER)
+    glShaderSource(vertex, 1, cast[cstringArray](addr vShaderCode), nil)
+    glCompileShader(vertex)
+    # print compile errors if any
+    glGetShaderiv(vertex, GL_COMPILE_STATUS, addr success)
+    if success <= 0:
+      glGetShaderInfoLog(vertex, 512, nil, infoLog)
+      LOG_CRITICAL("ho->shader", infoLog)
+      quit(2)
 
-  # fragment Shader
-  fragment = glCreateShader(GL_FRAGMENT_SHADER)
-  glShaderSource(fragment, 1, cast[cstringArray](addr fShaderCode), nil)
-  glCompileShader(fragment)
-  # print compile errors if any
-  glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
-  if success <= 0:
-    glGetShaderInfoLog(fragment, 512, nil, infoLog)
-    LOG_CRITICAL("ho->shader", infoLog)
-    quit(2)
+    # fragment Shader
+    fragment = glCreateShader(GL_FRAGMENT_SHADER)
+    glShaderSource(fragment, 1, cast[cstringArray](addr fShaderCode), nil)
+    glCompileShader(fragment)
+    # print compile errors if any
+    glGetShaderiv(fragment, GL_COMPILE_STATUS, addr success)
+    if success <= 0:
+      glGetShaderInfoLog(fragment, 512, nil, infoLog)
+      LOG_CRITICAL("ho->shader", infoLog)
+      quit(2)
 
-  # shader program
-  result.id = glCreateProgram()
-  glAttachShader(result.id, vertex)
-  glAttachShader(result.id, fragment)
-  glLinkProgram(result.id)
-  # print linking errors if any
-  glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
-  if success == 0:
-    glGetProgramInfoLog(result.id, 512, nil, infoLog)
-    LOG_CRITICAL("ho->shader", infoLog)
-    quit(2)
+    # shader program
+    result.id = glCreateProgram()
+    glAttachShader(result.id, vertex)
+    glAttachShader(result.id, fragment)
+    glLinkProgram(result.id)
+    # print linking errors if any
+    glGetProgramiv(result.id, GL_LINK_STATUS, addr success)
+    if success == 0:
+      glGetProgramInfoLog(result.id, 512, nil, infoLog)
+      LOG_CRITICAL("ho->shader", infoLog)
+      quit(2)
 
-  # delete the shaders as they're linked into our program now and no longer necessary
-  glDeleteShader(vertex)
-  glDeleteShader(fragment)
+    # delete the shaders as they're linked into our program now and no longer necessary
+    glDeleteShader(vertex)
+    glDeleteShader(fragment)
 
 proc registerParam*(s: var Shader, p: ShaderParam) =
   for sp in s.params.keys:
@@ -194,38 +197,41 @@ proc registerParam*(s: var Shader, n: string, k: ShaderParamKind) =
   s.params[p] = false
 
 proc use*(s: Shader) =
-  glUseProgram(s.id)
+  withGraphics:
+    glUseProgram(s.id)
 
 proc setParam*(s: var Shader, p: string, value: pointer) =
   for sp in s.params.keys:
     if p == sp.name:
       s.use()
-      let loc = s.id.glGetUniformLocation(sp.name.cstring)
-      case sp.kind:
-      of SPKFloat4: glUniform4fv(loc, 1, cast[ptr GLfloat](value))
-      of SPKProj4:
-        glUniformMatrix4fv(loc, 1, GL_FALSE.GLboolean, cast[
-          ptr GLfloat](value))
-      of SPKFloat3:
-        glUniform3f(loc, cast[ptr array[0..2, GLfloat]](value)[][0], cast[
-            ptr array[0..2, GLfloat]](value)[][1], cast[ptr array[0..2,
-                GLfloat]](value)[][2])
-      of SPKFloat2:
-        glUniform2f(loc, cast[ptr array[0..1, GLfloat]](value)[][0], cast[
-            ptr array[0..1, GLfloat]](value)[][1])
-      of SPKFloat1:
-        glUniform1f(loc, cast[ptr GLfloat](value)[])
-      of SPKInt1:
-        glUniform1i(loc, cast[ptr GLint](value)[])
-      of SPKBool:
-        glUniform1i(loc, cast[ptr GLint](value)[])
-      else:
-        LOG_WARN("ho->shader", "shader param kind not implemented `", sp.kind, "`")
+      withGraphics:
+        let loc = s.id.glGetUniformLocation(sp.name.cstring)
+        case sp.kind:
+        of SPKFloat4: glUniform4fv(loc, 1, cast[ptr GLfloat](value))
+        of SPKProj4:
+          glUniformMatrix4fv(loc, 1, GL_FALSE.GLboolean, cast[
+            ptr GLfloat](value))
+        of SPKFloat3:
+          glUniform3f(loc, cast[ptr array[0..2, GLfloat]](value)[][0], cast[
+              ptr array[0..2, GLfloat]](value)[][1], cast[ptr array[0..2,
+                  GLfloat]](value)[][2])
+        of SPKFloat2:
+          glUniform2f(loc, cast[ptr array[0..1, GLfloat]](value)[][0], cast[
+              ptr array[0..1, GLfloat]](value)[][1])
+        of SPKFloat1:
+          glUniform1f(loc, cast[ptr GLfloat](value)[])
+        of SPKInt1:
+          glUniform1i(loc, cast[ptr GLint](value)[])
+        of SPKBool:
+          glUniform1i(loc, cast[ptr GLint](value)[])
+        else:
+          LOG_WARN("ho->shader", "shader param kind not implemented `", sp.kind, "`")
+          return
+        s.params[sp] = true
         return
-      s.params[sp] = true
-      return
   LOG_ERROR("ho->shader", "shader param not found `" & $p & "`")
 
 proc runCompute*(compute: Shader, size: Point) =
   compute.use()
-  glDispatchCompute(size.x.GLuint, size.y.GLuint, 1)
+  withGraphics:
+    glDispatchCompute(size.x.GLuint, size.y.GLuint, 1)

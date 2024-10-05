@@ -1,7 +1,7 @@
 import vector2
 
 type
-  Rect* = object of RootObj
+  Rect* = object
     ## a rectangle object
     x*: float32
     y*: float32
@@ -96,7 +96,7 @@ proc contains*(r: Rect, v: Rect): bool =
 
 proc scale*(r: Rect, scale: float32): Rect =
   result = r
-  
+
   result.x *= scale
   result.y *= scale
   result.width *= scale

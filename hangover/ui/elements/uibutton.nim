@@ -6,8 +6,10 @@ import hangover/core/types/font
 import hangover/core/types/sfx
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
+import hangover/ui/types/uifield
 import hangover/core/logging
 import hangover/core/audio
+import options
 
 #TODO: comment
 #TODO: add align
@@ -16,68 +18,28 @@ type
   UIButton* = ref object of UIElement
     ## A button element for ui
     font*: Font
-    fontMult*: float32
+    font_scale_mult*: float32
     action*: UIAction
-    text*: string
-    textUpdate*: UIUpdate
-    hasTexture*: bool
-    sprite*: Sprite
-    toggleSprite*: Sprite
-    hasSprite*: bool
-    hasToggleSprite*: bool
-    normalUI*, clickedUI*, disabledUI*, focusedUI*: UISprite
-    iconScale*: float32
+    text*: UIField[string]
+
+    icon*: Sprite
+    icon_toggle*: Sprite
+    icon_scale*: float32
+
+    normal_sprite*: UISprite
+    clicked_sprite*: UISprite
+    disabled_sprite*: UISprite
+    focused_sprite*: UISprite
+
     toggle*: bool
     pressed*: bool
-    color*: proc(): Color
-    textColor*: Color
+    color*: UIField[Color]
+    text_color*: UIField[Color]
 
 var
   buttonHoverSound*: Sound
   buttonClickSound*: Sound
   buttonFailSound*: Sound
-
-proc newUIButton*(texture: Texture, font: Font, bounds: UIRectangle,
-        action: UIAction = nil, text = "", disableProc: proc(): bool = nil,
-        sprite: Sprite = Sprite(), toggleSprite: Sprite = Sprite(),
-        toggle: bool = false): UIButton =
-  ## creates a ui button
-  result = UIButton()
-
-  # generic element stuff
-  result.isActive = true
-  result.bounds = bounds
-  result.isDisabled = disableProc
-
-  # set the font
-  result.font = font
-
-  # setup texture data
-  if texture.isDefined():
-    result.hasTexture = true
-    result.normalUI = newUiSprite(texture, newRect(0, 0, 0.5, 1),
-          newRect(0.125, 0.25, 0.125, 0.25)).scale(newVector2(64, 32))
-    result.focusedUI = newUiSprite(texture, newRect(0.5, 0, 0.5, 1),
-          newRect(0.625, 0.25, 0.125, 0.25)).scale(newVector2(64, 32))
-    result.disabledUI = newUiSprite(texture, newRect(16, 0, 8, 8),
-          newRect(18, 2, 4, 4))
-
-  if sprite.texture != nil:
-    result.sprite = sprite
-    result.hasSprite = true
-  if toggleSprite.texture != nil:
-    result.toggleSprite = toggleSprite
-    result.hasToggleSprite = true
-
-  # setup the action
-  if action != nil:
-    result.action = action
-  else:
-    result.action = proc(i: int) = discard
-
-  # setup the text and misc
-  result.text = text
-  result.toggle = toggle
 
 method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
   ## updates the button element on a mouse move
@@ -97,23 +59,25 @@ method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
   # check if mouse is in the button
   if mousePos in bounds:
     if not wasFocused:
-      if buttonHoverSound.valid:
-        buttonHoverSound.play()
+      buttonHoverSound.play()
     b.focused = true
 
 method click*(b: UIButton, button: int) =
   ## processes a click event for a button element
+  if not b.focused:
+    return
 
   # if the button is a toggle button toggle it
-  if b.isDisabled == nil or not b.isDisabled():
+  if not b.disabled.value:
     if b.toggle:
       b.pressed = not b.pressed
       b.action(b.pressed.int)
     else:
       b.action(button)
-    if buttonClickSound.valid:
-      buttonClickSound.play()
-  elif buttonFailSound.valid:
+    buttonClickSound.play()
+  else:
+    if b.color.value.a == 0:
+      return
     buttonFailSound.play()
 
 method draw*(b: UIButton, parentRect: Rect) =
@@ -127,90 +91,116 @@ method draw*(b: UIButton, parentRect: Rect) =
   let bounds = b.bounds.toRect(parentRect)
 
   # get the sprite and text color for the button
-  var sprite = b.normalUI
-  var textColor = b.textColor
-  var color = newColor(255, 255, 255)
-  if b.color != nil:
-    color = b.color()
-
-  textColor.a = 255
+  var
+    sprite = b.normal_sprite
+    color = b.color.value
+    text_color = b.text_color.value.withAlpha(color.a)
 
   # check if the disabled func is defined
-  if b.isDisabled != nil:
-    # check if the button should be disabled
-    if (b.isDisabled()):
-      sprite = b.disabledUI
-    else:
-      if b.focused:
-        sprite = b.focusedUI
+  # check if the button should be disabled
+  if b.disabled.value:
+    if b.disabled_sprite != nil:
+      sprite = b.disabled_sprite
+    if color.a == 0:
+      return
   else:
-    if b.focused:
-      sprite = b.focusedUI
+    if b.focused and b.focused_sprite != nil:
+      sprite = b.focused_sprite
+
+  var contrast = false
 
   # if the button has a uiSprite draw it
-  if b.hasTexture:
-    sprite.draw(bounds, c = color)
+  if sprite != nil:
+    sprite.draw(bounds, color = color, fg = some(contrast))
+    contrast = not contrast
 
-  # if the button has a icon draw it
-  if (b.hasSprite):
-    let iconSize = bounds.height * b.iconScale
-    let posx = bounds.x + ((bounds.width - iconSize) -
-        sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
-    let posy = bounds.y + (bounds.height - iconSize) / 2
-    b.sprite.draw(newVector2(posx, posy),
-        0, newVector2(iconSize, iconSize), c = color)
+  let
+    text = b.text.value
 
-  # if the button has a focused icon draw it
-  if (b.hasToggleSprite):
-    if not b.toggle:
-      if b.focused:
-        let posx = (bounds.x) + ((bounds.width - bounds.height) -
-            sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
-        b.toggleSprite.draw(newVector2(posx, bounds.y),
-            0, newVector2(bounds.height, bounds.height), c = newColor(255,
-                255, 255, 255))
-    else:
-      if b.pressed:
-        let posx = (bounds.x) + ((bounds.width - bounds.height) -
-            sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
-        b.toggleSprite.draw(newVector2(posx, bounds.y),
-            0, newVector2(bounds.height, bounds.height), c = color)
-      if b.focused:
-        let posx = (bounds.x) + ((bounds.width - bounds.height) -
-            sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
-        b.toggleSprite.draw(newVector2(posx, bounds.y),
-            0, newVector2(bounds.height, bounds.height), c = newColor(255,
-                255, 255, 128))
+    base_text_size = b.font.sizeText(text)
+    max_scale = bounds.width / base_text_size.x * 0.9
+    text_scale = min(b.font_scale_mult * uiElemScale, max_scale)
+    text_size = base_text_size * text_scale
 
   # draw the buttons text centered
-  if (b.text != ""):
-    var posx: float32 = (bounds.x + ((
-                bounds.width - sizeText(b.font,
-                b.text, b.fontMult * uiElemScale).x) / 2))
-    let posy: float32 = bounds.y + ((bounds.height - b.font.sizeText(b.text,
-        b.fontMult * uiElemScale).y.float32) / 2)
-    if b.hasSprite:
-      posx = (bounds.x + bounds.height + 10) + ((bounds.width - bounds.height) -
-          sizeText(b.font, b.text, b.fontMult * uiElemScale).x) / 2
-    b.font.draw(b.text, newPoint(posx.cint, posy.cint), textColor,
-        b.fontMult * uiElemScale)
+  if text != "":
+    let
+      offset = if b.icon != nil: bounds.height + 10 else: 0
+
+      text_pos = newVector2(
+        bounds.x + offset + (bounds.width - offset - text_size.x) / 2,
+        bounds.y + (bounds.height - text_size.y) / 2,
+      )
+
+    b.font.draw(text, text_pos, text_color, text_scale, fg = some(contrast))
+
+  # if the button has a icon draw it
+  if b.icon != nil:
+    let
+      icon_size = bounds.height * b.icon_scale
+      icon_pos = newVector2(
+        bounds.x + ((bounds.width - icon_size) - text_size.x) / 2,
+        bounds.y + (bounds.height - icon_size) / 2,
+      )
+
+    b.icon.draw(
+      icon_pos,
+      0,
+      newVector2(icon_size),
+      color = color,
+      fg = some(contrast),
+    )
+
+  if b.icon != nil:
+    contrast = not contrast
+
+  # if the button has a focused icon draw it
+  if b.icon_toggle != nil:
+    let
+      icon_pos = newVector2(
+        bounds.x + (bounds.width - bounds.height - text_size.x) / 2,
+        bounds.y,
+      )
+
+    if not b.toggle:
+      if b.focused:
+        b.icon_toggle.draw(
+          icon_pos,
+          0,
+          newVector2(bounds.height),
+          color = newColor(255, 255, 255, 255),
+          fg = some(contrast),
+        )
+    else:
+      if b.pressed:
+        b.icon_toggle.draw(
+          icon_pos,
+          0,
+          newVector2(bounds.height),
+          color = color,
+          fg = some(contrast),
+        )
+      if b.focused:
+        b.icon_toggle.draw(
+          icon_pos,
+          0,
+          newVector2(bounds.height),
+          color = newColor(255, 255, 255, 128),
+          fg = some(contrast),
+        )
 
 method update*(b: UIButton, parentRect: Rect, mousePos: Vector2,
-    dt: float32) =
+    dt: float32, active: bool) =
   ## processes a frame for the button
 
-  # return if the button is not active
-  if not b.isActive:
-    return
-
   # update the button text
-  if b.textUpdate != nil:
-    b.text = b.textUpdate()
-  if b.fontMult == 0:
-    b.fontMult = 1
-  if b.iconScale == 0:
-    b.iconScale = 0.75
+  if b.font_scale_mult == 0:
+    b.font_scale_mult = 1.0
+  if b.icon_scale == 0:
+    b.icon_scale = 1.0
 
 method focusable*(b: UIButton): bool =
   ## returns true if you can focus the element
-  return true #not(b.isDisabled != nil and b.isDisabled())
+  if b.color.value.a == 0:
+    return false
+  return not b.neverFocus
