@@ -2,6 +2,7 @@ import sprite
 import tables
 import hangover/core/types/rect
 import hangover/core/types/color
+import hangover/core/types/texture
 import options
 
 #TODO: comment
@@ -51,6 +52,6 @@ proc draw*[T](
   r: Rect,
   rotation: float32 = 0,
   color: Color = newColor(255, 255, 255),
-  fg: Option[bool] = some(true),
+  contrast: ContrastEntry = ContrastEntry(mode: fg),
 ) =
-  getStateFrame(a).draw(r.location, rotation, r.size, color, fg = fg)
+  getStateFrame(a).draw(r.location, rotation, r.size, color, contrast = contrast)

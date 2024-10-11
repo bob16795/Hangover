@@ -47,6 +47,8 @@ in vec4 tintColor;
 out vec4 color;
 
 uniform sampler2D text;
+uniform sampler2D contrast_tex;
+uniform int contrast_override;
 uniform int mode;
 uniform float contrast;
 
@@ -60,7 +62,7 @@ void main()
     float M = (3.45565 * tex.r) + (27.1554 * tex.g) + (3.86714 * tex.b);
     float S = (0.02995 * tex.r) + (0.184309 * tex.g) + (1.46709 * tex.b);
     float l, m, s;
-
+    
     if (mode == 0) //Normal
     {
         l = L;
@@ -118,11 +120,20 @@ void main()
     } else {
       color = tex;
     }      
-
-    if (contrast < 0) {
-      color.rgb = mix(vec3(0.0), vec3(1.0 + contrast), color.rgb);
+    
+    if (contrast_override != 0) // has contrast tex
+    {
+      color.rgb = mix(
+        mix(vec3(0.0), vec3(1.0 + contrast), color.rgb),
+        mix(vec3(0.0 + contrast), vec3(1.0), color.rgb),
+        texture(contrast_tex, texCoords).r
+      );
     } else {
-      color.rgb = mix(vec3(0.0 + contrast), vec3(1.0), color.rgb);
+      if (contrast < 0) {
+        color.rgb = mix(vec3(0.0), vec3(1.0 + contrast), color.rgb);
+      } else {
+        color.rgb = mix(vec3(0.0 + contrast), vec3(1.0), color.rgb);
+      }
     }
 }
 """
@@ -133,6 +144,18 @@ type
     data*: pointer
     name*: string
 
+  ContrastMode* = enum
+    noContrast 
+    fg
+    bg
+    texture
+
+  ContrastEntry* = object
+    case mode*: ContrastMode:
+    of noContrast, fg, bg: discard
+    of texture:
+      tex*: Texture
+
   QueueEntry = object
     update: bool
     shader: Shader
@@ -142,7 +165,13 @@ type
     params: seq[TextureParam]
     scissor: Rect
     mul: bool
-    fg: Option[bool]
+    contrast: ContrastEntry
+
+proc `==`*(a, b: ContrastEntry): bool =
+  if a.mode == texture and b.mode == texture:
+    a.tex == b.tex
+  else:
+    a.mode == b.mode
 
 var
   textureProgram*: Shader
@@ -236,12 +265,20 @@ proc setupTexture*() =
   textureProgram.registerParam("projection", SPKProj4)
   textureProgram.registerParam("rotation", SPKFloat1)
   textureProgram.registerParam("contrast", SPKFloat1)
+  textureProgram.registerParam("contrast_override", SPKInt1)
+  textureProgram.registerParam("contrast_tex", SPKInt1)
   textureProgram.registerParam("layer", SPKFloat1)
   textureProgram.registerParam("mode", SPKInt1)
 
-  let tmp: float32 = 1.0
+  block:
+    let tmp: float32 = 1.0
 
-  textureProgram.setParam("contrast", addr tmp)
+    textureProgram.setParam("contrast", addr tmp)
+
+  block:
+    let tmp: int = 5
+
+    textureProgram.setParam("contrast_tex", addr tmp)
 
 proc newTexture*(size: Vector2): Texture =
   ## creates a new texture with size
@@ -361,7 +398,7 @@ method drawVerts*(
     params: seq[TextureParam] = @[],
     flip: array[2, bool] = [false, false],
     mul: bool = false,
-    fg: Option[bool] = some(true),
+    contrast: ContrastEntry = ContrastEntry(mode: fg),
   ) {.base.} =
   ## draws verts in a texture
 
@@ -382,7 +419,7 @@ method drawVerts*(
       params: params,
       scissor: textureScissor,
       mul: mul,
-      fg: fg,
+      contrast: contrast,
     )
 
   # attempt to add to the last queue item
@@ -391,7 +428,7 @@ method drawVerts*(
        program[].id == queue[^1].shader.id and
        params == queue[^1].params and
        mul == queue[^1].mul and
-       fg == queue[^1].fg and
+       contrast == queue[^1].contrast and
        textureScissor == queue[^1].scissor:
     queue[^1].verts &= vertices
 
@@ -406,7 +443,7 @@ method drawVerts*(
       params: params,
       scissor: textureScissor,
       mul: mul,
-      fg: fg,
+      contrast: contrast,
     )
 
 
@@ -421,7 +458,7 @@ method draw*(
     flip: array[2, bool] = [false, false],
     mul: bool = false,
     rotation_center = newVector2(0.5),
-    fg: Option[bool] = some(true),
+    contrast: ContrastEntry = ContrastEntry(mode: fg),
   ) {.base.} =
   ## draws a texture
 
@@ -458,7 +495,7 @@ method draw*(
     params,
     flip,
     mul,
-    fg
+    contrast
   )
 
 proc finishDraw*() =
@@ -500,19 +537,29 @@ proc finishDraw*() =
     for param in q.params:
       q.shader.setParam(param.name, param.data)
 
-    let contrast =
-      if q.fg.isSome():
-        if q.fg.get():
-          contrastDiff
-        else:
-          -contrastDiff
-      else:
+    let contrast = case q.contrast.mode:
+      of fg:
+        contrastDiff
+      of bg:
+        -contrastDiff
+      of noContrast, texture:
         0
 
     q.shader.setParam("mode", addr colorMode)
     q.shader.setParam("contrast", addr contrast)
 
+    var over: GLint = 0
+      
+    if q.contrast.mode == texture:
+      withGraphics:
+        glActiveTexture(GL_TEXTURE5)
+        glBindTexture(GL_TEXTURE_2D, q.contrast.tex.tex)
+      over = 1
+      
+    q.shader.setParam("contrast_override", addr over)
+
     withGraphics:
+      glUseProgram(q.shader.id)
       if q.scissor.size.x == 0 or q.scissor.size.y == 0:
         glDisable(GL_SCISSOR_TEST)
       else:

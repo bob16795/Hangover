@@ -42,7 +42,7 @@ proc newLayout*(base: UIRectangle, data: UILayoutData): UILayout =
     )
 
 proc next*(self: UILayout, aStart: float32 = 0.0,
-        aEnd: float32 = 1.0): UIRectangle =
+        aEnd: float32 = 1.0, oStart, oEnd: float32 = 0.0): UIRectangle =
     new(result)
     result[] = self.curr[]
 
@@ -55,17 +55,21 @@ proc next*(self: UILayout, aStart: float32 = 0.0,
             dist = result.anchorXMax - result.anchorXMin
         result.anchorXMin = start + dist * aStart
         result.anchorXMax = start + dist * aEnd
+        if oStart != 0: result.XMin = oStart
+        if oEnd != 0: result.XMax = oEnd
     of Horizontal:
         let
             start = result.anchorYMin
             dist = result.anchorYMax - result.anchorYMin
         result.anchorYMin = start + dist * aStart
         result.anchorYMax = start + dist * aEnd
+        if oStart != 0: result.YMin = oStart
+        if oEnd != 0: result.YMax = oEnd
 
     self.curr = self.data.applyUIRectangle(self.curr)
 
 proc curr*(self: UILayout, aStart: float32 = 0.0,
-        aEnd: float32 = 1.0): UIRectangle =
+        aEnd: float32 = 1.0, oStart, oEnd: float32 = 0.0): UIRectangle =
     new(result)
     result[] = self.prev[]
     case self.data.kind:
@@ -75,14 +79,18 @@ proc curr*(self: UILayout, aStart: float32 = 0.0,
             dist = result.anchorXMax - result.anchorXMin
         result.anchorXMin = start + dist * aStart
         result.anchorXMax = start + dist * aEnd
+        if oStart != 0: result.XMin = oStart
+        if oEnd != 0: result.XMax = oEnd
     of Horizontal:
         let
             start = result.anchorYMin
             dist = result.anchorYMax - result.anchorYMin
         result.anchorYMin = start + dist * aStart
         result.anchorYMax = start + dist * aEnd
+        if oStart != 0: result.YMin = oStart
+        if oEnd != 0: result.YMax = oEnd
 
-proc first*(self: UILayout, aStart: float32 = 0.0, aEnd: float32 = 1.0): UIRectangle =
+proc first*(self: UILayout, aStart: float32 = 0.0, aEnd: float32 = 1.0, oStart: float32 = 0, oEnd: float32 = 0): UIRectangle =
   self.curr[] = self.first[]
   self.prev = nil
-  return self.next(aStart, aEnd)
+  return self.next(aStart, aEnd, oStart, oEnd)

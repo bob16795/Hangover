@@ -18,7 +18,7 @@ type
   EventListener* = object
     ## stores a proc that can be attached to an event
     id: Oid
-    p: proc(data: pointer): bool
+    p: proc(data: pointer): bool {.cdecl.}
 
 proc `+`(a, b: EventId): EventId {.borrow.}
 proc `==`(a, b: EventId): bool {.borrow.}
@@ -53,7 +53,7 @@ proc sendEvent*(event: EventId, data: pointer) =
       if call.p(data):
         break
 
-proc createListener*(event: EventId, call: proc (data: pointer): bool): Oid {.discardable.} =
+proc createListener*(event: EventId, call: proc (data: pointer): bool {.cdecl.}): Oid {.discardable.} =
   ## attaches a listener to an event
   
   # create a listener
@@ -98,16 +98,15 @@ proc setupEventCallbacks*(ctx: GraphicsContext) =
 
   # setup listeners for keyboard
   createListener(EVENT_START_LINE_ENTER,
-                 proc(d: pointer): bool =
+                 proc(d: pointer): bool {.cdecl.} =
                    lineInput = true
                    lineText = "")
   createListener(EVENT_STOP_LINE_ENTER,
-                 proc(d: pointer): bool =
+                 proc(d: pointer): bool {.cdecl.} =
                    lineInput = false
                    lineInputNew = false
                    lineText = "")
-  createListener(EVENT_SET_LINE_TEXT,
-    setLineText)
+  createListener(EVENT_SET_LINE_TEXT, setLineText)
 
 template eventListener*(name: untyped, varName: untyped, kind: type, body: untyped) =
   proc name(d: pointer): bool =

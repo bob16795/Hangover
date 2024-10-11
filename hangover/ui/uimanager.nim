@@ -36,6 +36,7 @@ import delaunay
 import sequtils
 import tables
 import hashes
+import strformat
 
 export uitext
 export uiinput
@@ -107,7 +108,7 @@ proc uiHeight*(): float32 =
 #  if result > TARG_HEIGHT / 2 * 3:
 #    result -= TARG_HEIGHT / 2
 
-proc mouseMove(data: pointer): bool =
+proc mouseMove(data: pointer): bool {.cdecl.} =
   ## processes a mouse move event
 
   # get the event data
@@ -134,7 +135,7 @@ proc mouseMove(data: pointer): bool =
   if dragProc != nil:
     dragProc(false)
 
-proc mouseClick(data: pointer): bool =
+proc mouseClick(data: pointer): bool {.cdecl.} =
   ## processes a click event
 
   # get the event data
@@ -146,7 +147,7 @@ proc mouseClick(data: pointer): bool =
   # update drag
   for ei in 0..<len um.elements:
     let e = um.elements[ei]
-    e.click(btn)
+    e.click(btn, false)
     if e.propagate():
       capture e:
         dragProc = (done: bool) => e.drag(btn, done)
@@ -156,13 +157,13 @@ proc propagateUI*() =
     if not e.isActive: continue
     discard e.propagate()
 
-proc mouseRel(data: pointer): bool =
+proc mouseRel(data: pointer): bool {.cdecl.} =
   # update drag to nothing
   if dragProc != nil:
     dragProc(true)
   dragProc = nil
 
-proc mouseScroll(data: pointer): bool =
+proc mouseScroll(data: pointer): bool {.cdecl.} =
   let offset = cast[ptr Vector2](data)[]
 
   for ei in 0..<len um.elements:
@@ -171,14 +172,14 @@ proc mouseScroll(data: pointer): bool =
 
     e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
 
-proc resizeUI(data: pointer): bool =
+proc resizeUI(data: pointer): bool {.cdecl.} =
   ## resizes the ui to the screen size
 
   # get the event data
   let size = cast[ptr tuple[x, y: int32]](data)[]
   if size.x != 0 and size.y != 0:
     um.size = newVector2(size.x.float32, size.y.float32)
-
+  
 proc initUIManager*(size: Point) =
   ## creates a new UIManager
 
@@ -243,13 +244,17 @@ proc drawUI*() =
           LOG_ERROR "ho->ui", "failed to create ui fb"
           return
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
         um.aSize = uiSize.toVector2()
+      
+        LOG_INFO "ho->ui", "resize UI to ", &"{um.aSize.x}x{um.aSize.y}"
       except Exception as ex:
         LOG_ERROR $ex[]
+      finally:
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
   ## draw the ui
   finishDraw()
+
   withGraphics:
     glBindFramebuffer(GL_FRAMEBUFFER, um.fbo)
   setCameraSize(um.aSize.x.int32, um.aSize.y.int32)
@@ -301,7 +306,7 @@ proc drawUI*() =
     newRect(um.border[borderLeft], um.border[borderTop], unscaledSize.x, unscaledSize.y),
     flip = [false, true],
     color = newColor(255, 255, 255, (255 * uiTransparency).uint8),
-    fg = none[bool](),
+    contrast = ContrastEntry(mode: noContrast),
   )
 
 proc isUITooltip*(): bool =
@@ -372,7 +377,7 @@ proc uiNavigate*(dir: UIDir): bool =
       for e in um.elements:
         if not e.isActive: continue
 
-        e.click(1)
+        e.click(1, true)
 
         let tmp = false
         result = result or tmp

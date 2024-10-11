@@ -62,7 +62,7 @@ method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
       buttonHoverSound.play()
     b.focused = true
 
-method click*(b: UIButton, button: int) =
+method click*(b: UIButton, button: int, key: bool) =
   ## processes a click event for a button element
   if not b.focused:
     return
@@ -111,7 +111,7 @@ method draw*(b: UIButton, parentRect: Rect) =
 
   # if the button has a uiSprite draw it
   if sprite != nil:
-    sprite.draw(bounds, color = color, fg = some(contrast))
+    sprite.draw(bounds, color = color, contrast = ContrastEntry(mode: if contrast: fg else: bg))
     contrast = not contrast
 
   let
@@ -132,7 +132,7 @@ method draw*(b: UIButton, parentRect: Rect) =
         bounds.y + (bounds.height - text_size.y) / 2,
       )
 
-    b.font.draw(text, text_pos, text_color, text_scale, fg = some(contrast))
+    b.font.draw(text, text_pos, text_color, text_scale, contrast = ContrastEntry(mode: if contrast: fg else: bg))
 
   # if the button has a icon draw it
   if b.icon != nil:
@@ -148,7 +148,7 @@ method draw*(b: UIButton, parentRect: Rect) =
       0,
       newVector2(icon_size),
       color = color,
-      fg = some(contrast),
+      contrast = ContrastEntry(mode: if contrast: fg else: bg),
     )
 
   if b.icon != nil:
@@ -169,7 +169,7 @@ method draw*(b: UIButton, parentRect: Rect) =
           0,
           newVector2(bounds.height),
           color = newColor(255, 255, 255, 255),
-          fg = some(contrast),
+          contrast = ContrastEntry(mode: if contrast: fg else: bg),
         )
     else:
       if b.pressed:
@@ -178,7 +178,7 @@ method draw*(b: UIButton, parentRect: Rect) =
           0,
           newVector2(bounds.height),
           color = color,
-          fg = some(contrast),
+          contrast = ContrastEntry(mode: if contrast: fg else: bg),
         )
       if b.focused:
         b.icon_toggle.draw(
@@ -186,7 +186,7 @@ method draw*(b: UIButton, parentRect: Rect) =
           0,
           newVector2(bounds.height),
           color = newColor(255, 255, 255, 128),
-          fg = some(contrast),
+          contrast = ContrastEntry(mode: if contrast: fg else: bg),
         )
 
 method update*(b: UIButton, parentRect: Rect, mousePos: Vector2,

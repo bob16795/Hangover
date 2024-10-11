@@ -55,11 +55,12 @@ method draw*(s: UIScroll, parentRect: Rect) =
       value = s.scrollVis.y / (s.height - s.vpHeight)
       posy: float32 = ((vp.y + 80) * (1 - value)) + (vp.y + vp.height - 80) * value - 80
       posx: float32 = vp.x + vp.width - 80 * 0.5
-    s.sprite.draw(newRect(posx - 80 * 0.5, vp.y, 80, vp.height), fg = some(true))
-    s.handleSprite.draw(newRect(vp.x + vp.width - 80, posy, 80, 160), fg = some(true))
+    s.sprite.draw(newRect(posx - 80 * 0.5, vp.y, 80, vp.height), contrast = ContrastEntry(mode: fg))
+    s.handleSprite.draw(newRect(vp.x + vp.width - 80, posy, 80, 160), contrast = ContrastEntry(mode: fg))
+  
+    # slider size
+    bounds.width -= 80
 
-  # slider size
-  bounds.width -= 80
   textureScissor = vp.scale(uiScaleMult)
 
   var postpone: seq[UIElement]
@@ -84,7 +85,8 @@ method navigate*(s: UIScroll, dir: UIDir, parent_rect: Rect): bool =
 
   var bounds = s.bounds.toRect(parent_rect_moved)
 
-  bounds.width -= 80
+  if s.height > s.vpHeight:
+    bounds.width -= 80
 
   case dir:
   of UIPrev, UINext:
@@ -112,16 +114,20 @@ method checkHover*(s: UIScroll, parent_rect: Rect, mousePos: Vector2) =
     bounds = s.bounds.toRect(parent_rect_moved)
     scroll_bounds = vp
 
-  scroll_bounds.x += scrollBounds.width - 80
-  scroll_bounds.width = 80
-  vp.width -= 80
+  if s.height > s.vpHeight:
+    scroll_bounds.x += scrollBounds.width - 80
+    scroll_bounds.width = 80
+    vp.width -= 80
 
-  bounds.width -= 80
+    bounds.width -= 80
+  else:
+    scroll_bounds.x += scrollBounds.width
+    scroll_bounds.width = 0
 
   s.tmpVal = ((mousePos.y - scroll_bounds.y) / scroll_bounds.height).clamp(0, 1)
   s.scrollFocus = mousePos in scroll_bounds
 
-  s.inside = mousePos in vp
+  s.inside = not s.scrollFocus and mousePos in vp
 
   if not s.inside: 
     return
@@ -131,8 +137,8 @@ method checkHover*(s: UIScroll, parent_rect: Rect, mousePos: Vector2) =
     if s.elements[i].focused and s.inside:
       s.focused = true
 
-method click*(s: UIScroll, button: int) =
-  if s.scrollFocus:
+method click*(s: UIScroll, button: int, key: bool) =
+  if not key and s.scrollFocus:
     s.scrollClick = true
     s.scrollPos.value = newVector2(
       s.scrollPos.value.x,
@@ -143,11 +149,12 @@ method click*(s: UIScroll, button: int) =
       s.onScroll(s.scrollPos.value)
     return
 
-  for i in 0..<s.elements.len:
-    s.elements[i].click(button)
-    if s.elements[i].propagate():
-      capture i:
-        s.dragProc = proc(done: bool) = s.elements[i].drag(button, done)
+  if s.inside:
+    for i in 0..<s.elements.len:
+      s.elements[i].click(button, key)
+      if not key and s.elements[i].propagate():
+        capture i:
+          s.dragProc = proc(done: bool) = s.elements[i].drag(button, done)
 
 method scroll*(s: UIScroll, offset: Vector2) =
   if not s.isActive:
@@ -215,7 +222,8 @@ method center*(s: UIScroll, parent_rect: Rect): Vector2 =
 
   var bounds = s.bounds.toRect(parent_rect_moved)
 
-  bounds.width -= 80
+  if s.height > s.vpHeight:
+    bounds.width -= 80
 
   ## returns true if you can focus the element
   for e in s.elements:
@@ -243,7 +251,9 @@ method update*(s: UIScroll, parentRect: Rect, mousePos: Vector2, dt: float32, ac
 
   var bounds = s.bounds.toRect(parent_rect_moved)
 
-  bounds.width -= 80
+  if s.height > s.vpHeight:
+    bounds.width -= 80
+
   for i in 0..<s.elements.len:
     s.elements[i].update(bounds, mousePos, dt, s.isActive and active and mousePos in bounds)
 

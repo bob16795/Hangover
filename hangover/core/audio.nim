@@ -59,7 +59,10 @@ proc checkAudioErr*(name: string) {.inline.} =
 proc initAudio*() {.exportc, cdecl, dynlib.} =
   ## sets up the audio system
   try:
-    device = alcOpenDevice(nil)
+    let
+      devicename = alcGetString(nil, ALC_DEFAULT_DEVICE_SPECIFIER);
+    
+    device = alcOpenDevice(devicename)
 
     if device == nil:
       raise newException(AudioError, "Failed to get default audio device") 
@@ -84,7 +87,8 @@ proc initAudio*() {.exportc, cdecl, dynlib.} =
     for v in VolumeEntry.low..VolumeEntry.high:
       volume[v] = 1.0
   finally:
-    discard alGetError()
+    while alGetError() != AL_NO_ERROR:
+      discard
 
 proc setStereo*(value: bool) =
   stereo = value

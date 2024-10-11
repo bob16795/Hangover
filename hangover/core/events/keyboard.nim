@@ -41,6 +41,6 @@ when not defined(ginGLFM):
     lineText &= $r
     sendEvent(EVENT_LINE_ENTER, addr lineText)
   
-proc setLineText*(data: pointer): bool =
+proc setLineText*(data: pointer): bool {.cdecl.} =
   lineText = cast[ptr string](data)[]
 

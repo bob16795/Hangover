@@ -169,12 +169,10 @@ proc finFont*(self: var Font, size: int, face: FT_Face) =
 
   template g: untyped = face.glyph
 
-  withGraphics:
-    glActiveTexture(GL_TEXTURE0)
-
   self.textures &= newTexture(newVector2(FONT_TEX_SIZE, FONT_TEX_SIZE))
 
   withGraphics:
+    glActiveTexture(GL_TEXTURE0)
     glBindTexture(GL_TEXTURE_2D, self.textures[^1].tex)
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
@@ -206,6 +204,7 @@ proc finFont*(self: var Font, size: int, face: FT_Face) =
 
         var tex = newTexture(newVector2(FONT_TEX_SIZE, FONT_TEX_SIZE))
         withGraphics:
+          glActiveTexture(GL_TEXTURE0)
           glBindTexture(GL_TEXTURE_2D, tex.tex)
           glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
           glPixelStorei(GL_PACK_ALIGNMENT, 1)
@@ -215,6 +214,7 @@ proc finFont*(self: var Font, size: int, face: FT_Face) =
       self.size = max(self.size, g.bitmap.rows.int)
 
       withGraphics:
+        glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, self.textures[^1].tex)
         glTexSubImage2D(GL_TEXTURE_2D, 0, x.GLint, y.GLint, g.bitmap.width.GLsizei,
             g.bitmap.rows.GLsizei, GL_RED, GL_UNSIGNED_BYTE, addr g.bitmap.buffer[0])
@@ -300,7 +300,7 @@ proc draw*(
   scale: float32 = 1,
   wrap: float32 = 0,
   layer: range[0..500] = 0,
-  fg: Option[bool] = some(true)
+  contrast: ContrastEntry = ContrastEntry(mode: fg),
 ) =
   var pos = position
 
@@ -323,7 +323,7 @@ proc draw*(
         newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border, h.float32 + 2 * font.border),
         layer = layer,
         color = clr,
-        fg = fg,
+        contrast = contrast,
       )
       pos.x += font.size.float32 * scale
       pos.x += font.spacing.float32 + (2 * font.border)
@@ -362,7 +362,7 @@ proc draw*(
       fontProgram,
       color,
       layer = layer,
-      fg = fg
+      contrast = contrast,
     )
     pos.x += ((ch.advance shr 6).float32 * scale)
     pos.x += font.spacing.float32 + (2 * font.border)

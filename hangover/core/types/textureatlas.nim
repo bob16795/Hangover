@@ -163,7 +163,7 @@ method draw*(
   flip: array[2, bool] = [false, false],
   mul: bool = false,
   rotation_center: Vector2 = newVector2(0.5),
-  fg: Option[bool] = some(true),
+  contrast: ContrastEntry = ContrastEntry(mode: fg),
 ) =
   let texSrc = newRect(e.bounds.x / e.parentSize.x.float32,
                        e.bounds.y / e.parentSize.y.float32,
@@ -188,5 +188,5 @@ method draw*(
     flip,
     mul,
     rotation_center,
-    fg,
+    contrast = contrast,
   )

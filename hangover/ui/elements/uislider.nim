@@ -55,8 +55,10 @@ method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2) =
               bounds.height > mousePos.y):
       s.focused = true
 
-method click*(s: UISlider, button: int) =
+method click*(s: UISlider, button: int, key: bool) =
   if not s.focused:
+    return
+  if key:
     return
 
   s.value = s.tmpVal
@@ -78,22 +80,40 @@ method draw*(s: UISlider, parentRect: Rect) =
           s.valueVis)) + (bounds.y + bounds.height -
           halfSize) * (s.valueVis) - halfSize
       var posx: float32 = bounds.x + (bounds.width) / 2
-      s.sprite.draw(newRect(posx - s.barSize / 2, bounds.y, s.barSize, bounds.height), fg = some(true))
-      handleSprite.draw(newRect(bounds.x, posy, bounds.width, s.handleSize), fg = some(true))
+      s.sprite.draw(
+        newRect(posx - s.barSize / 2, bounds.y, s.barSize, bounds.height),
+        contrast = ContrastEntry(mode: fg),
+      )
+      handleSprite.draw(
+        newRect(bounds.x, posy, bounds.width, s.handleSize),
+        contrast = ContrastEntry(mode: fg),
+      )
     else:
       var posx: float32 = ((bounds.x + halfSize) * (1 -
           s.valueVis)) + (bounds.x + bounds.width -
           halfSize) * (s.valueVis) - halfSize
       var posy: float32 = bounds.y + (bounds.height) / 2
-      s.sprite.draw(newRect(bounds.x, posy - s.barSize / 2, bounds.width, s.barSize), fg = some(true))
-      handleSprite.draw(newRect(posx, bounds.y, s.handleSize, bounds.height), fg = some(true))
+      s.sprite.draw(
+        newRect(bounds.x, posy - s.barSize / 2, bounds.width, s.barSize),
+        contrast = ContrastEntry(mode: fg),
+      )
+      handleSprite.draw(
+        newRect(posx, bounds.y, s.handleSize, bounds.height),
+        contrast = ContrastEntry(mode: fg),
+      )
       if s.font != nil:
         let
           handlePos = newRect(posx, bounds.y, s.handleSize, bounds.height).center()
           text = $int(s.value * s.valueMul + s.valueAdd) & s.valueLabel
           size = s.font.sizeText(text, s.fontMult * uiElemScale) * 0.5
 
-        s.font.draw(text, handlePos - size, newColor(0, 0, 0), s.fontMult * uiElemScale, fg = some(false))
+        s.font.draw(
+          text,
+          handlePos - size,
+          newColor(0, 0, 0),
+          s.fontMult * uiElemScale,
+          contrast = ContrastEntry(mode: bg),
+        )
 
 proc lerp*(a, b: float, pc: float32): float =
   return a + (b - a) * pc

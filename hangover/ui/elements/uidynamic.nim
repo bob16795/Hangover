@@ -25,21 +25,14 @@ proc newUIDynamic*(bounds: UIRectangle): UIDynamic =
 
 method update*(d: UIDynamic, parentRect: Rect, mousePos: Vector2,
     dt: float32, active: bool) =
-  if d.dynamicUpdate == nil or d.dynamicUpdate():
+  if (d.dynamicUpdate == nil or d.dynamicUpdate()) or
+     (not(d.lastAct) and (d.isActive and active)):
     d.elements = d.dynamicGenerate(d)
     if d.focused:
       d.focus(true)
+
+  d.lastAct = (d.isActive and active)
 
   let bounds = d.bounds.toRect(parentRect)
   for i in 0..<d.elements.len:
     d.elements[i].update(bounds, mousePos, dt, active and d.isActive)
-
-method draw*(d: UIDynamic, r: Rect) =
-  if d.lastAct != d.isActive:
-    d.elements = d.dynamicGenerate(d)
-    if d.focused:
-      d.focus(true)
-
-    d.lastAct = d.isActive
-
-  procCall d.UIGroup.draw(r)

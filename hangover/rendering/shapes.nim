@@ -19,31 +19,31 @@ proc setupShapeTexture*() =
       0, GL_RGBA, GL_UNSIGNED_BYTE, addr data)
     glGenerateMipmap(GL_TEXTURE_2D)
 
-proc drawRectOutline*(r: Rect, width: int, c: Color, fg: Option[bool] = some(true)) =
+proc drawRectOutline*(r: Rect, width: int, c: Color, contrast: ContrastEntry = ContrastEntry(mode: fg)) =
   block:
     var tmp = r
     tmp.width = width.float32
-    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, fg = fg)
+    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
 
   block:
     var tmp = r
     tmp.height = width.float32
-    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, fg = fg)
+    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
 
   block:
     var tmp = r
     tmp.x += tmp.width - width.float32
     tmp.width = width.float32
-    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, fg = fg)
+    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
 
   block:
     var tmp = r
     tmp.y += tmp.height - width.float32
     tmp.height = width.float32
-    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, fg = fg)
+    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
 
-proc drawRectFill*(r: Rect, c: Color, fg: Option[bool] = some(true)) =
-  shapeTexture.draw(newRect(0, 0, 1, 1), r, color = c, fg = fg)
+proc drawRectFill*(r: Rect, c: Color, contrast: ContrastEntry = ContrastEntry(mode: fg)) =
+  shapeTexture.draw(newRect(0, 0, 1, 1), r, color = c, contrast = contrast)
 
 proc drawPoly*(points: seq[Vector2], c: Color) =
   var center = newVector2(0, 0)
@@ -51,7 +51,7 @@ proc drawPoly*(points: seq[Vector2], c: Color) =
     center += point
   center /= points.len - 1
 
-proc drawLine*(a, b: Vector2, thickness: float32, c: Color, fg: Option[bool] = some(true)) =
+proc drawLine*(a, b: Vector2, thickness: float32, c: Color, contrast: ContrastEntry = ContrastEntry(mode: fg)) =
   var verts: seq[array[16, float32]]
   let
     length = distance(a, b)
@@ -69,7 +69,7 @@ proc drawLine*(a, b: Vector2, thickness: float32, c: Color, fg: Option[bool] = s
   verts &= [(b.x - px).float32, b.y - py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
   verts &= [(a.x - px).float32, a.y - py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-  shapeTexture.drawVerts(verts, color = c, fg = fg)
+  shapeTexture.drawVerts(verts, color = c, contrast = contrast)
 
 proc drawCircleOutline*(center: Vector2, radius: float32, thickness: float32, c: Color) =
   var

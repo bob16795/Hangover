@@ -46,10 +46,10 @@ method checkHover*(g: UIGroup, parentRect: Rect, mousePos: Vector2) =
     if g.elements[i].focused:
       g.focused = true
 
-method click*(g: UIGroup, button: int) =
+method click*(g: UIGroup, button: int, key: bool) =
   for i in 0..<g.elements.len:
-    g.elements[i].click(button)
-    if g.elements[i].propagate():
+    g.elements[i].click(button, key)
+    if not key and g.elements[i].propagate():
       capture i:
         g.dragProc = proc(done: bool) = g.elements[i].drag(button, done)
 

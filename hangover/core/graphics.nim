@@ -55,7 +55,7 @@ proc setCameraSize*(w, h: int32) =
   textureSize.x = w.float32
   textureSize.y = h.float32
 
-proc resizeBuffer*(data: pointer): bool =
+proc resizeBuffer*(data: pointer): bool {.cdecl.} =
   ## called when window is resized
 
   # get the event data

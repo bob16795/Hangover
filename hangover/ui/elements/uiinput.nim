@@ -28,7 +28,7 @@ proc text*(i: UIInput): string =
 proc `text=`*(i: UIInput, text: string) =
   i.setText(text)
 
-proc onKey*(data: pointer): bool =
+proc onKey*(data: pointer): bool {.cdecl.} =
   let c = cast[ptr string](data)[]
   tmpText = c
 
@@ -48,7 +48,7 @@ method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2) =
               bounds.height > mousePos.y):
     e.focused = true
 
-method click*(e: UIInput, button: int) =
+method click*(e: UIInput, button: int, key: bool) =
   if not e.focused: return
   if not e.active:
     let line_text = e.text
@@ -73,7 +73,13 @@ method draw*(e: UIInput, parentRect: Rect) =
       posx: float32 = bounds.x + (bounds.width - sizeText(e.font,
         e.text, e.fontMult * uiElemScale).x) / 2
       posy: float32 = bounds.y + ((bounds.height - h) / 2)
-    e.font.draw(text, newVector2(posx, posy), newColor(0, 0, 0), e.fontMult * uiElemScale, fg = some(true))
+    e.font.draw(
+      text,
+      newVector2(posx, posy),
+      newColor(0, 0, 0),
+      e.fontMult * uiElemScale,
+      contrast = ContrastEntry(mode: fg),
+    )
   elif (e.hint != ""):
     let
       text = e.hint
@@ -82,10 +88,22 @@ method draw*(e: UIInput, parentRect: Rect) =
 
     var
       posx: float32 = bounds.x + (bounds.width - sizeText(e.font, text, e.fontMult * uiElemScale).x) / 2
-    e.font.draw(text, newVector2(posx, posy), newColor(0, 0, 0, 150), e.fontMult * uiElemScale, fg = some(true))
+    e.font.draw(
+      text,
+      newVector2(posx, posy),
+      newColor(0, 0, 0, 150),
+      e.fontMult * uiElemScale,
+      contrast = ContrastEntry(mode: fg),
+    )
     if e.active:
       posx = bounds.x + (bounds.width - sizeText(e.font, "|", e.fontMult * uiElemScale).x) / 2
-      e.font.draw("|", newVector2(posx, posy), newColor(0, 0, 0), e.fontMult * uiElemScale, fg = some(true))
+      e.font.draw(
+        "|",
+        newVector2(posx, posy),
+        newColor(0, 0, 0),
+        e.fontMult * uiElemScale,
+        contrast = ContrastEntry(mode: fg),
+      )
 
 method propagate*(i: UIInput): bool =
   if not i.isActive:

@@ -9,6 +9,7 @@ import unicode
 import tables
 import sequtils
 import hangover/core/logging
+import hangover/core/types/texture
 import options
 
 type
@@ -76,7 +77,7 @@ proc add*(console: var DebugConsole, c: Rune) =
 proc draw*(console: DebugConsole) =
   if not console.show: return
 
-  drawRectFill(console.bounds, newColor(0, 0, 0, 200), fg = some(false))
+  drawRectFill(console.bounds, newColor(0, 0, 0, 200), contrast = ContrastEntry(mode: bg))
   var y = min(float(console.text.len) * console.font.size.float, console.bounds.height - console.font.size.float)
   var first = true
   for l in console.text.reversed():

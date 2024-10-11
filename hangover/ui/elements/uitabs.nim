@@ -19,8 +19,8 @@ method checkHover*(t: UITabs, parentRect: Rect, mousePos: Vector2) =
   let bounds = t.bounds.toRect(parentRect)
   t.elements[t.active_tab.value].checkHover(bounds, mousePos)
 
-method click*(t: UITabs, button: int) =
-  t.elements[t.active_tab.value].click(button)
+method click*(t: UITabs, button: int, key: bool) =
+  t.elements[t.active_tab.value].click(button, key)
 
 method draw*(t: UITabs, parentRect: Rect) =
   let bounds = t.bounds.toRect(parentRect)

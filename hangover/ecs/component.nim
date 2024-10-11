@@ -38,7 +38,7 @@ proc `[]=`*(c: Entity, d: typedesc, data: ComponentData) =
 proc attachMethod*(comp: Component, event: EventId, meth: proc(c: Entity, d: pointer): bool)=
   ## attaches a event to a component
   var oid: Oid
-  var tmpMeth = proc(data: pointer): bool =
+  var tmpMeth = proc(data: pointer): bool {.cdecl.} =
     var parent = comp.parent
     return meth(parent, data)
   oid = createListener(event, tmpMeth)

@@ -27,9 +27,6 @@ method checkHover*(b: UIImage, parentRect: Rect, mousePos: Vector2) =
   if mousePos in bounds:
     b.focus(true)
 
-method click*(b: UIImage, button: int) =
-  discard
-
 method draw*(b: UIImage, parentRect: Rect) =
   if not b.isActive:
     return

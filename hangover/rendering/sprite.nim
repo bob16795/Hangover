@@ -42,7 +42,7 @@ method draw*(
   shader: Shader = nil,
   params: seq[TextureParam] = @[],
   rotation_center = newVector2(0.5),
-  fg: Option[bool] = some(true),
+  contrast: ContrastEntry = ContrastEntry(mode: fg),
 ) {.base.} =
   ## draws a sprite at `target`
 
@@ -66,7 +66,7 @@ method draw*(
     layer = 0,
     params = params,
     rotation_center = rotation_center,
-    fg = fg,
+    contrast = contrast,
   )
 
 method draw*(
@@ -76,7 +76,7 @@ method draw*(
   size: Vector2 = newVector2(0, 0),
   color: Color = newColor(255, 255, 255, 255),
   rotation_center = newVector2(0.5),
-  fg: Option[bool] = some(true),
+  contrast: ContrastEntry = ContrastEntry(mode: fg),
 ) {.deprecated: "Use targetRect instead", base.} =
   ## old sprite draw proc
   sprite.draw(
@@ -84,5 +84,5 @@ method draw*(
     rotation,
     color,
     rotation_center = rotation_center,
-    fg = fg
+    contrast = contrast,
   )

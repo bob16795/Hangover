@@ -67,7 +67,6 @@ method log*(l: Logger, priority: LogPriority, file, message: string) =
     l.output.write(&"[{pString}] {file}: {message}\n")
     l.output.flush()
 
-
 template LOG_TRACE*(file: string, message: varargs[string, `$`]) = {.cast(gcsafe).}: logger.log(lpTrace, file, message.join(" "))
 template LOG_DEBUG*(file: string, message: varargs[string, `$`]) = {.cast(gcsafe).}: logger.log(lpDebug, file, message.join(" "))
 template LOG_INFO*(file: string, message: varargs[string, `$`]) = {.cast(gcsafe).}: logger.log(lpInfo, file, message.join(" "))

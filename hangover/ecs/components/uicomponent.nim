@@ -31,7 +31,7 @@ component UIComponent:
     sendEvent(EVENT_STOP_LINE_ENTER, nil)
     var active = this.element.isActive
     if this.element.focused:
-      this.element.click(btn)
+      this.element.click(btn, true)
       this.drag = this.element
     var rect = parent[RectComponentData]
     var dest = newRect(rect.position, rect.size)

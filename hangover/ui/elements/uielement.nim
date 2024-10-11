@@ -42,7 +42,7 @@ type
   UIElement* = ref object of RootObj
     ## a generic ui element does nothing
     focused*: bool          ## wether the element is focused
-    isActive*: bool         ## if the element is active
+    isActive*: bool = true  ## if the element is active
     bounds*: UIRectangle    ## the target bounds
     disabled*: UIField[bool]
     tooltip*: UIToolTip
@@ -62,7 +62,7 @@ method update*(e: UIElement, parentRect: Rect, mousePos: Vector2,
   ## updates the element on a frame
   discard
 
-method click*(e: UIElement, button: int) {.base.} =
+method click*(e: UIElement, button: int, key: bool) {.base.} =
   ## processes a click event
   discard
 
