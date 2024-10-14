@@ -145,7 +145,6 @@ proc drawSec(
     contrast = contrast,
   )
 
-
 proc drawUISprite*(
   sprite: UISprite,
   renderRect: Rect,
@@ -262,9 +261,6 @@ proc drawUISprite*(
   destRect.width = tempDest.width - sideSizes.x
   destRect.height = tempDest.height - sideSizes.y
   sprite.drawSec(newPoint(1, 1), destRect, color, layer, hflip, contrast)
-
-  if uiDebug:
-    drawRectFill(destRect, COLOR_MAGENTA.withAlpha(128))
 
 method draw*(
   sprite: UISprite,

@@ -272,31 +272,31 @@ proc drawUI*() =
       postpone = some(e)
     else:
       e.draw(newRect(newVector2(0, 0), um.aSize))
+
   if postpone.is_some():
     postpone.get().draw(newRect(newVector2(0, 0), um.aSize))
 
   rectUpdate = false
 
-  if uiDebug:
-    var tmp: seq[UIElement] = @[]
-
-    for e in um.elements:
-      e.drawDebug(newRect(newVector2(0, 0), um.aSize))
-      for e in um.elements:
-        if e.isActive:
-          tmp &= e.getElems()
-
-    for e in tmp:
-      drawCircleOutline(e.navCenter, 20, 3, COLOR_RED)
-      for f in e.focusDir:
-        if f != nil:
-          if not f.focused:
-            drawLine(e.navCenter, f.navCenter, 5, COLOR_RED)
-
   for e in um.elements:
     e.drawTooltip(um.mousePos, um.aSize.toPoint())
 
-  if uiDebug:      
+  if uiDebug:
+    for top in um.elements:
+      top.drawDebug(newRect(newVector2(0, 0), um.aSize))
+
+      if top.isActive:
+        for e in top.getElems():
+          if e.focused:
+            drawCircleOutline(e.navCenter, 25, 10, COLOR_BLUE)
+          drawCircleOutline(e.navCenter, 25, 5, COLOR_RED)
+          for f in e.focusDir:
+            if f == nil: continue
+
+            if e.focused or f.focused:
+              drawLine(e.navCenter, f.navCenter, 10, COLOR_BLUE)
+            drawLine(e.navCenter, f.navCenter, 5, COLOR_RED)
+
     drawCircleOutline(um.mousePos, 10, 5, COLOR_CYAN)
 
   finishDraw()

@@ -124,6 +124,9 @@ method getElems*(e: UIElement): seq[UIElement] {.base.} =
   if e.focusable:
     result &= e
 
+  if uiDebug:
+    drawRectOutline(dest, 1, COLOR_MAGENTA)
+
 method propagate*(e: UIElement): bool {.base.} =
   return e.focused
 
