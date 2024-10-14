@@ -114,7 +114,7 @@ method checkHover*(s: UIScroll, parent_rect: Rect, mousePos: Vector2) =
     vp = s.bounds.toRect(parent_rect)
     scroll_bounds = vp
 
-  if vp.height > s.vpHeight:
+  if s.height > s.vpHeight:
     scroll_bounds.x += scroll_bounds.width - 80
     scroll_bounds.width = 80
     vp.width -= 80
@@ -300,35 +300,46 @@ method drawDebug*(s: UIScroll, parent_rect: Rect) =
   parent_rect_moved.x -= s.scrollVis.x
   parent_rect_moved.y -= s.scrollVis.y
 
-  let vp = s.bounds.toRect(parent_rect)
+  var
+    bounds = s.bounds.toRect(parent_rect_moved)
+    vp = s.bounds.toRect(parent_rect)
+    scroll_bounds = vp
 
-  var bounds = s.bounds.toRect(parent_rect_moved)
+  if s.height > s.vpHeight:
+    scroll_bounds.x += scroll_bounds.width - 80
+    scroll_bounds.width = 80
+    vp.width -= 80
 
-  bounds.width -= 80
+    bounds.width -= 80
+  else:
+    scroll_bounds.x += scroll_bounds.width
+    scroll_bounds.width = 0
 
   if s.scrollFocus:
     drawRectOutline(
-      newRect(
-        vp.x + vp.width - 80.0,
-        vp.y,
-        80.0,
-        vp.height,
-      ),
-      5,
-      COLOR_GREEN,
+      scroll_bounds,
+      10,
+      COLOR_BLUE,
     )
+
   if s.inside:
     drawRectOutline(
       vp,
-      5,
+      10,
       COLOR_BLUE,
     )
-  else:
-    drawRectOutline(
-      vp,
-      5,
-      COLOR_RED,
-    )
+
+  drawRectOutline(
+    scroll_bounds,
+    5,
+    COLOR_RED,
+  )
+  
+  drawRectOutline(
+    vp,
+    5,
+    COLOR_RED,
+  )
 
   for e in s.elements:
     if e.isActive:
