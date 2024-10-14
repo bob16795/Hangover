@@ -44,11 +44,11 @@ method draw*(s: UIScroll, parentRect: Rect) =
     oldScissor = textureScissor
 
   var
-    vp = s.bounds.toRect(parent_rect)
     bounds = s.bounds.toRect(parent_rect_moved)
+    vp = s.bounds.toRect(parent_rect)
     scrollBounds = bounds
 
-  s.vpHeight = vp.height * uiScaleMult
+  s.vpHeight = vp.height
 
   if s.height > s.vpHeight:
     let
@@ -110,18 +110,18 @@ method checkHover*(s: UIScroll, parent_rect: Rect, mousePos: Vector2) =
   parent_rect_moved.y -= s.scrollVis.y
 
   var
-    vp = s.bounds.toRect(parent_rect)
     bounds = s.bounds.toRect(parent_rect_moved)
+    vp = s.bounds.toRect(parent_rect)
     scroll_bounds = vp
 
-  if s.height > s.vpHeight:
-    scroll_bounds.x += scrollBounds.width - 80
+  if vp.height > s.vpHeight:
+    scroll_bounds.x += scroll_bounds.width - 80
     scroll_bounds.width = 80
     vp.width -= 80
 
     bounds.width -= 80
   else:
-    scroll_bounds.x += scrollBounds.width
+    scroll_bounds.x += scroll_bounds.width
     scroll_bounds.width = 0
 
   s.tmpVal = ((mousePos.y - scroll_bounds.y) / scroll_bounds.height).clamp(0, 1)
@@ -149,7 +149,7 @@ method click*(s: UIScroll, button: int, key: bool) =
       s.onScroll(s.scrollPos.value)
     return
 
-  if s.inside:
+  if s.inside or key:
     for i in 0..<s.elements.len:
       s.elements[i].click(button, key)
       if not key and s.elements[i].propagate():
@@ -250,6 +250,7 @@ method update*(s: UIScroll, parentRect: Rect, mousePos: Vector2, dt: float32, ac
   parent_rect_moved.y -= s.scrollVis.y
 
   var bounds = s.bounds.toRect(parent_rect_moved)
+  var vp = s.bounds.toRect(parent_rect)
 
   if s.height > s.vpHeight:
     bounds.width -= 80

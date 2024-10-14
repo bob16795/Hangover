@@ -49,10 +49,6 @@ method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
   # set focused to false
   b.focused = false
 
-  # return if button is inactive
-  if not b.isActive:
-    return
-
   # get the bounds of the element
   let bounds = b.bounds.toRect(parentRect)
 

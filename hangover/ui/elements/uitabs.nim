@@ -28,12 +28,13 @@ method draw*(t: UITabs, parentRect: Rect) =
 
 method update*(t: UITabs, parentRect: Rect, mousePos: Vector2,
     dt: float32, active: bool) =
-  t.focused = t.elements[t.active_tab.value].focused
-
   let bounds = t.bounds.toRect(parentRect)
 
   for ei in 0..<t.elements.len:
     t.elements[ei].update(bounds, mousePos, dt, active and t.active_tab.value == ei)
+  
+  t.focused = t.elements[t.active_tab.value].focused
+
 
 method scroll*(t: UITabs, offset: Vector2) =
   t.elements[t.active_tab.value].scroll(offset)
@@ -41,27 +42,11 @@ method scroll*(t: UITabs, offset: Vector2) =
 method drag*(t: UITabs, button: int, done: bool) =
   t.elements[t.active_tab.value].drag(button, done)
 
-method focusable*(t: UITabs): bool =
-  return false
+method propagatee*(t: UITabs): bool =
+  t.elements[t.active_tab.value].propagate()
 
 method navigate*(t: UITabs, dir: UIDir, parent: Rect): bool =
-  if t.elements[t.active_tab.value].propagate():
-    let old = t.active_tab.value
-
-    if dir == UIPrev:
-      t.active_tab.value = t.active_tab.value - 1
-    elif dir == UINext:
-      t.active_tab.value = t.active_tab.value + 1
-
-    t.active_tab.value = t.active_tab.value.clamp(0, t.elements.high)
-
-    t.elements[t.active_tab.value].focus(false)
-    t.elements[t.active_tab.value].getElems()[0].focus(true)
-
-    result = t.active_tab.value != old
-
-  if dir notin [UIPrev, UINext]:
-    return t.elements[t.active_tab.value].navigate(dir, parent)
+  t.elements[t.active_tab.value].navigate(dir, parent)
 
 method focus*(t: UITabs, focus: bool) =
   ## returns true if you can focus the element
@@ -85,7 +70,4 @@ method drawDebug*(t: UITabs, parentRect: Rect) =
   t.elements[t.active_tab.value].drawDebug(bounds)
 
 method getElems*(t: UITabs): seq[UIElement] =
-  if not t.isActive:
-    return
-
   t.elements[t.active_tab.value].getElems()

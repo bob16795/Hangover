@@ -42,13 +42,13 @@ method checkHover*(g: UIGroup, parentRect: Rect, mousePos: Vector2) =
   for i in 0..<g.elements.len:
     g.elements[i].checkHover(bounds, mousePos)
 
-  for i in 0..<g.elements.len:
     if g.elements[i].focused:
       g.focused = true
 
 method click*(g: UIGroup, button: int, key: bool) =
   for i in 0..<g.elements.len:
     g.elements[i].click(button, key)
+
     if not key and g.elements[i].propagate():
       capture i:
         g.dragProc = proc(done: bool) = g.elements[i].drag(button, done)
@@ -98,7 +98,9 @@ method `active=`*(g: UIGroup, value: bool) =
     e.active = value
 
 method focusable*(g: UIGroup): bool =
-  return false
+  for e in g.elements:
+    if e.focusable:
+      return true
 
 method navigate*(g: UIGroup, dir: UIDir, parent: Rect): bool =
   let bounds = g.bounds.toRect(parent)
@@ -112,17 +114,14 @@ method navigate*(g: UIGroup, dir: UIDir, parent: Rect): bool =
 
 method focus*(g: UIGroup, focus: bool) =
   ## returns true if you can focus the element
+  g.focused = focus
   for e in g.elements:
     if not e.isActive: continue
 
     if e.focusable():
       e.focus(focus)
-      if focus and e.focused:
-        g.focused = true
+      if focus:
         return
-    else:
-      e.focus(false)
-  g.focused = false
 
 method center*(g: UIGroup, parent: Rect): Vector2 =
   let bounds = g.bounds.toRect(parent)

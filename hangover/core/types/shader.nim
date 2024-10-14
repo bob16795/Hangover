@@ -229,7 +229,6 @@ proc setParam*(s: var Shader, p: string, value: pointer) =
           return
         s.params[sp] = true
         return
-  LOG_ERROR("ho->shader", "shader param not found `" & $p & "`")
 
 proc runCompute*(compute: Shader, size: Point) =
   compute.use()

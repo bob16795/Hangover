@@ -375,8 +375,6 @@ proc uiNavigate*(dir: UIDir): bool =
       return true
     of UISelect:
       for e in um.elements:
-        if not e.isActive: continue
-
         e.click(1, true)
 
         let tmp = false
