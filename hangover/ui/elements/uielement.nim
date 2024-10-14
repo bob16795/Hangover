@@ -133,22 +133,21 @@ method updateCenter*(e: UIElement, parentRect: Rect) {.base.} =
 
 method drawDebug*(e: UIElement, parentRect: Rect) {.base.} =
   ## draws the element
-  if not e.focusable:
-    return
+  if not e.isActive: return
+  if not e.focusable: return
+
   let bounds = e.bounds.toRect(parentRect)
 
-  let color = if e.focused:
-    COLOR_RED
-  else:
-    COLOR_BLUE
-  
+  if e.focused:
+    drawRectOutline(
+      bounds,
+      10,
+      COLOR_BLUE,
+    )
+
   drawRectOutline(
     bounds,
     5,
-    color,
+    COLOR_RED,
   )
 
-  for f in e.focusDir:
-    if f != nil:
-      if not f.focused:
-        drawLine(e.navCenter, f.navCenter, 5, color)

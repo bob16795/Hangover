@@ -294,6 +294,8 @@ method updateTooltip*(s: UIScroll, dt: float32) =
       e.updateTooltip(dt)
 
 method drawDebug*(s: UIScroll, parent_rect: Rect) =
+  if not s.isActive: return
+
   var
     parent_rect_moved = parent_rect
 
@@ -314,6 +316,9 @@ method drawDebug*(s: UIScroll, parent_rect: Rect) =
   else:
     scroll_bounds.x += scroll_bounds.width
     scroll_bounds.width = 0
+
+  for e in s.elements:
+    e.drawDebug(bounds)
 
   if s.scrollFocus:
     drawRectOutline(
@@ -340,7 +345,3 @@ method drawDebug*(s: UIScroll, parent_rect: Rect) =
     5,
     COLOR_RED,
   )
-
-  for e in s.elements:
-    if e.isActive:
-      e.drawDebug(bounds)

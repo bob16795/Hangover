@@ -8,6 +8,7 @@ import hangover/ui/elements/uigroup
 import hangover/ui/types/uisprite
 import hangover/ui/types/uifield
 import hangover/core/logging
+import hangover/rendering/shapes
 import options
 import sugar
 
@@ -66,8 +67,16 @@ method drawTooltip*(t: UITabs, mousePos: Vector2, size: Point) =
   t.elements[t.active_tab.value].drawTooltip(mousePos, size)
 
 method drawDebug*(t: UITabs, parentRect: Rect) =
+  if not t.isActive: return
+
   let bounds = t.bounds.toRect(parentRect)
   t.elements[t.active_tab.value].drawDebug(bounds)
+
+  drawRectOutline(
+    bounds,
+    1,
+    COLOR_YELLOW,
+  )
 
 method getElems*(t: UITabs): seq[UIElement] =
   t.elements[t.active_tab.value].getElems()

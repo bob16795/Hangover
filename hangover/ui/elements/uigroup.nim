@@ -156,17 +156,13 @@ method updateCenter*(g: UIGroup, parentRect: Rect) =
   g.navPoint = bounds.location
 
 method drawDebug*(g: UIGroup, parentRect: Rect) =
+  if not g.isActive: return
+
   var bounds = g.bounds.toRect(parentRect)
-
-  drawRectOutline(
-    bounds,
-    5,
-    COLOR_RED,
-  )
-
   for e in g.elements:
-    if e.isActive:
-      e.drawDebug(bounds)
+    e.drawDebug(bounds)
+
+  procCall g.UIElement.drawDebug(parentRect)
 
 method getElems*(g: UIGroup): seq[UIElement] =
   if not g.isActive:

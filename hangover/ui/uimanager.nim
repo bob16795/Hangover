@@ -277,17 +277,23 @@ proc drawUI*() =
 
   rectUpdate = false
 
-  for e in um.elements:
-    if uiDebug and e.isActive:
-      e.drawDebug(newRect(newVector2(0, 0), um.aSize))
-      var tmp: seq[UIElement] = @[]
+  if uiDebug:
+    var tmp: seq[UIElement] = @[]
 
+    for e in um.elements:
+      e.drawDebug(newRect(newVector2(0, 0), um.aSize))
       for e in um.elements:
         if e.isActive:
           tmp &= e.getElems()
 
-      for e in tmp:
-        drawCircleOutline(e.navCenter, 20, 3, COLOR_RED)
+    for e in tmp:
+      drawCircleOutline(e.navCenter, 20, 3, COLOR_RED)
+      for f in e.focusDir:
+        if f != nil:
+          if not f.focused:
+            drawLine(e.navCenter, f.navCenter, 5, COLOR_RED)
+
+  for e in um.elements:
     e.drawTooltip(um.mousePos, um.aSize.toPoint())
 
   if uiDebug:      
@@ -369,8 +375,7 @@ proc uiNavigate*(dir: UIDir): bool =
         let e = um.elements[ei]
         if e.focused:
           focused = true 
-
-        e.scroll(offset)
+ 
 
       return true
     of UISelect:
