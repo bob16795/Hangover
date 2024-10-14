@@ -320,6 +320,14 @@ method drawDebug*(s: UIScroll, parent_rect: Rect) =
   for e in s.elements:
     e.drawDebug(bounds)
 
+  let 
+    y = bounds.y + s.scrollPos.value.y 
+
+  drawLine(
+    newVector2(scroll_bounds.x, y),
+    newVector2(scroll_bounds.x + scroll_bounds.width, y), 10, COLOR_YELLOW,
+  )
+
   if s.scrollFocus:
     drawRectOutline(
       scroll_bounds,

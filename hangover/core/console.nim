@@ -78,7 +78,7 @@ proc draw*(console: DebugConsole) =
   if not console.show: return
 
   drawRectFill(console.bounds, newColor(0, 0, 0, 200), contrast = ContrastEntry(mode: bg))
-  var y = min(float(console.text.len) * console.font.size.float, console.bounds.height - console.font.size.float)
+  var y = min(float(console.text.len) * console.font.size.float, console.bounds.height - console.font.size.float - 10)
   var first = true
   for l in console.text.reversed():
     if first:
