@@ -70,6 +70,7 @@ proc add*(console: var DebugConsole, c: Rune) =
   if c == Rune('`'):
     console.show = not console.show
     return
+
   if not console.show: return
 
   console.text[^1] &= c
