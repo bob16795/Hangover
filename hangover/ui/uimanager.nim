@@ -375,7 +375,8 @@ proc uiNavigate*(dir: UIDir): bool =
         let e = um.elements[ei]
         if e.focused:
           focused = true 
- 
+
+        e.scroll(offset)
 
       return true
     of UISelect:
