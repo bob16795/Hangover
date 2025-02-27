@@ -31,4 +31,4 @@ method draw*(p: UIPanel, parentRect: Rect) =
   if not p.isActive:
     return
   let bounds = p.bounds.toRect(parentRect)
-  p.texture.draw(bounds, color = p.color.value, contrast = ContrastEntry(mode: bg))
+  p.texture.draw(bounds, color = p.color.value, contrast = ContrastEntry(mode: texture))

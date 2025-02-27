@@ -17,7 +17,6 @@ type
   UIGroup* = ref object of UIElement
     elements*: seq[UIElement]
     hasPopupAbove*: bool
-    dragProc*: proc(done: bool)
     scissor*: bool
 
 proc newUIGroup*(bounds: UIRectangle): UIGroup =
@@ -49,32 +48,28 @@ method click*(g: UIGroup, button: int, key: bool) =
   for i in 0..<g.elements.len:
     g.elements[i].click(button, key)
 
-    if not key and g.elements[i].propagate():
-      capture i:
-        g.dragProc = proc(done: bool) = g.elements[i].drag(button, done)
-
 method draw*(g: UIGroup, parentRect: Rect) =
   if not g.isActive:
     return
+
   let
     bounds = g.bounds.toRect(parentRect)
-    oldScissor = textureScissor
-
-  if g.scissor:
-    textureScissor = bounds.scale(uiScaleMult)
-
-  var postpone: seq[UIElement]
-
-  for i in 0..<g.elements.len:
-    if g.elements[i].focused:
-      postpone &= g.elements[i]
+    tmpScissor = if g.scissor:
+      bounds.scale(uiScaleMult)
     else:
-      g.elements[i].draw(bounds)
+      getScissor()
 
-  for p in postpone:
-    p.draw(bounds)
+  withScissor tmpScissor:
+    var postpone: seq[UIElement]
 
-  textureScissor = oldScissor
+    for i in 0..<g.elements.len:
+      if g.elements[i].focused:
+        postpone &= g.elements[i]
+      else:
+        g.elements[i].draw(bounds)
+
+    for p in postpone:
+      p.draw(bounds)
 
 method update*(g: UIGroup, parentRect: Rect, mousePos: Vector2,
     dt: float32, active: bool) =
@@ -83,8 +78,8 @@ method update*(g: UIGroup, parentRect: Rect, mousePos: Vector2,
     g.elements[i].update(bounds, mousePos, dt, g.isActive and active)
 
 method drag*(g: UIGroup, button: int, done: bool) =
-  if g.dragProc != nil:
-    g.dragProc(done)
+  for i in 0..<g.elements.len:
+    g.elements[i].drag(button, done)
 
 method scroll*(g: UIGroup, offset: Vector2) =
   for i in 0..<g.elements.len:
@@ -175,7 +170,7 @@ method propagate*(g: UIGroup): bool =
     if e.propagate():
       result = true
 
-method moveCenter*(g: var UIGroup, diff: Vector2) =
+method moveCenter*(g: UIGroup, diff: Vector2) =
   ## returns true if you can focus the element
   g.bounds.lastCenter += diff
 

@@ -38,9 +38,6 @@ type
 var
   globalCtx*: GraphicsContext
 
-proc setFixedUpdateTime*(l: var Loop, t: float64) =
-  l.fixedUpdateTime = t
-
 proc lockGraphics(c: var GraphicsContext) =
   c.lock.acquire()
   c.window.makeContextCurrent()
@@ -50,13 +47,16 @@ proc unlockGraphics(c: var GraphicsContext) =
   c.lock.release()
 
 template withGraphics*(body: untyped) =
-  #LOG_INFO "ho->gfx", "lock"
   globalCtx.lockGraphics()
-  try:
-    body
-  finally:
-    #LOG_INFO "ho->gfx", "unlock"
-    globalCtx.unlockGraphics()
+  try: body
+  finally: globalCtx.unlockGraphics()
+
+proc setFixedUpdateTime*(l: var Loop, t: float64) =
+  l.fixedUpdateTime = t
+
+proc updateFPS*(l: var Loop) =
+  withGraphics:
+    l.targetFPS = 1.0 / glfw.getPrimaryMonitor().videoMode.refreshRate.float64
 
 proc newLoop*(fps: float64): Loop =
   ## creates a new loop running at fps

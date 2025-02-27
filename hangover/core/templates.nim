@@ -6,13 +6,13 @@ else:
 import hangover/core/types/font
 import hangover/core/loop
 import hangover/core/events
-import hangover/ecs/types
-import hangover/ecs/entity
 import sugar
 import segfaults
 import asyncdispatch
 import times
 import locks
+import options
+import strformat
 
 export loop
 
@@ -24,12 +24,15 @@ when defined debug:
 ## templates:
 ## creates a game loop
 
-createEvent(EVENT_UPDATE, true)
-createEvent(EVENT_DRAW, true)
-createEvent(EVENT_DRAW_UI, true)
-createEvent(EVENT_INIT)
-createEvent(EVENT_LOADED)
-createEvent(EVENT_CLOSE)
+createEvent[void] eventUpdate, {hideLogs} 
+createEvent[void] eventDraw 
+createEvent[void] eventDrawUi 
+createEvent[void] eventInit
+createEvent[void] eventLoaded 
+createEvent[void] eventClose
+
+const ginSourcePath {.strdefine.} = ""
+const ginNimblePath {.strdefine.} = ""
 
 var
   mainLoop*: Loop
@@ -51,11 +54,8 @@ template Game*(body: untyped) =
 
   ctx = initGraphics(data)
 
-  proc updateSize(data: pointer): bool {.cdecl.} =
-    let res = cast[ptr tuple[w, h: int32]](data)[]
-    size = newPoint(res.w.cint, res.h.cint)
-
-  createListener(EVENT_RESIZE, updateSize)
+  eventResize.listen do (newSize: Point) -> bool:
+    size = newSize
 
   template noUI() = ui = false
   template drawUIEarly() =
@@ -63,33 +63,45 @@ template Game*(body: untyped) =
       drawUI()
       ui = false
 
-  when defined debug:
-    var lastTime = cpuTime()
+  var lastTime {.gensym.}: float
 
-  template setStatus(perc: float32, status: string): untyped =
+  template setStatus(
+    perc: float32, status: string,
+    timeUpdate: Option[string] = none[string](),
+  ): untyped =
+    if timeUpdate.isSome():
+      let newTime = cpuTime()
+      let time = newTime - lastTime
+      let stepName = timeUpdate.get()
+      LOG_TRACE "ho->templates", "Finished " & stepName & " in " & formatFloat(time, ffDecimal, 9) & "s"
+      lastTime = newTime
+
     pc = perc
     loadStatus = status
-    when defined debug:
-      let newTime = cpuTime()
-      LOG_INFO "ho->templates", "Finished `" & loadStatus & "` in " & $int(1000 * (newTime - lastTime)) & "ms"
-      lastTime = newTime
 
   body
 
   var loadLock: Lock
   var started: bool
+  var crashed: bool
 
   loadLock.initLock()
 
   proc initThread() {.thread.} =
     {.cast(gcsafe).}:
-      withLock loadLock:
-        started = true
-        initialize()
+      try:
+        let loadStartTime = cpuTime()
+        lastTime = loadStartTime
+        withLock loadLock:
+          started = true
+          initialize()
+        let time = cpuTime() - loadStartTime
+        LOG_TRACE "ho->templates", "Loaded game in " & formatFloat(time, ffDecimal, 9) & "s"
+      except Exception as ex:
+        LOG_CRITICAL "ho->templates", ex.msg
+        raise ex
 
   proc drawLoadingAsync() {.async.} =
-    let time = cpuTime()
-    
     var tmp: Thread[void]
     createThread(tmp, initThread)
     
@@ -97,10 +109,9 @@ template Game*(body: untyped) =
       await sleepAsync(1000.0 / 60.0)
 
     while true:
-      if drawLoading(pc, loadStatus, ctx, size) and tryAcquire(loadLock):
+      if (drawLoading(pc, loadStatus, ctx, size) or crashed) and tryAcquire(loadLock):
         finishDraw()
         finishRender(ctx)
-        LOG_INFO "ho->templates", "Loaded in " & $int((cpuTime() - time) * 1000) & "ms"
         loadLock.release()
         break
       when not defined(ginGLFM):
@@ -112,52 +123,184 @@ template Game*(body: untyped) =
       updateAudio(1.0 / 60.0)
       await sleepAsync(1000.0 / 60.0)
 
-  initFT()
-  initAudio()
-  initUIManager(data.size)
+  # proc demangleWord(s: string, idx: var int): string =
+  #   let start = idx
 
-  setupEventCallbacks(ctx)
+  #   case s[idx]
+  #   of '0'..'9': 
+  #     var len = 0
+  #     while s[idx] in '0'..'9':
+  #       len *= 10
+  #       len += int(s[idx]) - int('0')
+  #       idx += 1
+  #     result = s[idx..(idx + len - 1)]
+  #     idx += len
 
-  waitFor drawLoadingAsync()
+  #     if result[^1] == '_':
+  #       result = result[0..^2].replace("colon", ":")
+  #   of 'N':
+  #     idx += 1
+  #     result = demangleWord(s, idx) & "." & demangleWord(s, idx)
+  #     idx += 1
+  #   of 'I':
+  #     idx += 1
+  #     result = "["
+  #     var hasFirst = false
+  #     while s[idx] != 'E':
+  #       let tmp = demangleWord(s, idx)
+  #       if hasFirst:
+  #         if tmp[0] != '[':
+  #           result &= ", "
+  #       else:
+  #         hasFirst = true
 
-  createListener(EVENT_RESIZE, proc(p: pointer): bool {.cdecl.} = mainLoop.forceDraw(ctx))
-  #createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = mainLoop.forceDraw(ctx))
-  mainLoop.fixedUpdateProc =
-    proc (dt: float): bool =
-      return fixedUpdate(dt)
+  #       result &= tmp
+  #     result &= "]"
+  #     idx += 1
+  #   else:
+  #     idx += 1
+  #     result = demangleWord(s, idx)
 
-  mainLoop.updateProc =
-    proc (dt: float, delayed: bool): bool =
-      glfw.pollEvents()
-      if glfw.shouldClose(ctx.window):
-        return true
+  #   echo result
 
-      updateUI(dt)
-      updateAudio(dt)
-      return update(dt, delayed)
+  # # _ZN4loop6updateE3varIN4loop4LoopEE3varI3refIN4loop31GraphicsContextcolonObjectType_EEE
+  # # loop.update(var[loop.Loop], var[ref[loop.GraphicsContext:ObjectType]])
 
-  mainLoop.drawProc = proc (ctx: var GraphicsContext, dt: float32) =
-    ui = true
-    drawGame(ctx, dt)
-    if ui:
-      drawUI()
+  # proc demangleZ(s: string): string =
+  #   if s == "":
+  #     return ""
 
-    finishrender(ctx)
+  #   echo s
+
+  #   var idx = 0
+
+  #   result = demangleWord(s, idx) & "("
+  #   var hasFirst = false
+  #   while idx < s.len:
+  #     let tmp = demangleWord(s, idx)
+  #     if hasFirst:
+  #       if tmp[0] != '[':
+  #         result &= ", "
+  #     else:
+  #       hasFirst = true
+
+  #     result &= tmp
+  # 
+  #   result &= ")"
 
   try:
+    LOG_TRACE("ho->templates", "start loading game")
+
+    initFT()
+    initAudio()
+    initUIManager(data.size)
+
+    setupEventCallbacks(ctx)
+
+    waitFor drawLoadingAsync()
+
+    eventResize.listen do (_: Point) -> bool:
+      mainLoop.forceDraw(ctx)
+      mainLoop.updateFPS()
+
+    #createListener(EVENT_RESIZE_DONE, proc(p: pointer): bool = mainLoop.forceDraw(ctx))
+
+    mainLoop.fixedUpdateProc =
+      proc (dt: float): bool =
+        return fixedUpdate(dt)
+
+    mainLoop.updateProc =
+      proc (dt: float, delayed: bool): bool =
+        glfw.pollEvents()
+        if glfw.shouldClose(ctx.window):
+          return true
+
+        updateUI(dt)
+        updateAudio(dt)
+        return update(dt, delayed)
+
+    mainLoop.drawProc = proc (ctx: var GraphicsContext, dt: float32) =
+      ui = true
+      drawGame(ctx, dt)
+      if ui:
+        drawUI()
+
+      finishrender(ctx)
+
     while not mainLoop.done:
       mainLoop.update(ctx)
-  except Defect as ex:
-    when defined debug:
-      raise ex
-    else:
-      LOG_ERROR "ho->templates", ex.msg
-      raise ex
+
+  except Exception as ex:
+    pauseAudio()
+
+    eventsCrashed = true
+
+    var stacktrace = ""
+    var inputTrace = ex.getStackTrace()
+    for line in inputTrace.split("\n"):
+      var tmp = line
+      # if line.split(" ")[^1][0] == '/':
+      #   stacktrace &= "\n> ..... oops"
+      #   break
+
+      tmp = tmp
+        .replace(ginSourcePath, "[" & ginAppName & "]/")
+        .replace("/home/john/.choosenim/toolchains/nim-2.2.0/lib/", "[Stdl]/")
+      if tmp.startsWith(ginNimblePath):
+        let
+          tt = tmp[ginNimblePath.len..^1].split("/")
+          package = tt[0].split("-")
+        tmp = tmp.replace(ginNimblePath & tt[0], "[Pakg]/" & package[0] & "V" & package[1])
+         
+      if stacktrace != "":
+        stacktrace &= "\n"
+
+      stacktrace &= "> " & tmp
+
+    let
+      defect = ex of Defect
+      message = ex.msg
+        .replace(ginSourcePath, "[" & ginAppName & "]/")
+        .replace("/home/john/.choosenim/toolchains/nim-2.2.0/lib/", "[Stdl]/")
+      e =
+        ginAppName & " has crashed!\n" &
+        "Press escape to close the game, If the problem persists please report it.\n" &
+        "\n" &
+        "Error Message:\n" &
+          "> " & $ex.name & ": " & message & "\n" &
+        "\n" &
+        "StackTrace:\n" &
+        stacktrace
+   
+    for l in e.split("\n"):
+      LOG_CRITICAL "ho->templates", l
+
+    mainLoop.drawProc =
+      proc (ctx: var GraphicsContext, dt: float32) =
+        drawCrash(ctx, e, defect)
+
+        finishrender(ctx)
+
+    mainLoop.fixedUpdateProc = nil
+
+    mainLoop.updateProc =
+      proc (dt: float, delayed: bool): bool =
+        glfw.pollEvents()
+
+        return glfw.shouldClose(ctx.window) or
+          ctx.window.isKeyDown(keyEscape)
+
+    while not mainLoop.done:
+      mainLoop.update(ctx)
+
   finally:
     deinitFT()
     gameClose()
   
 template GameECS*(name: string, body: untyped) =
+  import hangover/ecs/types
+  import hangover/ecs/entity
+
   ## creates a ec based game loop
   Game:
     body

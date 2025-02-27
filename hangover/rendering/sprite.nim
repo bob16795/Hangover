@@ -38,11 +38,10 @@ method draw*(
   target: Rect,
   rotation: float32 = 0,
   color: Color = newColor(255, 255, 255),
-  layer: range[0..500] = 0,
   shader: Shader = nil,
   params: seq[TextureParam] = @[],
   rotation_center = newVector2(0.5),
-  contrast: ContrastEntry = ContrastEntry(mode: fg),
+  contrast: ContrastEntry = ContrastEntry(mode: noContrast),
 ) {.base.} =
   ## draws a sprite at `target`
 
@@ -63,7 +62,6 @@ method draw*(
       shader,
     color = color,
     rotation = rotation,
-    layer = 0,
     params = params,
     rotation_center = rotation_center,
     contrast = contrast,
@@ -76,7 +74,7 @@ method draw*(
   size: Vector2 = newVector2(0, 0),
   color: Color = newColor(255, 255, 255, 255),
   rotation_center = newVector2(0.5),
-  contrast: ContrastEntry = ContrastEntry(mode: fg),
+  contrast: ContrastEntry = ContrastEntry(mode: noContrast),
 ) {.deprecated: "Use targetRect instead", base.} =
   ## old sprite draw proc
   sprite.draw(

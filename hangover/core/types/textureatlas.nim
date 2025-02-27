@@ -13,22 +13,26 @@ import tables
 import hangover/ui/types/uirectangle
 import hangover/core/loop
 import options
+import strformat
 
 # has to be a power of 2
 type
   TextureAtlasData* = object
-    size*: Vector2
+    size*: Point
     data*: pointer
+    contrast*: Option[pointer]
     name*: string
     stbi: bool
 
   TextureAtlasEntry* = ref object of Texture
     source*: Texture
+    defaultContrast*: ContrastEntry
     bounds*: Rect
     parentSize: Point
 
   TextureAtlas* = object
     source*: Texture
+    contrast*: Texture
     entrys*: Table[string, TextureAtlasEntry]
     target*: seq[TextureAtlasData]
 
@@ -38,27 +42,57 @@ proc newTextureData*(image: string, name: string): TextureAtlasData =
     width, height, channels: cint
     data: pointer = stbi_load(image, width, height, channels, 4)
   result.data = data
-  result.size = newVector2(width.float32, height.float32)
+  result.size = newPoint(width, height)
   result.name = name
   result.stbi = true
   if data == nil:
     LOG_CRITICAL("ho->texture", "failed to load image")
     quit(2)
 
-proc newTextureDataMem*(image: pointer, imageSize: cint,
-    name: string): TextureAtlasData {.stdcall.} =
+proc newTextureDataMem*(
+    image: pointer,
+    imageSize: cint,
+    name: string,
+  ): TextureAtlasData {.stdcall.} =
   # load the texture
   var
     width, height, channels: cint
-    data: pointer = stbi_load_from_memory(cast[ptr char](image), imageSize,
-        width, height, channels, 4)
+    data: pointer = stbi_load_from_memory(
+      cast[ptr char](image),
+      imageSize,
+      width,
+      height,
+      channels,
+      4,
+    )
   result.data = data
-  result.size = newVector2(width.float32, height.float32)
+  result.size = newPoint(width, height)
   result.name = name
   result.stbi = true
   if data == nil:
     LOG_CRITICAL("ho->texture", "failed to load image")
     quit(2)
+
+proc setContrastMem*(
+  data: var TextureAtlasData,
+  contrast: pointer,
+  contrastSize: cint,
+) =
+  var
+    width, height, channels: cint
+    contrastData: pointer = stbi_load_from_memory(
+      cast[ptr char](contrast),
+      contrastSize,
+      width,
+      height,
+      channels,
+      4,
+    )
+  
+  assert(width == data.size.x, &"diff x sizes in {data.name}")
+  assert(height == data.size.y, &"diff y sizes in {data.name}")
+
+  data.contrast = some[pointer](contrastData)
 
 proc newTextureAtlas*(): TextureAtlas =
   result.source = Texture()
@@ -73,6 +107,8 @@ proc pack*(ta: var TextureAtlas) =
   ta.source = Texture()
   ta.target.sort(cmpTex)
 
+  var contrastTex: GLuint
+
   withGraphics:
     glGenTextures(1, addr ta.source.tex)
     glBindTexture(GL_TEXTURE_2D, ta.source.tex)
@@ -84,7 +120,20 @@ proc pack*(ta: var TextureAtlas) =
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR.GLint)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+    
+    glGenTextures(1, addr contrastTex)
+    glBindTexture(GL_TEXTURE_2D, contrastTex)
 
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+    glPixelStorei(GL_PACK_ALIGNMENT, 1)
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT.GLint)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT.GLint)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR.GLint)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST.GLint)
+
+  ta.source.contrast = some(contrastTex)
+    
   var
     sizex: GLsizei = 32
     sizey: GLsizei = 32
@@ -102,9 +151,12 @@ proc pack*(ta: var TextureAtlas) =
       glBindTexture(GL_TEXTURE_2D, ta.source.tex)
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, sizex, sizey, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
 
+      glBindTexture(GL_TEXTURE_2D, contrastTex)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, sizex, sizey, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
+
     for tidx in 0..<len(ta.target):
       var
-        targ = newRect(newVector2(0, 0), ta.target[tidx].size)
+        targ = newRect(newVector2(0, 0), ta.target[tidx].size.toVector2())
 
       if x + targ.width > sizex.float32:
         y += maxh
@@ -128,16 +180,41 @@ proc pack*(ta: var TextureAtlas) =
       if targ.width > 0 and targ.height > 0:
         withGraphics:
           glBindTexture(GL_TEXTURE_2D, ta.source.tex)
-          glTexSubImage2D(GL_TEXTURE_2D, 0, targ.x.GLint, targ.y.GLint,
-              targ.width.GLsizei, targ.height.GLsizei, GL_RGBA, GL_UNSIGNED_BYTE,
-              ta.target[tidx].data)
-      ta.entrys[ta.target[tidx].name] = TextureAtlasEntry(bounds: targ)
+          glTexSubImage2D(
+            GL_TEXTURE_2D,
+            0,
+            targ.x.GLint, targ.y.GLint,
+            targ.width.GLsizei, targ.height.GLsizei,
+            GL_RGBA, GL_UNSIGNED_BYTE,
+            ta.target[tidx].data,
+          )
+          
+          if ta.target[tidx].contrast.isSome:
+            glBindTexture(GL_TEXTURE_2D, contrastTex)
+            glTexSubImage2D(
+              GL_TEXTURE_2D,
+              0,
+              targ.x.GLint, targ.y.GLint,
+              targ.width.GLsizei, targ.height.GLsizei,
+              GL_RGBA, GL_UNSIGNED_BYTE,
+              ta.target[tidx].contrast.get(),
+            )
+      ta.entrys[ta.target[tidx].name] = TextureAtlasEntry(
+        defaultContrast:
+          if ta.target[tidx].contrast.isSome:
+            ContrastEntry(mode: texture)
+          else:
+            ContrastEntry(mode: fg),
+        bounds: targ,
+      )
 
   LOG_DEBUG "ho->atlas", "Packed Atlas " & $sizex & "x" & $sizey
 
   for tidx in 0..<len(ta.target):
     if ta.target[tidx].stbi:
       stbi_image_free(ta.target[tidx].data)
+    if ta.target[tidx].contrast.isSome:
+      stbi_image_free(ta.target[tidx].contrast.get())
 
   for vi in ta.entrys.keys:
     ta.entrys[vi].parentSize = newPoint(sizex, sizey)
@@ -146,6 +223,10 @@ proc pack*(ta: var TextureAtlas) =
 
   withGraphics:
     glBindTexture(GL_TEXTURE_2D, ta.source.tex)
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4)
+    glPixelStorei(GL_PACK_ALIGNMENT, 4)
+    
+    glBindTexture(GL_TEXTURE_2D, contrastTex)
     glPixelStorei(GL_UNPACK_ALIGNMENT, 4)
     glPixelStorei(GL_PACK_ALIGNMENT, 4)
 
@@ -158,12 +239,11 @@ method draw*(
   shader: Shader = nil,
   color = newColor(255, 255, 255, 255),
   rotation: float = 0,
-  layer: range[0..500] = 0,
   params: seq[TextureParam] = @[],
   flip: array[2, bool] = [false, false],
   mul: bool = false,
   rotation_center: Vector2 = newVector2(0.5),
-  contrast: ContrastEntry = ContrastEntry(mode: fg),
+  contrast: ContrastEntry = ContrastEntry(mode: noContrast),
 ) =
   let texSrc = newRect(e.bounds.x / e.parentSize.x.float32,
                        e.bounds.y / e.parentSize.y.float32,
@@ -183,10 +263,9 @@ method draw*(
     shader,
     color,
     rotation,
-    layer,
     params,
     flip,
     mul,
     rotation_center,
-    contrast = contrast,
+    contrast = contrast or e.defaultContrast,
   )

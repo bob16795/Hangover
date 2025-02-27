@@ -140,6 +140,20 @@ proc getSongQueueSize*(): int =
   # gets how many songs are queued
   result = songQueue.len
 
+var glitchTime: ALfloat
+
+proc glitchAudio*(save: bool = false) =
+  try:
+    if not save:
+      for idx in 0..<musicSources.len:
+        alSourcef(musicSources[idx], AL_SAMPLE_OFFSET, glitchTime)
+        checkAudioErr("sourcei")
+
+    alGetSourcef(musicSources[0], AL_SAMPLE_OFFSET, addr glitchTime)
+    checkAudioErr("getSourcei")
+  except AudioError as ex:
+    discard
+
 proc play*(
   song: Song,
   fade: bool = false,
@@ -170,8 +184,8 @@ proc play*(
   for idx in 0..<musicSources.len:
     var offset: ALfloat
 
-    alGetSourcef(musicSources[idx], AL_SEC_OFFSET, addr offset)
-    checkAudioErr("getSourcef")
+    alGetSourcef(musicSources[idx], AL_SAMPLE_OFFSET, addr offset)
+    checkAudioErr("getSourcei")
     alSourceStop(musicSources[idx])
     checkAudioErr("sourceStop")
 
@@ -204,8 +218,11 @@ proc play*(
     checkAudioErr("sourcePlay")
 
     if skip:
-      alSourcef(musicSources[idx], AL_SEC_OFFSET, offset)
-      checkAudioErr("sourcef")
+      try:
+        alSourcef(musicSources[idx], AL_SAMPLE_OFFSET, offset)
+        checkAudioErr("sourcei")
+      except AudioError as ex:
+        LOG_ERROR "ho->audio", ex.msg
 
     loopBuffers[idx] = song.layers[idx].get().loopBuffer
 
@@ -236,8 +253,7 @@ proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0),
 
   let source = soundSources[nextSoundSource mod SOURCES]
 
-  alGetSourcei(source, AL_SOURCE_STATE,
-    addr sourceState)
+  alGetSourcei(source, AL_SOURCE_STATE, addr sourceState)
   checkAudioErr("sourcei")
   alSourceStop(source)
   checkAudioErr("sourceStop")

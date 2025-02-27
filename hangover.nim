@@ -25,11 +25,11 @@ when defined hoConsole:
 # ui
 import hangover/ui/uimanager
 import hangover/ui/statemachine
-import hangover/ui/statemachineref
+# import hangover/ui/statemachineref
 
 export uimanager
 export statemachine
-export statemachineref
+# export statemachineref
 
 # rendering
 import hangover/rendering/animation
@@ -42,9 +42,10 @@ export particles
 export sprite
 export shapes
 
-# entity component system
-import hangover/ecs/all
-export all
+when defined hoECS:
+  # entity component system
+  import hangover/ecs/all
+  export all
 
 # collisions
 when defined hoCollisions:

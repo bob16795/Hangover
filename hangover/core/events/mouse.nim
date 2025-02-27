@@ -1,7 +1,7 @@
-createEvent(EVENT_MOUSE_MOVE, true)
-createEvent(EVENT_MOUSE_CLICK, true)
-createEvent(EVENT_MOUSE_RELEASE, true)
-createEvent(EVENT_MOUSE_SCROLL, true)
+createEvent[Vector2] eventMouseMove, {hideLogs}
+createEvent[int] eventMouseClick, {hideLogs}
+createEvent[int] eventMouseRelease, {hideLogs}
+createEvent[Vector2] eventMouseScroll, {hideLogs}
 
 # TODO: comment
 
@@ -10,16 +10,14 @@ when not defined(ginGLFM):
     var pos = res
     pos.x += textureOffset.x
     pos.y += textureOffset.y
-    sendEvent(EVENT_MOUSE_MOVE, addr pos)
+    eventMouseMove.send(newVector2(pos.x, pos.y))
   
   proc mouseButtonCb*(win: Window, button: MouseButton, action: bool, mods: set[ModifierKey]) =
     let btn = ord(button)
     if action:
-      sendEvent(EVENT_MOUSE_CLICK, addr btn)
+      eventMouseClick.send(btn)
     else:
-      sendEvent(EVENT_MOUSE_RELEASE, addr btn)
+      eventMouseRelease.send(btn)
 
   proc mouseScrollCb*(win: Window, res: tuple[x, y: float64]) =
-    let offset = newVector2(res.x, res.y)
-
-    sendEvent(EVENT_MOUSE_SCROLL, addr offset)
+    eventMouseScroll.send(newVector2(res.x, res.y))

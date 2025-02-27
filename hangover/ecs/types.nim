@@ -7,7 +7,7 @@ import hangover/core/events
 
 type
   ComponentLink* = object
-    event*: EventId
+    event*: ptr Event
     p*: proc(c: Entity, data: pointer): bool
   Component* = ref object
     lids*: seq[Oid]

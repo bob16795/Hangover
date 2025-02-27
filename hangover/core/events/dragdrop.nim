@@ -1,7 +1,5 @@
-when not defined(ginGLFM):
-  createEvent(EVENT_DROP_FILE)
-  
-  proc dropCb(win: Window, paths: PathDropInfo) =
-    for p in paths:
-      let path = p
-      sendEvent(EVENT_DROP_FILE, addr path)
+createEvent[string] eventDropFile
+
+proc dropCb(win: Window, paths: PathDropInfo) =
+  for path in paths:
+    eventDropFile.send($path)

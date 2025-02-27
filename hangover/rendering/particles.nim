@@ -9,11 +9,6 @@ import sequtils
 #TODO: comment
 #TODO: add scale
 
-template ifor*(variable: untyped, list: untyped, body: untyped): untyped =
-  for i in 0..<list.len:
-    template variable(): untyped = list[i]
-    body
-
 var particleDensity*: float32 = 1.0
 
 type
@@ -56,12 +51,12 @@ type
     isActive*: bool
 
 proc clear*(ps: var ParticleSystem) =
-  ifor part, ps.pool:
+  for part in ps.pool.mitems():
     part.isActive = false
 
 proc update*(ps: var ParticleSystem, dt: float32) =
   ## updates a particle system
-  ifor part, ps.pool:
+  for part in ps.pool.mitems():
     if not part.isActive:
       continue
     if part.lifeRemaining <= 0:

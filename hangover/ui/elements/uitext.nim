@@ -22,6 +22,7 @@ type
     align*: UITextAlign
     color*: UIField[Color]
     cutoff*: bool
+    no_auto*: bool
 
 method draw*(t: UIText, parentRect: Rect) =
   if not t.isActive: return
@@ -35,7 +36,20 @@ method draw*(t: UIText, parentRect: Rect) =
   posy = max(posy, bounds.y)
 
   if "\n" notin t.text.value and t.cutoff:
-    let size = sizeText(t.font, t.text.value, t.fontMult * uiElemScale)
+    let
+      base_text_size = t.font.sizeText(t.text.value)
+      max_scale = min(
+        bounds.width / base_text_size.x * 0.9,
+        bounds.height / base_text_size.y * 0.9,
+      )
+      text_scale = if t.no_auto:
+                     t.fontMult * uiElemScale
+                   else:
+                     min(
+                       max_scale,
+                       t.fontMult * uiElemScale,
+                     )
+      size = sizeText(t.font, t.text.value, text_scale)
     if size.x < bounds.width:
       var posx: float32 = bounds.x
       case t.align:
@@ -44,7 +58,7 @@ method draw*(t: UIText, parentRect: Rect) =
         of ARight:
           posx = bounds.x + bounds.width - size.x
         else: discard
-      t.font.draw(t.text.value, newVector2(posx, posy), t.color.value, t.fontMult * uiElemScale, wrap = bounds.width)
+      t.font.draw(t.text.value, newVector2(posx, posy), t.color.value, text_scale, wrap = bounds.width)
       return
 
     var last = "..."
@@ -52,21 +66,51 @@ method draw*(t: UIText, parentRect: Rect) =
       var text = t.text.value[0..i] & "..."
       var size = sizeText(t.font, text, t.fontMult * uiElemScale).x
       if size > bounds.width:
+        let
+          base_text_size = t.font.sizeText(last)
+          max_scale = min(
+            bounds.width / base_text_size.x * 0.9,
+            bounds.height / base_text_size.y * 0.9,
+          )
+          text_scale = if t.no_auto:
+                         t.fontMult * uiElemScale
+                       else:
+                         min(
+                           max_scale,
+                           t.fontMult * uiElemScale,
+                         )
         var posx: float32 = bounds.x
-        t.font.draw(last, newVector2(posx, posy), t.color.value, t.fontMult * uiElemScale, wrap = bounds.width)
+        t.font.draw(last, newVector2(posx, posy), t.color.value, text_scale, wrap = bounds.width)
         return
       last = text
     return
 
+  let all_lines = t.text.value.split("\n")
+
   var line = 0
-  for text in t.text.value.split("\n"):
+  for text in all_lines:
+    let
+      base_text_size = t.font.sizeText(text)
+      max_scale = min(
+        bounds.width / base_text_size.x * 0.9,
+        (bounds.height / all_lines.len.float32) / base_text_size.y * 0.9,
+      )
+      text_scale = if t.no_auto:
+                     t.fontMult * uiElemScale
+                   else:
+                     min(
+                       max_scale,
+                       t.fontMult * uiElemScale,
+                     )
+
     var posx: float32 = bounds.x
     case t.align:
       of ACenter:
-        posx = bounds.x + (bounds.width - sizeText(t.font, text, t.fontMult * uiElemScale).x) / 2
+        posx = bounds.x + (bounds.width - sizeText(t.font, text, text_scale).x) / 2
       of ARight:
-        posx = bounds.x + bounds.width - sizeText(t.font, text, t.fontMult * uiElemScale).x
+        posx = bounds.x + bounds.width - sizeText(t.font, text, text_scale).x
       else: discard
+
     posx = max(posx, bounds.x)
-    t.font.draw(text, newVector2(posx, posy), t.color.value, t.fontMult * uiElemScale, wrap = bounds.width)
-    posy += t.font.sizeText(text, t.fontMult * uiElemScale, wrap = bounds.width).y
+    t.font.draw(text, newVector2(posx, posy), t.color.value, text_scale, wrap = bounds.width)
+    posy += t.font.sizeText(text, text_scale, wrap = bounds.width).y

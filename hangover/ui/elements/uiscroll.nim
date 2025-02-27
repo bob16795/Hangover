@@ -40,9 +40,6 @@ method draw*(s: UIScroll, parentRect: Rect) =
   parent_rect_moved.x -= s.scrollVis.x
   parent_rect_moved.y -= s.scrollVis.y
 
-  let
-    oldScissor = textureScissor
-
   var
     bounds = s.bounds.toRect(parent_rect_moved)
     vp = s.bounds.toRect(parent_rect)
@@ -61,20 +58,17 @@ method draw*(s: UIScroll, parentRect: Rect) =
     # slider size
     bounds.width -= 80
 
-  textureScissor = vp.scale(uiScaleMult)
+  withScissor vp.scale(uiScaleMult):
+    var postpone: seq[UIElement]
 
-  var postpone: seq[UIElement]
+    for i in 0..<s.elements.len:
+      if s.elements[i].focused:
+        postpone &= s.elements[i]
+      else:
+        s.elements[i].draw(bounds)
 
-  for i in 0..<s.elements.len:
-    if s.elements[i].focused:
-      postpone &= s.elements[i]
-    else:
-      s.elements[i].draw(bounds)
-
-  for p in postpone:
-    p.draw(bounds)
-
-  textureScissor = oldScissor
+    for p in postpone:
+      p.draw(bounds)
 
 method navigate*(s: UIScroll, dir: UIDir, parent_rect: Rect): bool =
   var
@@ -138,6 +132,9 @@ method checkHover*(s: UIScroll, parent_rect: Rect, mousePos: Vector2) =
       s.focused = true
 
 method click*(s: UIScroll, button: int, key: bool) =
+  if not s.isActive:
+    return
+
   if not key and s.scrollFocus:
     s.scrollClick = true
     s.scrollPos.value = newVector2(
@@ -152,9 +149,6 @@ method click*(s: UIScroll, button: int, key: bool) =
   if s.inside or key:
     for i in 0..<s.elements.len:
       s.elements[i].click(button, key)
-      if not key and s.elements[i].propagate():
-        capture i:
-          s.dragProc = proc(done: bool) = s.elements[i].drag(button, done)
 
 method scroll*(s: UIScroll, offset: Vector2) =
   if not s.isActive:
@@ -176,8 +170,9 @@ method drag*(s: UIScroll, button: int, done: bool) =
     )
     if s.onScroll != nil:
       s.onScroll(s.scrollPos.value)
-  elif s.dragProc != nil:
-    s.dragProc(done)
+  else:
+    for e in s.elements:
+      e.drag(button, done)
 
   if done:
     s.scrollClick = false
@@ -192,26 +187,11 @@ method focus*(s: UIScroll, focus: bool) =
     if e.focusable():
       e.focus(focus)
 
-      if focus:
-        let
-          min_y = e.bounds.YMin + e.bounds.anchorYMin * s.vpHeight
-          max_y = e.bounds.YMax + e.bounds.anchorYMax * s.vpHeight
-
-          y = (min_y + max_y) / 2
-        
-          diff = s.scrollPos.value.y -
-            (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0))
-  
-        for j in 0..<s.elements.len:
-          s.elements[j].bounds.lastCenter.y += diff
-
-        s.scrollPos.value = newVector2(
-          s.scrollPos.value.x,
-          (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0)),
-        )
-        if s.onScroll != nil:
-          s.onScroll(s.scrollPos.value)
-        return
+      s.scrollPos.value = newVector2(0)
+      s.scrollClick = false
+      s.scrollFocus = false
+      s.inside = false
+      return
 
 method center*(s: UIScroll, parent_rect: Rect): Vector2 =
   var
@@ -259,9 +239,6 @@ method update*(s: UIScroll, parentRect: Rect, mousePos: Vector2, dt: float32, ac
     s.elements[i].update(bounds, mousePos, dt, s.isActive and active and mousePos in bounds)
 
 method propagate*(s: UIScroll): bool =
-  if s.scrollClick:
-    return true
-
   for i in 0..<s.elements.len:
     if s.elements[i].propagate():
       template e: untyped = s.elements[i]
@@ -272,19 +249,23 @@ method propagate*(s: UIScroll): bool =
 
         y = (min_y + max_y) / 2
 
-        diff = s.scrollVis.y -
+        diff = s.scrollPos.value.y -
           (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0))
-  
-      for j in 0..<s.elements.len:
-        s.elements[j].moveCenter(newVector2(0, diff))
 
-      s.scrollPos.value = newVector2(
-        s.scrollPos.value.x,
-        (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0)),
-      )
-      if s.onScroll != nil:
-        s.onScroll(s.scrollPos.value)
-      result = true
+        pc = s.vpHeight * 0.1
+
+      if diff < -pc or diff > pc:
+        for j in 0..<s.elements.len:
+          s.elements[j].moveCenter(newVector2(0, diff))
+
+        if s.isActive:
+          s.scrollPos.value = newVector2(
+            s.scrollPos.value.x,
+            (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0)),
+          )
+          if s.onScroll != nil:
+            s.onScroll(s.scrollPos.value)
+        result = true
 
 method updateTooltip*(s: UIScroll, dt: float32) =
   for e in s.elements:

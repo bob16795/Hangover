@@ -1,12 +1,12 @@
 import unicode
 
-createEvent(EVENT_PRESS_KEY, true)
-createEvent(EVENT_RELEASE_KEY, true)
-createEvent(EVENT_LINE_ENTER)
-createEvent(EVENT_START_LINE_ENTER)
-createEvent(EVENT_STOP_LINE_ENTER)
-createEvent(EVENT_SET_LINE_TEXT)
-createEvent(EVENT_CHAR)
+createEvent[Key] eventPressKey, {hideLogs} 
+createEvent[Key] eventReleaseKey, {hideLogs}
+createEvent[string] eventUpdateLineEnter
+createEvent[void] eventStartLineEnter
+createEvent[void] eventStopLineEnter
+createEvent[string] eventSetLineEnter
+createEvent[Rune] eventPressChar, {hideLogs}
 
 var
   lineInput = false
@@ -22,25 +22,22 @@ when not defined(ginGLFM):
     if lineInput:
       if action != kaUp and key == keyBackspace and lineText != "":
         lineText = lineText[0..^2]
-        sendEvent(EVENT_LINE_ENTER, addr lineText)
+        eventUpdateLineEnter.send(lineText)
     case action:
     of kaDown:
-      let k = key
-      sendEvent(EVENT_PRESS_KEY, addr k)
+      eventPressKey.send(key)
     of kaUp:
-      let k = key
-      sendEvent(EVENT_RELEASE_KEY, addr k)
+      eventReleaseKey.send(key)
     else:
       discard
   
   proc charCb*(win: Window, r: Rune) =
-    sendEvent(EVENT_CHAR, addr r)
+    eventPressChar.send(r)
 
     if not lineInput: return
 
     lineText &= $r
-    sendEvent(EVENT_LINE_ENTER, addr lineText)
+    eventUpdateLineEnter.send(lineText)
   
-proc setLineText*(data: pointer): bool {.cdecl.} =
-  lineText = cast[ptr string](data)[]
-
+proc setLineText*(data: string): bool =
+  lineText = data

@@ -19,7 +19,7 @@ proc setupShapeTexture*() =
       0, GL_RGBA, GL_UNSIGNED_BYTE, addr data)
     glGenerateMipmap(GL_TEXTURE_2D)
 
-proc drawRectOutline*(r: Rect, width: int, c: Color, contrast: ContrastEntry = ContrastEntry(mode: fg)) =
+proc drawRectOutline*(r: Rect, width: int, c: Color, contrast: ContrastEntry = ContrastEntry(mode: noContrast)) =
   block:
     var tmp = r
     tmp.width = width.float32
@@ -42,7 +42,7 @@ proc drawRectOutline*(r: Rect, width: int, c: Color, contrast: ContrastEntry = C
     tmp.height = width.float32
     shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
 
-proc drawRectFill*(r: Rect, c: Color, contrast: ContrastEntry = ContrastEntry(mode: fg)) =
+proc drawRectFill*(r: Rect, c: Color, contrast: ContrastEntry = ContrastEntry(mode: noContrast)) =
   shapeTexture.draw(newRect(0, 0, 1, 1), r, color = c, contrast = contrast)
 
 proc drawPoly*(points: seq[Vector2], c: Color) =
@@ -51,7 +51,7 @@ proc drawPoly*(points: seq[Vector2], c: Color) =
     center += point
   center /= points.len - 1
 
-proc drawLine*(a, b: Vector2, thickness: float32, c: Color, contrast: ContrastEntry = ContrastEntry(mode: fg)) =
+proc drawLine*(a, b: Vector2, thickness: float32, c: Color, contrast: ContrastEntry = ContrastEntry(mode: noContrast)) =
   var verts: seq[array[16, float32]]
   let
     length = distance(a, b)

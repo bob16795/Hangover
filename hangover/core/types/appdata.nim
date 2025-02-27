@@ -14,7 +14,7 @@ type
     color*: Color
 
 const
-  ginAppName {.strdefine.} = "Hangover Game"
+  ginAppName* {.strdefine.} = "Hangover Game"
 
 static:
   # get misc data

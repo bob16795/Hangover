@@ -11,23 +11,23 @@ type
     b*: uint8
     a*: uint8
 
-proc newColor*(r, g, b: uint8, a: uint8 = 255): Color =
+func newColor*(r, g, b: uint8, a: uint8 = 255): Color =
   ## creates a new color
   result.r = r
   result.g = g
   result.b = b
   result.a = a
 
-proc rf*(c: Color): float32 =
+func rf*(c: Color): float32 =
   c.r.float32 / 255.0
 
-proc gf*(c: Color): float32 =
+func gf*(c: Color): float32 =
   c.g.float32 / 255.0
 
-proc bf*(c: Color): float32 =
+func bf*(c: Color): float32 =
   c.b.float32 / 255.0
 
-proc af*(c: Color): float32 =
+func af*(c: Color): float32 =
   c.a.float32 / 255.0
 
 func sRGB(c: Color): Color =
@@ -60,7 +60,7 @@ func linearRGB(c: Color): Color =
       pow((c.bf + 0.055) / 1.055, 2.4), 0, 1))
   result.a = c.a
 
-proc lerp*(a, b: Color, ratio: float): Color =
+func lerp*(a, b: Color, ratio: float): Color =
   ## mixes 2 colors
   let
     afactor = ratio
@@ -70,8 +70,7 @@ proc lerp*(a, b: Color, ratio: float): Color =
   result.b = (a.b.float * afactor + b.b.float * bfactor).uint8
   result.a = (a.a.float * afactor + b.a.float * bfactor).uint8
 
-proc mix*(aLinear, bLinear: Color, ratio: float = 0.5): Color =
-
+func mix*(aLinear, bLinear: Color, ratio: float = 0.5): Color =
   ## mixes 2 colors
   let
     a = sRGB(aLinear)
@@ -79,20 +78,20 @@ proc mix*(aLinear, bLinear: Color, ratio: float = 0.5): Color =
 
   result = linearRGB(a.lerp(b, ratio))
 
-proc `$`*(c: Color): string =
+func `$`*(c: Color): string =
   result = "#"
   result &= c.r.toHex(2)
   result &= c.g.toHex(2)
   result &= c.b.toHex(2)
   result &= c.a.toHex(2)
 
-proc newColorGray*(c: uint8): Color =
-  return newColor(c, c, c, 255)
+func newColorGray*(c: uint8): Color =
+  newColor(c, c, c, 255)
 
-proc withAlpha*(c: Color, a: uint8): Color =
+func withAlpha*(c: Color, a: uint8): Color =
   return newColor(c.r, c.g, c.b, a)
 
-proc hue*(c: Color): float32 =
+func hue*(c: Color): float32 =
   let
     r = c.rf
     g = c.gf
@@ -111,7 +110,7 @@ proc hue*(c: Color): float32 =
   if result.classify == fcNaN:
     return 0.66
 
-proc parseColor*(s: string): Color =
+func parseColor*(s: string): Color =
   if s[0] == '#':
     if s.len == 4:
       result.r = parseHexInt(s[1..1]).uint8 * 0x11.uint8

@@ -1,7 +1,7 @@
 import ../core/events
 import options
 
-createEvent(EVENT_RFSM_CHANGE)
+createEvent[array[2, int]] eventRFSMChange
 
 type
   RStateMachine*[S] = object
@@ -71,7 +71,7 @@ proc setFlag*(sm: var RStateMachine, id: int) =
     data[1].init()
   if sm.currentState != data[1]:
     data[1] = sm.currentState
-    sendEvent(EVENT_RFSM_CHANGE, addr data)
+    eventRFSMChange.send data
 
 proc contains*[S](states: set[S], sm: RStateMachine[S]): bool =
   sm.currentState in states

@@ -18,7 +18,7 @@ var
 method setup*(rect: UIRectangle) {.base.} =
   discard
 
-method toRect*(rect: var UIRectangle, parent: Rect): Rect {.base.} =
+method toRect*(rect: UIRectangle, parent: Rect): Rect {.base.} =
   ## converts the UIRectangle to a Rect
 
   # calculate anchored positions
@@ -56,3 +56,6 @@ proc newUIRectangle*(XMin, YMin: float32, XMax, YMax: float32, anchorXMin,
   result.anchorXMax = anchorXMax
   result.anchorYMin = anchorYMin
   result.anchorYMax = anchorYMax
+
+  assert not(Xmin == Xmax and anchorXMin == anchorXMax)
+  assert not(Ymin == Ymax and anchorYMin == anchorYMax)

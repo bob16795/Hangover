@@ -2,6 +2,7 @@ import streams
 import strformat
 import strutils
 import options
+import os
 
 type
   LogPriority* = enum
@@ -21,11 +22,14 @@ type
 
   LoggerConsole* = ref object of RootObj
 
-method log*(console: var LoggerConsole, text: string) {.base.} =
+method log*(console: LoggerConsole, text: string, priority: LogPriority) {.base.} =
   discard
 
 method enableFileOutput(l: var Logger) =
-  l.output = newFileStream("hangover.log", fmWrite)
+  var file = when defined debug: "hangover_" & $getCurrentProcessId() & ".log"
+             else: "hangover.log"
+
+  l.output = newFileStream(file, fmWrite)
   l.fileOutput = true
 
 proc newLogger(priority: LogPriority = lpInfo): Logger =
@@ -61,7 +65,7 @@ method log*(l: Logger, priority: LogPriority, file, message: string) =
   if priority >= l.priority:
     echo &"[{pString}] {file}: {message}"
     if log_console != nil:
-      log_console.log(&"[{pString}] {file}: {message}\n")
+      log_console.log(&"[{pString}] {file}: {message}\n", priority)
 
   if l.fileOutput:
     l.output.write(&"[{pString}] {file}: {message}\n")

@@ -31,6 +31,7 @@ type
     release*: (v: float) -> void
     scrollSensitivity*: float
     smooth*: float32
+    dragging: bool
 
 method checkHover*(s: UISlider, parentRect: Rect, mousePos: Vector2) =
   s.focused = false
@@ -65,6 +66,8 @@ method click*(s: UISlider, button: int, key: bool) =
   s.value = s.tmpVal
   if s.update != nil:
     s.update(s.value)
+
+  s.dragging = true
 
 method draw*(s: UISlider, parentRect: Rect) =
   if not s.isActive:
@@ -101,19 +104,19 @@ method draw*(s: UISlider, parentRect: Rect) =
       newRect(posx, bounds.y, s.handleSize, bounds.height),
       contrast = ContrastEntry(mode: fg),
     )
-    if s.font != nil:
-      let
-        handlePos = newRect(posx, bounds.y, s.handleSize, bounds.height).center()
-        text = $int(s.value * s.valueMul + s.valueAdd) & s.valueLabel
-        size = s.font.sizeText(text, s.fontMult * uiElemScale) * 0.5
 
-      s.font.draw(
-        text,
-        handlePos - size,
-        newColor(0, 0, 0),
-        s.fontMult * uiElemScale,
-        contrast = ContrastEntry(mode: bg),
-      )
+    let
+      handlePos = newRect(posx, bounds.y, s.handleSize, bounds.height).center()
+      text = $int(s.value * s.valueMul + s.valueAdd) & s.valueLabel
+      size = s.font.sizeText(text, s.fontMult * uiElemScale) * 0.5
+
+    s.font.draw(
+      text,
+      handlePos - size,
+      newColor(0, 0, 0),
+      s.fontMult * uiElemScale,
+      contrast = ContrastEntry(mode: bg),
+    )
 
 proc lerp*(a, b: float, pc: float32): float =
   return a + (b - a) * pc
@@ -128,12 +131,16 @@ method update*(s: UISlider, parentRect: Rect, mousePos: Vector2,
     s.valueVis = s.value
 
 method drag*(e: UISlider, button: int, done: bool) =
+  if not e.dragging:
+    return
+
   e.value = e.tmpVal
   if e.update != nil:
     e.update(e.value)
   if done:
     if e.release != nil:
       e.release(e.value)
+    e.dragging = false
 
 method scroll*(e: UISlider, offset: Vector2) =
   if e.vertical:

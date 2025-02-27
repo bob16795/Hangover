@@ -52,6 +52,6 @@ proc draw*[T](
   r: Rect,
   rotation: float32 = 0,
   color: Color = newColor(255, 255, 255),
-  contrast: ContrastEntry = ContrastEntry(mode: fg),
+  contrast: ContrastEntry = ContrastEntry(mode: noContrast),
 ) =
   getStateFrame(a).draw(r.location, rotation, r.size, color, contrast = contrast)

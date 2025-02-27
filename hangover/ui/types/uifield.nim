@@ -15,7 +15,7 @@ type
         getter*: proc (): T
         setter*: proc (data: T)
 
-template UIFieldValue*[T](data: static[T]): UIField[T] =
+template fieldValue*[T](data: static[T]): UIField[T] =
   let tmp = data
 
   capture tmp:
@@ -24,13 +24,13 @@ template UIFieldValue*[T](data: static[T]): UIField[T] =
       this: tmp,
     )
 
-proc UIFieldGetter*[T](getter: proc(): T): UIField[T] =
+proc fieldGetter*(T: type, getter: proc(): T): UIField[T] =
   UIField[T](
     kind: dynamic,
     getter: getter,
   )
 
-template UIFieldFrom*(value: untyped): untyped =
+template fieldVar*(value: untyped): untyped =
   type T = typeof(value)
 
   UIField[T](

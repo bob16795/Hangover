@@ -39,7 +39,7 @@ type
     UILeft
     UIRight
 
-  UIElement* = ref object of RootObj
+  UIElement* {.acyclic.} = ref object of RootObj
     ## a generic ui element does nothing
     focused*: bool          ## wether the element is focused
     isActive*: bool = true  ## if the element is active
@@ -82,7 +82,7 @@ method focus*(e: UIElement, focus: bool) {.base.} =
   ## returns true if you can focus the element
   e.focused = focus
 
-method moveCenter*(e: var UIElement, diff: Vector2) {.base.} =
+method moveCenter*(e: UIElement, diff: Vector2) {.base.} =
   ## returns true if you can focus the element
   e.bounds.lastCenter += diff
 

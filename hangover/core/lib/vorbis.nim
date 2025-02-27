@@ -1,4 +1,4 @@
-{.compile: "vorbis.c".}
+{.compile: ("vorbis.c", "-O3 -fno-math-errors -fno-trapping-math").}
 
 # Stole this from treeform slappy
 

@@ -28,11 +28,8 @@ proc text*(i: UIInput): string =
 proc `text=`*(i: UIInput, text: string) =
   i.setText(text)
 
-proc onKey*(data: pointer): bool {.cdecl.} =
-  let c = cast[ptr string](data)[]
-  tmpText = c
-
-createListener(EVENT_LINE_ENTER, onKey)
+eventUpdateLineEnter.listen do (text: string) -> bool:
+  tmpText = text
 
 method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2) =
   e.focused = false
@@ -51,14 +48,14 @@ method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2) =
 method click*(e: UIInput, button: int, key: bool) =
   if not e.focused: return
   if not e.active:
-    let line_text = e.text
-
     tmpText = ""
-    sendEvent(EVENT_START_LINE_ENTER, nil)
-    sendEvent(EVENT_SET_LINE_TEXT, addr line_text)
+
+    eventStartLineEnter.send
+    eventSetLineEnter.send e.text
+
     e.active = true
   else:
-    sendEvent(EVENT_STOP_LINE_ENTER, nil)
+    eventStopLineEnter.send
     e.active = false
 
 method draw*(e: UIInput, parentRect: Rect) =
@@ -108,7 +105,7 @@ method draw*(e: UIInput, parentRect: Rect) =
 method propagate*(i: UIInput): bool =
   if not i.isActive:
     if i.active:
-      sendEvent(EVENT_STOP_LINE_ENTER, nil)
+      eventStopLineEnter.send()
       i.active = false
   return i.focused
 

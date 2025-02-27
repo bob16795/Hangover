@@ -102,7 +102,7 @@ proc newUIBobber*(b: UIRectangle, always: bool = false,
 
   bobbers &= result
 
-method toRect*(b: var UIBobber, parent: Rect): Rect =
+method toRect*(b: UIBobber, parent: Rect): Rect =
   ## converts the UIRectangle to a Rect
 
   # calculate anchored positions

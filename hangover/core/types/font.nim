@@ -13,6 +13,7 @@ import tables
 import hangover/rendering/sprite
 import hangover/core/loop
 import options
+import locks
 
 # TODO: comment
 
@@ -29,6 +30,7 @@ type
     characters: Table[Rune, Character]
     spacing: int
     border*: float32
+    emojiLock*: Lock
     emojis*: Table[Rune, Emoji]
     lastRune*: Rune
   Character* = object
@@ -153,7 +155,6 @@ proc initFT*() =
   fontProgram = newShader(vertexCode, fragmentCode)
   fontProgram.registerParam("projection", SPKProj4)
   fontProgram.registerParam("tintColor", SPKFloat4)
-  fontProgram.registerParam("layer", SPKFloat4)
   fontProgram.registerParam("contrast", SPKFloat1)
   fontProgram.registerParam("mode", SPKInt1)
 
@@ -258,26 +259,30 @@ proc newFontMem*(data: cstring, dataSize: int64, size: int, spacing: int = 0): F
   if FT_New_Memory_Face(ft, data, cast[FT_Long](dataSize), 0, face).int != 0:
     LOG_ERROR("ho->font", "Failed to load font")
     quit(2)
+
+  result.emojiLock.initLock()
+
   finFont(result, size, face)
   result.spacing = spacing
 
   LOG_DEBUG("ho->font", "Loaded font", result.textures.len, "Textures")
 
 proc updateFontMem*(self: var Font, data: cstring, dataSize: int64, size: int, spacing: int = 0) =
-  for t in self.textures:
-    t.freeTexture()
+  withLock self.emojiLock:
+    for t in self.textures:
+      t.freeTexture()
 
-  self.textures = @[]
+    self.textures = @[]
 
-  var face: FT_Face
+    var face: FT_Face
 
-  if FT_New_Memory_Face(ft, data, cast[FT_Long](dataSize), 0, face).int != 0:
-    LOG_ERROR("ho->font", "Failed to load font")
-    quit(2)
-  finFont(self, size, face)
-  self.spacing = spacing
+    if FT_New_Memory_Face(ft, data, cast[FT_Long](dataSize), 0, face).int != 0:
+      LOG_ERROR("ho->font", "Failed to load font")
+      quit(2)
+    finFont(self, size, face)
+    self.spacing = spacing
 
-  LOG_DEBUG("ho->font", "Loaded font", self.textures.len, "Textures")
+    LOG_DEBUG("ho->font", "Loaded font", self.textures.len, "Textures")
 
 proc newFont*(face: string, size: int, spacing: int = 0): Font =
   result = Font()
@@ -299,102 +304,107 @@ proc draw*(
   color: Color,
   scale: float32 = 1,
   wrap: float32 = 0,
-  layer: range[0..500] = 0,
-  contrast: ContrastEntry = ContrastEntry(mode: fg),
+  contrast: ContrastEntry = ContrastEntry(mode: noContrast),
 ) =
-  var pos = position
+  withLock font.emojiLock:
+    var pos = position
 
-  var srect = newRect(0, 0, 1, 1)
-  for c in text.runes:
-    if c in font.emojis:
+    var srect = newRect(0, 0, 1, 1)
+    for c in text.runes:
+      if c in font.emojis:
+        let
+          ch = font.emojis[c.Rune].sprite
+          w = (font.size.float32 * 0.8) * scale
+          h = (font.size.float32 * 0.8) * scale
+          xpos = pos.x + font.size.float32 * 0.1 * scale
+          ypos = pos.y + font.size.float32 * 0.2 * scale
+
+        var clr = COLOR_WHITE.withAlpha(color.a)
+
+        if font.emojis[c.Rune].color:
+          clr = color
+
+        ch.draw(
+          newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border, h.float32 + 2 * font.border),
+          color = clr,
+          contrast = contrast,
+        )
+        pos.x += font.size.float32 * scale
+        pos.x += font.spacing.float32 + (2 * font.border)
+
+        continue
+
+      if c notin font.characters: continue
+
       let
-        ch = font.emojis[c.Rune].sprite
-        w = (font.size.float32 * 0.8) * scale
-        h = (font.size.float32 * 0.8) * scale
-        xpos = pos.x + font.size.float32 * 0.1 * scale
-        ypos = pos.y + font.size.float32 * 0.2 * scale
+        ch = font.characters[c.Rune]
+        w = (ch.size.x.float32 * scale)
+        h = (ch.size.y.float32 * scale)
 
-      var clr = COLOR_WHITE
+      var
+        xpos = pos.x + (ch.bearing.x).float32 * scale
+        ypos = pos.y - (ch.bearing.y).float32 * scale + font.size.float32 * scale
 
-      if font.emojis[c.Rune].color:
-        clr = color
+      srect.x = ch.tx
+      srect.y = ch.ty
+      srect.width = ch.tw
+      srect.height = ch.th
 
-      ch.draw(
+      # wrap the font if enabled
+      if wrap != 0 and wrap < xpos - position.x + w:
+        pos.x = position.x
+        pos.y += font.size.float32 * scale
+        xpos = pos.x + (ch.bearing.x).float32 * scale
+        ypos = pos.y - (ch.bearing.y).float32 * scale + font.size.float32 * scale
+
+      # render texture
+      let
+        tex = font.textures[ch.tex]
+      tex.draw(
+        srect,
         newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border, h.float32 + 2 * font.border),
-        layer = layer,
-        color = clr,
+        fontProgram,
+        color,
         contrast = contrast,
       )
-      pos.x += font.size.float32 * scale
+      pos.x += ((ch.advance shr 6).float32 * scale)
       pos.x += font.spacing.float32 + (2 * font.border)
 
-      continue
-
-    if c notin font.characters: continue
-
-    let
-      ch = font.characters[c.Rune]
-      w = (ch.size.x.float32 * scale)
-      h = (ch.size.y.float32 * scale)
-
-    var
-      xpos = pos.x + (ch.bearing.x).float32 * scale
-      ypos = pos.y - (ch.bearing.y).float32 * scale + font.size.float32 * scale
-
-    srect.x = ch.tx
-    srect.y = ch.ty
-    srect.width = ch.tw
-    srect.height = ch.th
-
-    # wrap the font if enabled
-    if wrap != 0 and wrap < xpos - position.x + w:
-      pos.x = position.x
-      pos.y += font.size.float32 * scale
-      xpos = pos.x + (ch.bearing.x).float32 * scale
-      ypos = pos.y - (ch.bearing.y).float32 * scale + font.size.float32 * scale
-
-    # render texture
-    let
-      tex = font.textures[ch.tex]
-    tex.draw(
-      srect,
-      newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border, h.float32 + 2 * font.border),
-      fontProgram,
-      color,
-      layer = layer,
-      contrast = contrast,
+proc setEmoji*(font: Font, emoji: Rune, sprite: Sprite, color: bool = false) =
+  withLock font.emojiLock:
+    font.emojis[emoji] = Emoji(
+      sprite: sprite,
+      color: color,
     )
-    pos.x += ((ch.advance shr 6).float32 * scale)
-    pos.x += font.spacing.float32 + (2 * font.border)
-
-proc setEmoji*(font: var Font, emoji: Rune, sprite: Sprite, color: bool = false) =
-  font.emojis[emoji] = Emoji(
-    sprite: sprite,
-    color: color,
-  )
-
+    
 proc addEmoji*(font: var Font): Rune =
   result = font.lastRune
 
   font.lastRune = Rune(font.lastRune.int + 1)
 
 proc sizeText*(font: Font, text: string, scale: float32 = 1, wrap: float32 = 0): Vector2 =
-  var ypos: float32 = 0
-  for c in text.runes:
-    if c in font.emojis:
-      result.x += font.size.float32 * scale
-      result.x += font.spacing.float32 + (2 * font.border)
-      continue
+  withLock font.emojiLock:
+    var ypos: float32 = 0
+    for c in text.runes:
+      if c in font.emojis:
+        result.x += font.size.float32 * scale
+        result.x += font.spacing.float32 + (2 * font.border)
+      
+        let height = ypos + (font.size.float32 * 0.8) * scale 
+        if height > result.y:
+          result.y = height
+        continue
 
-    if c notin font.characters: continue
-    let ch = font.characters[c.Rune]
-    ypos = (ch.bearing.y).float32 * scale
-    let height = ypos + ch.size.y.float32 * scale
-    result.x += ((ch.advance shr 6).float32 * scale)
-    result.x += font.spacing.float32 + (2 * font.border).float32
-    if height > result.y:
-      result.y = height
+      if c notin font.characters: continue
+      let ch = font.characters[c.Rune]
+      ypos = (ch.bearing.y).float32 * scale
+      let height = ypos + ch.size.y.float32 * scale
+      result.x += ((ch.advance shr 6).float32 * scale)
+      result.x += font.spacing.float32 + (2 * font.border).float32
+      if height > result.y:
+        result.y = height
 
 proc freeFont*(self: Font) =
   for t in self.textures:
     t.freeTexture()
+  self.emojiLock.deinitLock()

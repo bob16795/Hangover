@@ -2,7 +2,9 @@ import types/appdata
 import types/texture
 import types/vector2
 import types/shader
+import types/point
 import types/color
+import types/rect
 import types/font
 import console
 import sequtils
@@ -18,8 +20,17 @@ import math
 import os
 import loop
 import locks
+import lists
 import hangover/rendering/shapes
 export opengl
+
+createEvent[void] eventBlitStart, {hideLogs}
+createEvent[void] eventBlitEnd, {hideLogs}
+
+createEvent[void] eventFrameEnd, {hideLogs}
+createEvent[void] eventFrameStart, {hideLogs}
+
+proc finishDraw*()
 
 var
   cameraPos: Vector2
@@ -36,32 +47,29 @@ proc setCameraPos*(pos: Vector2) =
   for si in 0..<len shaders:
     shaders[si].setParam("projection", projection.caddr)
 
-proc setCameraSize*(w, h: int32) =
+proc setCameraSize*(size: Vector2) =
   # update the viewport in glfm
   when not defined(hangui):
     withGraphics:
-      glViewport(0, 0, GLsizei(w), GLsizei(h))
+      glViewport(0, 0, GLsizei(size.x), GLsizei(size.y))
 
   # update camrea size var
-  cameraSize = newVector2(w.float32, h.float32)
+  cameraSize = size
 
   # update shader matrices
-  var projection = ortho(cameraPos.x, cameraPos.x + w.float, cameraPos.y +
-      h.float, cameraPos.y, -100, 100)
+  var projection = ortho(
+    cameraPos.x,
+    cameraPos.x + size.x,
+    cameraPos.y + size.y,
+    cameraPos.y,
+    -100, 100
+  )
   fontProgram.setParam("projection", projection.caddr)
   textureProgram.setParam("projection", projection.caddr)
   for si in 0..<len shaders:
     shaders[si].setParam("projection", projection.caddr)
-  textureSize.x = w.float32
-  textureSize.y = h.float32
-
-proc resizeBuffer*(data: pointer): bool {.cdecl.} =
-  ## called when window is resized
-
-  # get the event data
-  let res = cast[ptr tuple[w, h: int32]](data)[]
-
-  setCameraSize(res.w, res.h)
+  textureSize.x = size.x
+  textureSize.y = size.y
 
 proc regShader*(shader: Shader) =
   shaders &= shader
@@ -92,7 +100,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
 
     var c = DefaultOpenglWindowConfig
     c.title = data.name
-    c.size = (w: data.size.x, h: data.size.y)
+    c.size = (w: data.size.x.int32, h: data.size.y.int32)
     c.resizable = true
     if data.aa != 0:
       c.nMultiSamples = data.aa.int32
@@ -116,11 +124,12 @@ proc initGraphics*(data: AppData): GraphicsContext =
   initFT()
 
   # attach resize listener
-  createListener(EVENT_RESIZE, resizeBuffer)
+  eventResize.listen do (size: Point) -> bool: 
+    ## called when window is resized
+    setCameraSize(size.toVector2())
 
   # quick resize to fix bugs
-  let res = (w: data.size.x.int32, h: data.size.y.int32)
-  discard resizeBuffer(addr res)
+  eventResize.send(data.size)
 
   withGraphics:
     # setup antialiasing
@@ -155,11 +164,14 @@ proc finishRender*(ctx: GraphicsContext) =
   ## finishes a draw
   finishDraw()
 
+  eventFrameEnd.send()
   withGraphics:
     glFlush()
     glFinish()
     when not defined(ginGLFM):
       glfw.swapBuffers(ctx.window)
+  eventFrameStart.send()
+
   clearBuffer(ctx, ctx.color)
 
 proc isFullscreen*(ctx: GraphicsContext): bool =
@@ -234,3 +246,136 @@ proc getBufferTexture*(t: Texture) =
 proc setCursorPos*(pos: Vector2) =
   when not defined(ginGLFM):
     `cursorPos=`(globalCtx.window, (x: pos.x.float64, y: pos.y.float64))
+
+proc finishDraw*() =
+  eventBlitStart.send()
+
+  ## renders the texture queue
+  var startProg: GLint
+
+  withGraphics:
+    # gets the current program to reset later
+    glGetIntegerv(GL_CURRENT_PROGRAM, addr startProg)
+
+    # checks what items to redraw
+    #if queue != @[]:
+    #  for i in 0..<len(queue):
+    #    if pqueue.len() > i and hash(queue[i]) == pqueue[i]: queue[
+    #        i].update = false
+
+    # set gl options
+    glEnable(GL_BLEND)
+
+    # set texture
+    glActiveTexture(GL_TEXTURE0)
+
+  var i = 0
+
+  # redraw needed items
+  for q in queue.mitems():
+    i += 1
+
+    if i > len(buffers):
+      withGraphics:
+        addVBO()
+
+    let
+      vertices = q.verts
+
+    # use the correct program
+    q.shader.use()
+    for param in q.params:
+      q.shader.setParam(param.name, param.data)
+
+    let contrast = case q.contrast.mode:
+      of fg, texture:
+        contrastDiff
+      of bg:
+        -contrastDiff
+      of noContrast:
+        0
+
+    q.shader.setParam("mode", addr colorMode)
+    q.shader.setParam("contrast", addr contrast)
+
+    var over: GLint = 0
+
+    if q.contrast.mode == ContrastMode.texture:
+      withGraphics:
+        if q.tex.contrast.isSome():
+          glActiveTexture(GL_TEXTURE5)
+          glBindTexture(GL_TEXTURE_2D, q.tex.contrast.get())
+          glActiveTexture(GL_TEXTURE0)
+          over = 1
+
+    q.shader.setParam("contrast_override", addr over)
+
+    withGraphics:
+      glUseProgram(q.shader.id)
+      if q.scissor.width == 0 or q.scissor.height == 0:
+        glDisable(GL_SCISSOR_TEST)
+      else:
+        glEnable(GL_SCISSOR_TEST)
+
+        glScissor(
+          q.scissor.x.GLint,
+          textureSize.y.GLint - (q.scissor.y.GLint + q.scissor.height.GLint),
+          q.scissor.width.GLint,
+          q.scissor.height.GLint,
+        )
+
+      if q.mul:
+        glBlendFunc(GL_DST_COLOR, GL_ZERO)
+        # glBlendFunc(GL_ZERO, GL_SRC_COLOR)
+      else:
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+      # bind the queue items texture
+      glBindTexture(GL_TEXTURE_2D, q.tex.tex)
+      glBindBuffer(GL_ARRAY_BUFFER, buffers[i - 1])
+
+      # update VBO
+      if q.update:
+        glBufferData(
+          GL_ARRAY_BUFFER,
+          GLsizeiptr(len(vertices) *
+          sizeof(vertices[0])),
+          addr(vertices[0]),
+          GL_STATIC_DRAW,
+        )
+
+      # setup vertex attrib data
+      glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(GLfloat), cast[pointer](0))
+      glEnableVertexAttribArray(0)
+      glVertexAttribPointer(1, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(GLfloat), cast[pointer](4 * sizeof(GLfloat)))
+      glEnableVertexAttribArray(1)
+      glVertexAttribPointer(2, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(GLfloat), cast[pointer](8 * sizeof(GLfloat)))
+      glEnableVertexAttribArray(2)
+      glVertexAttribPointer(3, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(GLfloat), cast[pointer](12 * sizeof(GLfloat)))
+      glEnableVertexAttribArray(3)
+
+      # render
+      glDrawArrays(GL_TRIANGLES, 0, (len(vertices)).GLsizei)
+
+      # unbind the buffer
+      glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+
+  withGraphics:
+    # unbind the texture
+    glBindTexture(GL_TEXTURE_2D, 0)
+
+    # reset shader
+    glUseProgram(startProg.GLuint)
+
+    # update pqueue
+    #pqueue = @[]
+    #for qe in queue:
+    #  pqueue &= hash(qe)
+
+    # reset queue
+    queue = initSinglyLinkedList[QueueEntry]()
+    textureScissor = Rect()
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+  eventBlitEnd.send()

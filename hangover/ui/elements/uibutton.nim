@@ -21,6 +21,7 @@ type
     font_scale_mult*: float32
     action*: UIAction
     text*: UIField[string]
+    focus_text*: UIField[string]
 
     icon*: Sprite
     icon_toggle*: Sprite
@@ -35,6 +36,7 @@ type
     pressed*: bool
     color*: UIField[Color]
     text_color*: UIField[Color]
+    pad*: float32
 
 var
   buttonHoverSound*: Sound
@@ -103,7 +105,7 @@ method draw*(b: UIButton, parentRect: Rect) =
     if b.focused and b.focused_sprite != nil:
       sprite = b.focused_sprite
 
-  var contrast = false
+  var contrast = true
 
   # if the button has a uiSprite draw it
   if sprite != nil:
@@ -111,10 +113,17 @@ method draw*(b: UIButton, parentRect: Rect) =
     contrast = not contrast
 
   let
-    text = b.text.value
+    focus_text = b.focus_text.value
+
+    text = if focus_text != "" and b.focused: focus_text
+           else: b.text.value
 
     base_text_size = b.font.sizeText(text)
-    max_scale = bounds.width / base_text_size.x * 0.9
+    max_scale = min(
+      (bounds.width - 2.0 * b.pad * uiElemScale) / base_text_size.x * 0.9,
+      (bounds.height - 2.0 * b.pad * uiElemScale) / base_text_size.y * 0.9,
+    )
+
     text_scale = min(b.font_scale_mult * uiElemScale, max_scale)
     text_size = base_text_size * text_scale
 
@@ -144,7 +153,6 @@ method draw*(b: UIButton, parentRect: Rect) =
       0,
       newVector2(icon_size),
       color = color,
-      contrast = ContrastEntry(mode: if contrast: fg else: bg),
     )
 
   if b.icon != nil:

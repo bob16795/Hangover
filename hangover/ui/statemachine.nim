@@ -1,7 +1,7 @@
 import ../core/events
 import options
 
-createEvent(EVENT_FSM_CHANGE)
+createEvent[HSlice[int, int]] eventFsmChange
 
 type
   StateMachine*[S] = object
@@ -69,7 +69,8 @@ proc update*(sm: var StateMachine) =
     var id = sm.flag.get()
     sm.flag = none[int]()
 
-    var data = [sm.currentState, sm.currentState]
+    let start = sm.currentState
+
     for i in 0..<sm.states[sm.currentState].conds.len:
       if sm.states[sm.currentState].conds[i].id == id:
         sm.states[sm.currentState].conds[i].value = true
@@ -77,15 +78,21 @@ proc update*(sm: var StateMachine) =
       sm.currentState = sm.states[sm.currentState].checkCondsNext().get
     for i in 0..<sm.states[sm.currentState].conds.len:
       sm.states[sm.currentState].conds[i].value = false
-    if sm.currentState != data[1]:
-      data[1] = sm.currentState
-      sendEvent(EVENT_FSM_CHANGE, addr data)
+    if sm.currentState != start:
+      eventFsmChange.send((start.int)..(sm.currentState.int))
 
 proc contains*[S](states: set[S], sm: StateMachine[S]): bool =
   sm.currentState in states
 
-proc `currentState=`*[S](sm: var StateMachine[S], state: S) =
+proc forceState*[S](sm: var StateMachine[S], state: S) =
   sm.currentState = state
+
+proc `currentState=`*[S](sm: var StateMachine[S], state: S) =
+  if sm.currentState != state:
+    let start = sm.currentState
+    sm.currentState = state
+
+    eventFsmChange.send(start.int..state.int)
 
 proc getState*[S](sm: StateMachine[S]): S =
   sm.currentState

@@ -3,6 +3,7 @@ import hangover/ui/elements/uibutton
 import hangover/ui/elements/uislider
 import hangover/ui/elements/uipanel
 import hangover/ui/elements/uigroup
+import hangover/ui/elements/uiratio
 import hangover/ui/elements/uidynamic
 import hangover/ui/elements/uiimage
 import hangover/ui/elements/uiinput
@@ -42,6 +43,7 @@ export uitext
 export uiinput
 export uipanel
 export uigroup
+export uiratio
 export uiimage
 export uislider
 export uibutton
@@ -63,12 +65,14 @@ type
     borderLeft
     borderRight
 
-  UIManager* {.acyclic.} = object
+  UIManager* = ref object
     ## a ui manager, stores ui elements
     elements*: seq[UIElement]
     size*: Vector2
     mousePos: Vector2
     scale*: float32
+    elemScaleMult*: float32
+    spriteScaleMult*: float32
     aspect*: float32
 
     fbo*: GLuint
@@ -78,10 +82,12 @@ type
 
     border*: array[UIBorder, int]
 
+createEvent[void] eventStartUiDraw, {hideLogs}
+createEvent[void] eventEndUiDraw, {hideLogs}
+
 var
   um*: UIManager
   ## The ui manager
-  dragProc*: proc(done: bool)
   uiTransparency*: float32
   uiWidthTarget*: float32
 
@@ -108,91 +114,64 @@ proc uiHeight*(): float32 =
 #  if result > TARG_HEIGHT / 2 * 3:
 #    result -= TARG_HEIGHT / 2
 
-proc mouseMove(data: pointer): bool {.cdecl.} =
-  ## processes a mouse move event
-
-  # get the event data
-  var pos = cast[ptr tuple[x, y: float64]](data)[]
-
-  let
-    uiscaledWidth = uiWidth() / um.scale
-    uiSize = newPoint(uiScaledWidth.int, (um.aspect * uiScaledWidth).int)
-
-  pos.x -= um.border[borderLeft].float32
-  pos.y -= um.border[borderTop].float32
-
-  pos.x /= (um.size.x - um.border[borderLeft].float32 - um.border[borderRight].float32) / uiSize.x.float32
-  pos.y /= (um.size.y - um.border[borderTop].float32 - um.border[borderBottom].float32) / uiSize.y.float32
-
-  # update the ui mouse position
-  um.mousePos = newVector2(pos.x, pos.y)
-
-  # run check hover to update ui elements
-  for e in um.elements:
-    e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
-
-  # if the mouse is draging something update it
-  if dragProc != nil:
-    dragProc(false)
-
-proc mouseClick(data: pointer): bool {.cdecl.} =
-  ## processes a click event
-
-  # get the event data
-  let btn = cast[ptr int](data)[]
-
-  # stop input if its active
-  sendEvent(EVENT_STOP_LINE_ENTER, nil)
-
-  # update drag
-  for ei in 0..<len um.elements:
-    let e = um.elements[ei]
-    e.click(btn, false)
-    if e.propagate():
-      capture e:
-        dragProc = (done: bool) => e.drag(btn, done)
-
 proc propagateUI*() = 
   for e in um.elements:
     if not e.isActive: continue
     discard e.propagate()
 
-proc mouseRel(data: pointer): bool {.cdecl.} =
-  # update drag to nothing
-  if dragProc != nil:
-    dragProc(true)
-  dragProc = nil
-
-proc mouseScroll(data: pointer): bool {.cdecl.} =
-  let offset = cast[ptr Vector2](data)[]
-
-  for ei in 0..<len um.elements:
-    let e = um.elements[ei]
-    e.scroll(offset)
-
-    e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
-
-proc resizeUI(data: pointer): bool {.cdecl.} =
-  ## resizes the ui to the screen size
-
-  # get the event data
-  let size = cast[ptr tuple[x, y: int32]](data)[]
-  if size.x != 0 and size.y != 0:
-    um.size = newVector2(size.x.float32, size.y.float32)
-  
 proc initUIManager*(size: Point) =
   ## creates a new UIManager
+  um = UIManager()
 
   # set the size
   um.size = newVector2(size.x.float32, size.y.float32)
   um.scale = 1.0
+  um.elemScaleMult = 1.0
+  um.spriteScaleMult = 1.0
 
   # attach events
-  createListener(EVENT_MOUSE_MOVE, mouseMove)
-  createListener(EVENT_MOUSE_CLICK, mouseClick)
-  createListener(EVENT_MOUSE_RELEASE, mouseRel)
-  createListener(EVENT_MOUSE_SCROLL, mouseScroll)
-  createListener(EVENT_RESIZE, resizeUI)
+  eventMouseMove.listen do (data: Vector2) -> bool:
+    var pos = data
+
+    let
+      uiScaledWidth = uiWidth() / um.scale
+      uiSize = newPoint(uiScaledWidth.int, (um.aspect * uiScaledWidth).int)
+
+    pos.x -= um.border[borderLeft].float32
+    pos.y -= um.border[borderTop].float32
+
+    pos.x /= (um.size.x - um.border[borderLeft].float32 - um.border[borderRight].float32) / uiSize.x.float32
+    pos.y /= (um.size.y - um.border[borderTop].float32 - um.border[borderBottom].float32) / uiSize.y.float32
+  
+    # update the ui mouse position
+    um.mousePos = newVector2(pos.x, pos.y)
+
+    # run check hover to update ui elements
+    for e in um.elements:
+      e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
+      e.drag(0, false)
+
+  eventMouseClick.listen do (button: int) -> bool:
+    # stop input if its active
+    eventStopLineEnter.send
+
+    # update drag
+    for e in um.elements.mitems:
+      e.click(button, false)
+
+  eventMouseRelease.listen do (button: int) -> bool:
+    for e in um.elements:
+      e.drag(button, true)
+
+  eventMouseScroll.listen do (offset: Vector2) -> bool:
+    for e in um.elements.mitems: 
+      e.scroll(offset)
+
+      e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
+
+  eventResize.listen do (size: Point) -> bool:
+    if size.x != 0 and size.y != 0:
+      um.size = newVector2(size.x.float32, size.y.float32)
 
   withGraphics:
     glGenFramebuffers(1, addr um.fbo)
@@ -209,111 +188,125 @@ proc addUIElements*(elems: seq[UIElement]) =
 
 proc drawUI*() =
   ## draws the ui
-  let
-    unscaledSize = newVector2(
-      um.size.x - um.border[borderLeft].float32 - um.border[borderRight].float32,
-      um.size.y - um.border[borderTop].float32 - um.border[borderBottom].float32,
-    )
+  block check:
+    for e in um.elements:
+      if e.isActive:
+        break check
+    return
 
-  um.aspect = unscaledSize.y / unscaledSize.x
+  eventStartUiDraw.send
 
-  let
-    uiscaledWidth = uiWidth() / um.scale
-    uiSize = newPoint(uiScaledWidth.int, (um.aspect * uiScaledWidth).int)
+  try:
+    let
+      unscaledSize = newVector2(
+        um.size.x - um.border[borderLeft].float32 - um.border[borderRight].float32,
+        um.size.y - um.border[borderTop].float32 - um.border[borderBottom].float32,
+      )
 
-  if uiSize != um.aSize.toPoint() and uiSize.toVector2().distanceSq(newVector2(
-      0, 0)) > 128 * 128:
+    um.aspect = unscaledSize.y / unscaledSize.x
+
+    let
+      uiscaledWidth = uiWidth() / um.scale
+      uiSize = newPoint(uiScaledWidth.int, (um.aspect * uiScaledWidth).int)
+
+    if uiSize != um.aSize.toPoint() and
+       uiSize.toVector2().distanceSq(newVector2(0, 0)) > 128 * 128:
+      withGraphics:
+        try:
+          glBindFramebuffer(GL_FRAMEBUFFER, um.fbo)
+          glBindTexture(GL_TEXTURE_2D, um.renderTexture)
+          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, uiSize.x.GLsizei,
+                       uiSize.y.GLsizei, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+          glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                 GL_TEXTURE_2D, um.renderTexture, 0)
+
+          glBindRenderbuffer(GL_RENDERBUFFER, um.depthTexture);
+          # glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, uiSize.x.GLsizei,
+          #                        uiSize.y.GLsizei)
+          # glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+          #                           GL_RENDERBUFFER, um.depthTexture)
+
+          if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+            LOG_ERROR "ho->ui", "failed to create ui fb"
+            return
+
+          um.aSize = uiSize.toVector2()
+
+          uiElemScale = um.scale * um.elemScaleMult * min(1, um.aSize.y / unscaledSize.y)
+          uiSpriteScaleMult = um.scale * um.spriteScaleMult * min(1, um.aSize.y / unscaledSize.y)
+
+          LOG_TRACE "ho->ui", "resize UI buffer to", &"{um.aSize.x}x{um.aSize.y}"
+        except Exception as ex:
+          LOG_ERROR $ex[]
+        finally:
+          glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    ## draw the ui
+    finishDraw()
+
     withGraphics:
-      try:
-        glBindFramebuffer(GL_FRAMEBUFFER, um.fbo)
-        glBindTexture(GL_TEXTURE_2D, um.renderTexture)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA.GLint, uiSize.x.GLsizei,
-                  uiSize.y.GLsizei, 0, GL_RGBA, GL_UNSIGNED_BYTE, nil)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, um.renderTexture, 0)
+      glBindFramebuffer(GL_FRAMEBUFFER, um.fbo)
+    setCameraSize(um.aSize)
 
-        glBindRenderbuffer(GL_RENDERBUFFER, um.depthTexture);
-        # glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, uiSize.x.GLsizei,
-        #                        uiSize.y.GLsizei)
-        # glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-        #                           GL_RENDERBUFFER, um.depthTexture)
+    withGraphics:
+      glClearColor(0, 0, 0, 0)
+      glClear(GL_COLOR_BUFFER_BIT)
 
-        if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
-          LOG_ERROR "ho->ui", "failed to create ui fb"
-          return
-
-        um.aSize = uiSize.toVector2()
-      
-        LOG_INFO "ho->ui", "resize UI to ", &"{um.aSize.x}x{um.aSize.y}"
-      except Exception as ex:
-        LOG_ERROR $ex[]
-      finally:
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
-
-  ## draw the ui
-  finishDraw()
-
-  withGraphics:
-    glBindFramebuffer(GL_FRAMEBUFFER, um.fbo)
-  setCameraSize(um.aSize.x.int32, um.aSize.y.int32)
-
-  withGraphics:
-    glClearColor(0, 0, 0, 0)
-    glClear(GL_COLOR_BUFFER_BIT)
-
-  var postpone: Option[UIElement]
+    var postpone: Option[UIElement]
   
-  rectUpdate = true
+    rectUpdate = true
 
-  for e in um.elements:
-    if e.focused:
-      postpone = some(e)
-    else:
-      e.draw(newRect(newVector2(0, 0), um.aSize))
+    for e in um.elements:
+      if e.focused:
+        postpone = some(e)
+      else:
+        e.draw(newRect(newVector2(0, 0), um.aSize))
 
-  if postpone.is_some():
-    postpone.get().draw(newRect(newVector2(0, 0), um.aSize))
+    if postpone.is_some():
+      postpone.get().draw(newRect(newVector2(0, 0), um.aSize))
 
-  rectUpdate = false
+    rectUpdate = false
 
-  for e in um.elements:
-    e.drawTooltip(um.mousePos, um.aSize.toPoint())
+    for e in um.elements:
+      e.drawTooltip(um.mousePos, um.aSize.toPoint())
 
-  if uiDebug:
-    for top in um.elements:
-      top.drawDebug(newRect(newVector2(0, 0), um.aSize))
+    if uiDebug:
+      for top in um.elements:
+        top.drawDebug(newRect(newVector2(0, 0), um.aSize))
 
-      if top.isActive:
-        for e in top.getElems():
-          if e.focused:
-            drawCircleOutline(e.navCenter, 25, 10, COLOR_BLUE)
-          drawCircleOutline(e.navCenter, 25, 5, COLOR_RED)
-          for f in e.focusDir:
-            if f == nil: continue
+        if top.isActive:
+          for e in top.getElems():
+            if e.focused:
+              drawCircleOutline(e.navCenter, 25, 10, COLOR_BLUE)
+            drawCircleOutline(e.navCenter, 25, 5, COLOR_RED)
+            for f in e.focusDir:
+              if f == nil: continue
 
-            if e.focused or f.focused:
-              drawLine(e.navCenter, f.navCenter, 10, COLOR_BLUE)
-            drawLine(e.navCenter, f.navCenter, 5, COLOR_RED)
+              if e.focused or f.focused:
+                drawLine(e.navCenter, f.navCenter, 10, COLOR_BLUE)
+              drawLine(e.navCenter, f.navCenter, 5, COLOR_RED)
 
-    drawCircleOutline(um.mousePos, 10, 5, COLOR_CYAN)
+      drawCircleOutline(um.mousePos, 10, 5, COLOR_CYAN)
 
-  finishDraw()
+    finishDraw()
 
-  withGraphics:
-    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+    withGraphics:
+      glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-  setCameraSize(um.size.x.int32, um.size.y.int32)
+    setCameraSize(um.size)
 
-  let tex = Texture(tex: um.renderTexture)
-  tex.draw(
-    newRect(0, 0, 1, 1),
-    newRect(um.border[borderLeft], um.border[borderTop], unscaledSize.x, unscaledSize.y),
-    flip = [false, true],
-    color = newColor(255, 255, 255, (255 * uiTransparency).uint8),
-    contrast = ContrastEntry(mode: noContrast),
-  )
+    let tex = Texture(tex: um.renderTexture)
+    tex.draw(
+      newRect(0, 0, 1, 1),
+      newRect(um.border[borderLeft], um.border[borderTop], unscaledSize.x, unscaledSize.y),
+      flip = [false, true],
+      color = newColor(255, 255, 255, (255 * uiTransparency).uint8),
+      contrast = ContrastEntry(mode: noContrast),
+    )
+  finally:
+    eventEndUiDraw.send
 
 proc isUITooltip*(): bool =
   for e in um.elements:
