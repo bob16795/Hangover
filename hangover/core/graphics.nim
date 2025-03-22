@@ -35,17 +35,19 @@ proc finishDraw*()
 var
   cameraPos: Vector2
   cameraSize*: Vector2
-  shaders: seq[Shader]
+  projection: Mat4[float32]
 
 proc setCameraPos*(pos: Vector2) =
   cameraPos = pos
 
-  var projection = ortho(cameraPos.x, cameraPos.x + cameraSize.x.float, cameraPos.y +
-      cameraSize.y.float, cameraPos.y, -100, 100)
-  fontProgram.setParam("projection", projection.caddr)
-  textureProgram.setParam("projection", projection.caddr)
-  for si in 0..<len shaders:
-    shaders[si].setParam("projection", projection.caddr)
+  projection = ortho(
+    cameraPos.x, cameraPos.x + cameraSize.x.float,
+    cameraPos.y + cameraSize.y.float, cameraPos.y,
+    -100, 100
+  )
+
+proc setFontScreen*(screen: Rect) =
+  fontScreen = screen
 
 proc setCameraSize*(size: Vector2) =
   # update the viewport in glfm
@@ -57,32 +59,27 @@ proc setCameraSize*(size: Vector2) =
   cameraSize = size
 
   # update shader matrices
-  var projection = ortho(
-    cameraPos.x,
-    cameraPos.x + size.x,
-    cameraPos.y + size.y,
-    cameraPos.y,
+  projection = ortho(
+    cameraPos.x, cameraPos.x + size.x,
+    cameraPos.y + size.y, cameraPos.y,
     -100, 100
   )
-  fontProgram.setParam("projection", projection.caddr)
-  textureProgram.setParam("projection", projection.caddr)
-  for si in 0..<len shaders:
-    shaders[si].setParam("projection", projection.caddr)
   textureSize.x = size.x
   textureSize.y = size.y
-
-proc regShader*(shader: Shader) =
-  shaders &= shader
 
 proc scaleBuffer*(scale: float32) =
   ## scales the buffer
 
   withGraphics:
     # update the shader matrices
-    var projection = scale(ortho(cameraPos.x, cameraPos.x + cameraSize.x.float,
-        cameraPos.y + cameraSize.y.float, cameraPos.y, -100, 100), scale)
-    fontProgram.setParam("projection", projection.caddr)
-    textureProgram.setParam("projection", projection.caddr)
+    projection = scale(
+      ortho(
+        cameraPos.x, cameraPos.x + cameraSize.x.float,
+        cameraPos.y + cameraSize.y.float, cameraPos.y,
+        -100, 100
+      ),
+      scale
+    )
 
     # update viewport
     glViewport(0, 0, GLsizei(cameraSize.x), GLsizei(cameraSize.y))
@@ -124,7 +121,7 @@ proc initGraphics*(data: AppData): GraphicsContext =
   initFT()
 
   # attach resize listener
-  eventResize.listen do (size: Point) -> bool: 
+  eventResize.listen do (size: Point) -> bool:
     ## called when window is resized
     setCameraSize(size.toVector2())
 
@@ -173,6 +170,7 @@ proc finishRender*(ctx: GraphicsContext) =
   eventFrameStart.send()
 
   clearBuffer(ctx, ctx.color)
+  setFontScreen(newRect(cameraPos, cameraSize))
 
 proc isFullscreen*(ctx: GraphicsContext): bool =
   ## returns true if fullscreen
@@ -248,6 +246,8 @@ proc setCursorPos*(pos: Vector2) =
     `cursorPos=`(globalCtx.window, (x: pos.x.float64, y: pos.y.float64))
 
 proc finishDraw*() =
+  drawFontTips()
+
   eventBlitStart.send()
 
   ## renders the texture queue
@@ -268,8 +268,16 @@ proc finishDraw*() =
 
     # set texture
     glActiveTexture(GL_TEXTURE0)
+        
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-  var i = 0
+  var
+    i = 0
+    contrast: float32 = 0
+    shader = startProg
+    shaderContrast = false
+    mul = false
+    upProjection = false
 
   # redraw needed items
   for q in queue.mitems():
@@ -282,21 +290,37 @@ proc finishDraw*() =
     let
       vertices = q.verts
 
+    let
+      newShaderContrast = q.contrast.mode == ContrastMode.texture
+      newShader = if newShaderContrast: q.shader.id
+                  else: q.shader.contrast_id
+
+      newContrast = case q.contrast.mode:
+        of fg, texture: contrastDiff
+        of bg: -contrastDiff
+        of noContrast: 0
+    
+    if newShader != shader.GLuint:
+      shader = newShader.GLint
+      contrast = newContrast
+      q.shader.use(newShaderContrast)
+      q.shader.setParam("contrast", addr contrast)
+      upProjection = false
+
+    if not upProjection:
+      q.shader.setParam("projection", addr projection)
+      upProjection = true
+
     # use the correct program
-    q.shader.use()
     for param in q.params:
       q.shader.setParam(param.name, param.data)
 
-    let contrast = case q.contrast.mode:
-      of fg, texture:
-        contrastDiff
-      of bg:
-        -contrastDiff
-      of noContrast:
-        0
+    if newContrast != contrast:
+      contrast = newContrast
+      q.shader.setParam("contrast", addr contrast)
 
-    q.shader.setParam("mode", addr colorMode)
-    q.shader.setParam("contrast", addr contrast)
+    when defined debug:
+      q.shader.setParam("mode", addr colorMode)
 
     var over: GLint = 0
 
@@ -307,8 +331,6 @@ proc finishDraw*() =
           glBindTexture(GL_TEXTURE_2D, q.tex.contrast.get())
           glActiveTexture(GL_TEXTURE0)
           over = 1
-
-    q.shader.setParam("contrast_override", addr over)
 
     withGraphics:
       glUseProgram(q.shader.id)
@@ -324,11 +346,12 @@ proc finishDraw*() =
           q.scissor.height.GLint,
         )
 
-      if q.mul:
-        glBlendFunc(GL_DST_COLOR, GL_ZERO)
-        # glBlendFunc(GL_ZERO, GL_SRC_COLOR)
-      else:
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+      if mul != q.mul:
+        mul = q.mul
+        if mul:
+          glBlendFunc(GL_DST_COLOR, GL_ZERO)
+        else:
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
       # bind the queue items texture
       glBindTexture(GL_TEXTURE_2D, q.tex.tex)
@@ -360,22 +383,18 @@ proc finishDraw*() =
       # unbind the buffer
       glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-
   withGraphics:
     # unbind the texture
     glBindTexture(GL_TEXTURE_2D, 0)
 
     # reset shader
-    glUseProgram(startProg.GLuint)
-
-    # update pqueue
-    #pqueue = @[]
-    #for qe in queue:
-    #  pqueue &= hash(qe)
+    if shader != startProg:
+      glUseProgram(startProg.GLuint)
 
     # reset queue
     queue = initSinglyLinkedList[QueueEntry]()
     textureScissor = Rect()
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    if mul:
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
   eventBlitEnd.send()

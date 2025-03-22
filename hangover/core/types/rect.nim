@@ -38,18 +38,19 @@ func newRect*(position, size: Vector2): Rect =
 
 func fix*(r: Rect): Rect =
   ## fixes a rects bounds if negative
-  result = r
-  if result.width < 0:
-    result.width *= -1
-    result.x -= result.width
-  if result.height < 0:
-    result.height *= -1
-    result.y -= result.height
+  newRect(
+    if r.width < 0: r.x + r.width else: r.x,
+    if r.height < 0: r.y + r.height else: r.y,
+    abs(r.width),
+    abs(r.height),
+  )
 
 func size*(r: Rect): Vector2 =
   ## gets the size of a rectangle
-  result.x = r.width
-  result.y = r.height
+  newVector2(
+    r.width,
+    r.height,
+  )
 
 func `size=`*(r: var Rect, size: Vector2) =
   ## sets the size of a rectangle
@@ -58,8 +59,10 @@ func `size=`*(r: var Rect, size: Vector2) =
 
 func location*(r: Rect): Vector2 =
   ## gets the location of a rectangle
-  result.x = r.x
-  result.y = r.y
+  newVector2(
+    r.x,
+    r.y,
+  )
 
 func `location=`*(r: var Rect, p: Vector2) =
   ## sets the location of a rectangle
@@ -68,39 +71,55 @@ func `location=`*(r: var Rect, p: Vector2) =
 
 func offset*(r: Rect, offset: Vector2): Rect =
   ## moves a rectangle
-  result.x = r.x + offset.x
-  result.y = r.y + offset.y
-  result.width = r.width
-  result.height = r.height
+  newRect(
+    r.x + offset.x,
+    r.y + offset.y,
+    r.width,
+    r.height,
+  )
+
+func sizeOffset*(r: Rect, offset: Vector2): Rect =
+  ## moves a rectangle
+  newRect(
+    r.x,
+    r.y,
+    r.width + offset.x,
+    r.height + offset.y,
+  )
 
 func center*(r: Rect): Vector2 =
   ## geets the center of a rectangle
-  return r.location + r.size / 2
+  r.location + r.size / 2
 
 func clamp*(v: Vector2, r: Rect): Vector2 =
   ## clamps a vector2 into a rectangle
-  result.x = v.x.clamp(r.x, r.x + r.width)
-  result.y = v.y.clamp(r.y, r.y + r.height)
+  newVector2(
+    v.x.clamp(r.x, r.x + r.width),
+    v.y.clamp(r.y, r.y + r.height),
+  )
 
 func contains*(r: Rect, v: Vector2): bool =
   ## checks if a vector2 is in a rectangle
-  return r.x < v.x and
-         r.y < v.y and
-         r.x + r.width > v.x and
-         r.y + r.height > v.y
+  r.x < v.x and
+  r.y < v.y and
+  r.x + r.width > v.x and
+  r.y + r.height > v.y
 
 func contains*(r: Rect, v: Rect): bool =
   ## checks aabb for a rectangle
   return (r.x < v.x + v.width and r.x + r.width > v.x) and
          (r.y < v.y + v.height and r.y + r.height > v.y)
 
-func scale*(r: Rect, scale: float32): Rect =
-  result = r
+func scale*(r: Rect, scale: Vector2): Rect =
+  newRect(
+    r.x * scale.x,
+    r.y * scale.y,
+    r.width * scale.x,
+    r.height * scale.y,
+  )
 
-  result.x *= scale
-  result.y *= scale
-  result.width *= scale
-  result.height *= scale
+func scale*(r: Rect, scale: float32): Rect =
+  r.scale(newVector2(scale))
 
 func expand*(r: Rect, border: float32): Rect =
   newRect(

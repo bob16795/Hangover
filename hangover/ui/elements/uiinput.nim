@@ -8,17 +8,19 @@ import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
 import options
 import sugar
+import oids
 
 #TODO: comment
 
 type
   UIInput* = ref object of UIElement
-    getText*: () -> string
-    setText*: (string) -> void
+    getText*: proc(): string {.gcsafe.}
+    setText*: proc(text: string) {.gcsafe.}
     hint*: string
     font*: Font
     fontMult*: float32
     active*: bool
+    eventOid*: Oid
 
 var tmpText = ""
 

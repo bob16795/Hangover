@@ -46,6 +46,11 @@ func `/`*(p: Vector2, i: int | int16 | int32 | float | float32 | float64): Vecto
   result.x /= i.float32
   result.y /= i.float32
 
+func `/`*(i: int | int16 | int32 | float | float32 | float64, p: Vector2): Vector2 =
+  result = p
+  result.x = i.float32 / result.x
+  result.y = i.float32 / result.y
+
 func `-`*(p: Vector2): Vector2 =
   result = p * -1
 
@@ -102,6 +107,10 @@ func rotated*(p: Vector2, phi: int | int16 | int32 | float | float32 | float64):
 func rotate*(p: var Vector2, phi: int | int16 | int32 | float | float32 | float64) =
   p = p.rotated(phi)
 
+func round*(p: Vector2): Vector2 =
+  result.x = p.x.round
+  result.y = p.y.round
+
 func toPoint*(p: Vector2): Point =
   result.x = p.x.cint
   result.y = p.y.cint
@@ -111,7 +120,7 @@ func toVector2*(p: Point): Vector2 =
   result.y = p.y.float32
 
 func normal*(p: Vector2): Vector2 =
-  let mag = p.distance(newVector2(0, 0)).float32
+  let mag = p.mag
   if mag == 0: return newVector2(0, 0)
   result.x = p.x / mag
   result.y = p.y / mag
@@ -119,17 +128,16 @@ func normal*(p: Vector2): Vector2 =
   if result.y.isNaN: result.y = 0
 
 func dot*(a, b: Vector2): float32 =
-  return a.x * b.x + a.y * b.y
+  a.x * b.x + a.y * b.y
 
 func `$`*(v: Vector2): string =
-  result = "(" & $v.x & ", " & $v.y & ")"
+  "(" & $v.x & ", " & $v.y & ")"
 
 func lerp*(a, b: Vector2, pc: float): Vector2 =
-  result = a + (b - a) * pc
+  a + (b - a) * pc
 
 func clampMag*(v: Vector2, min: float32, max: float32): Vector2 =
-  let length = distance(v, Vector2())
-  let mult = clamp(length, min, max) / length
-  return v * mult
+  if v.mag == 0: return Vector2()
+  v.normal * clamp(v.mag, min, max)
 
 {.pop.}

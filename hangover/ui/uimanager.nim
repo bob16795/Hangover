@@ -76,9 +76,10 @@ type
     aspect*: float32
 
     fbo*: GLuint
-    aSize: Vector2
+    aSize*: Vector2
     renderTexture: GLuint
     depthTexture: GLuint
+    bg*: Color
 
     border*: array[UIBorder, int]
 
@@ -249,6 +250,11 @@ proc drawUI*() =
     withGraphics:
       glBindFramebuffer(GL_FRAMEBUFFER, um.fbo)
     setCameraSize(um.aSize)
+    setFontScreen(newRect(
+      um.border[borderLeft].float32 / unscaledSize.x * um.aSize.x,      
+      um.border[borderTop].float32 / unscaledSize.y * um.aSize.y,      
+      um.aSize,
+    ))
 
     withGraphics:
       glClearColor(0, 0, 0, 0)
@@ -305,6 +311,11 @@ proc drawUI*() =
       color = newColor(255, 255, 255, (255 * uiTransparency).uint8),
       contrast = ContrastEntry(mode: noContrast),
     )
+    
+    setFontScreen(newRect(
+      0, 0, 
+      um.size,
+    ))
   finally:
     eventEndUiDraw.send
 

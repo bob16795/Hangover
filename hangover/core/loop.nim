@@ -3,10 +3,7 @@ import types/vector2
 import types/color
 import times
 import locks
-when not defined(ginGLFM):
-  import glfw
-else:
-  import glfm
+import glfw
 
 import logging
 export LOG_INFO
@@ -14,10 +11,7 @@ export LOG_INFO
 type
   GraphicsContext* = ref object
     ## stores some random graphics data for a loop
-    when not defined(ginGLFM):
-      window*: Window          ## the game window
-    else:
-      window*: ptr GLFMDisplay ## the glfm display
+    window*: Window      ## the game window
     size*: Vector2             ## the screen dimensions
     pos*: Vector2              ## the screen position
     color*: Color              ## color data
@@ -25,26 +19,27 @@ type
 
   Loop* = object
     ## stores data and runs the main game loop
-    targetFPS*: float64
-    dt: float64                    ## delta time
-    fixedUpdateTime*: float64
-    fixedAccumulator: float64
+    targetFPS*: float32
+    dt: float32                    ## delta time
+    fixedUpdateTime*: float32
+    fixedAccumulator: float32
     lastTime*, currentTime*: float32 ## for calculating dt
     done*: bool                    ## true if the loop is over
-    updateProc*: (dt: float, delayed: bool) -> bool
-    fixedUpdateProc*: (dt: float) -> bool
-    drawProc*: (ctx: var GraphicsContext, dt: float32) -> void
-
+    updateProc*: proc (dt: float, delayed: bool)
+    fixedUpdateProc*: proc (dt: float)
+    drawProc*: proc (ctx: var GraphicsContext, dt: float32)
+          
 var
   globalCtx*: GraphicsContext
 
-proc lockGraphics(c: var GraphicsContext) =
-  c.lock.acquire()
-  c.window.makeContextCurrent()
 
-proc unlockGraphics(c: var GraphicsContext) =
+proc lockGraphics(ctx: var GraphicsContext) =
+  ctx.lock.acquire()
+  ctx.window.makeContextCurrent()
+
+proc unlockGraphics(ctx: var GraphicsContext) =
   detachCurrentContext()
-  c.lock.release()
+  ctx.lock.release()
 
 template withGraphics*(body: untyped) =
   globalCtx.lockGraphics()
@@ -69,10 +64,7 @@ proc forceDraw*(loop: var Loop, ctx: var GraphicsContext) =
   let initTime = loop.lastTime
 
   loop.lastTime = loop.currentTime
-  when not defined(ginGLFM):
-    loop.currentTime = glfw.getTime()
-  when defined(hangui) or defined(ginGLFM):
-    loop.currentTime = cpuTime()
+  loop.currentTime = glfw.getTime()
 
   if loop.currentTime - loop.lastTime > loop.targetFPS:
     if loop.lastTime != 0:
@@ -91,10 +83,7 @@ proc update*(loop: var Loop, ctx: var GraphicsContext) =
 
   # calculate dt
   loop.lastTime = loop.currentTime
-  when not defined(ginGLFM):
-    loop.currentTime = glfw.getTime()
-  when defined(hangui) or defined(ginGLFM):
-    loop.currentTime = cpuTime()
+  loop.currentTime = glfw.getTime()
 
   if loop.lastTime != 0:
     loop.dt = loop.currentTime - loop.lastTime
@@ -103,14 +92,13 @@ proc update*(loop: var Loop, ctx: var GraphicsContext) =
     loop.fixedAccumulator += loop.dt
 
     while loop.fixedAccumulator >= loop.fixedUpdateTime:
-      if loop.fixedupdateproc(loop.fixedUpdateTime):
-        loop.done = true
+      loop.fixedupdateproc(loop.fixedUpdateTime)
+
       loop.fixedAccumulator -= loop.fixedUpdateTime
 
   # update the game
   if loop.updateProc != nil:
-    if loop.updateproc(loop.dt, false):
-      loop.done = true
+    loop.updateproc(loop.dt, false)
 
   # render the game
   loop.drawProc(ctx, loop.fixedAccumulator / loop.fixedUpdateTime)
@@ -130,14 +118,12 @@ proc update*(loop: var Loop, ctx: var GraphicsContext, time: cdouble) =
     loop.fixedAccumulator += loop.dt
 
     while loop.fixedAccumulator >= loop.fixedUpdateTime:
-      if loop.fixedupdateproc(loop.fixedUpdateTime):
-        loop.done = true
+      loop.fixedupdateproc(loop.fixedUpdateTime)
       loop.fixedAccumulator -= loop.fixedUpdateTime
 
   # update the game
   if loop.updateProc != nil:
-    if loop.updateproc(loop.dt, false):
-      loop.done = true
+    loop.updateproc(loop.dt, false)
 
   # render the game
   loop.drawProc(ctx, loop.fixedAccumulator / loop.fixedUpdateTime)

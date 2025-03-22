@@ -11,7 +11,9 @@ import hangover/core/logging
 import unicode
 import tables
 import hangover/rendering/sprite
+import hangover/rendering/shapes
 import hangover/core/loop
+import hangover/core/events
 import options
 import locks
 
@@ -23,6 +25,7 @@ type
   Emoji* = object
     sprite: Sprite
     color: bool
+    tooltip: Option[string]
 
   Font* = ref object
     size*: int
@@ -142,9 +145,26 @@ void main()
     }
 }
 """
+
+type
+  TooltipData* = object
+    position: Rect
+    scale: float32
+    text: string
+    font: Font
+
 var
+  fontTooltips*: seq[ToolTipData]
   ft: FT_Library
+  fontScreen*: Rect 
   fontProgram*: Shader
+  fontMousePos: Vector2
+
+eventMouseMove.listen do (pos: Vector2) -> bool:
+  fontMousePos = newVector2(
+    (pos.x - fontScreen.x) / fontScreen.width,
+    (pos.y - fontScreen.y) / fontScreen.height,
+  )
 
 proc initFT*() =
   if init(ft).int != 0:
@@ -318,17 +338,29 @@ proc draw*(
           h = (font.size.float32 * 0.8) * scale
           xpos = pos.x + font.size.float32 * 0.1 * scale
           ypos = pos.y + font.size.float32 * 0.2 * scale
-
-        var clr = COLOR_WHITE.withAlpha(color.a)
-
-        if font.emojis[c.Rune].color:
-          clr = color
+          clr = if font.emojis[c.Rune].color: color
+                else: COLOR_WHITE.withAlpha(color.a)
+          textBounds = newRect(
+            xpos.float32 - font.border,
+            ypos.float32 - font.border,
+            w.float32 + 2 * font.border,
+            h.float32 + 2 * font.border,
+          )
 
         ch.draw(
-          newRect(xpos.float32 - font.border, ypos.float32 - font.border, w.float32 + 2 * font.border, h.float32 + 2 * font.border),
+          textBounds,
           color = clr,
           contrast = contrast,
         )
+
+        font.emojis[c.Rune].tooltip.map do (tip: string) -> void:
+          fontTooltips &= TooltipData(
+            text: tip,
+            scale: scale,
+            position: textBounds.offset(-fontScreen.location).scale(1.0 / fontScreen.size),
+            font: font,
+          )
+
         pos.x += font.size.float32 * scale
         pos.x += font.spacing.float32 + (2 * font.border)
 
@@ -370,11 +402,18 @@ proc draw*(
       pos.x += ((ch.advance shr 6).float32 * scale)
       pos.x += font.spacing.float32 + (2 * font.border)
 
-proc setEmoji*(font: Font, emoji: Rune, sprite: Sprite, color: bool = false) =
+proc setEmoji*(
+  font: Font,
+  emoji: Rune,
+  sprite: Sprite,
+  color: bool = false,
+  tip: Option[string] = none[string](),
+) =
   withLock font.emojiLock:
     font.emojis[emoji] = Emoji(
       sprite: sprite,
       color: color,
+      tooltip: tip,
     )
     
 proc addEmoji*(font: var Font): Rune =
@@ -408,3 +447,36 @@ proc freeFont*(self: Font) =
   for t in self.textures:
     t.freeTexture()
   self.emojiLock.deinitLock()
+
+proc drawFontTips*() =
+  for t in fontTooltips:
+    if fontMousePos in t.position:
+      let
+        size = t.font.sizeText(t.text, t.scale)
+        pos = newVector2(
+          fontMousePos.x * fontScreen.size.x,
+          fontMousePos.y * fontScreen.size.y,
+        )
+      drawRectFill(
+        newRect(
+          pos - newVector2(5),
+          size + newVector2(10),
+        ),
+        COLOR_WHITE,
+      )
+      drawRectOutline(
+        newRect(
+          pos - newVector2(5),
+          size + newVector2(10),
+        ),
+        3,
+        COLOR_BLACK,
+      )
+      t.font.draw(
+        t.text,
+        pos,
+        COLOR_BLACK,
+        t.scale,
+      )
+
+  fontTooltips = @[]

@@ -74,8 +74,8 @@ method navigate*(s: UIScroll, dir: UIDir, parent_rect: Rect): bool =
   var
     parent_rect_moved = parent_rect
 
-  parent_rect_moved.x -= s.scrollVis.x
-  parent_rect_moved.y -= s.scrollVis.y
+  parent_rect_moved.x -= s.scrollPos.value.x
+  parent_rect_moved.y -= s.scrollPos.value.y
 
   var bounds = s.bounds.toRect(parent_rect_moved)
 
@@ -100,8 +100,8 @@ method checkHover*(s: UIScroll, parent_rect: Rect, mousePos: Vector2) =
   var
     parent_rect_moved = parent_rect
 
-  parent_rect_moved.x -= s.scrollVis.x
-  parent_rect_moved.y -= s.scrollVis.y
+  parent_rect_moved.x -= s.scrollPos.value.x
+  parent_rect_moved.y -= s.scrollPos.value.y
 
   var
     bounds = s.bounds.toRect(parent_rect_moved)
@@ -211,6 +211,8 @@ method center*(s: UIScroll, parent_rect: Rect): Vector2 =
 
     if e.focused:
       return e.center(bounds)
+    
+  return s.bounds.toRect(parent_rect).center()
 
 method update*(s: UIScroll, parentRect: Rect, mousePos: Vector2, dt: float32, active: bool) =
   if active and s.isActive:
@@ -226,8 +228,8 @@ method update*(s: UIScroll, parentRect: Rect, mousePos: Vector2, dt: float32, ac
 
   var parent_rect_moved = parent_rect
 
-  parent_rect_moved.x -= s.scrollVis.x
-  parent_rect_moved.y -= s.scrollVis.y
+  parent_rect_moved.x -= s.scrollPos.value.x
+  parent_rect_moved.y -= s.scrollPos.value.y
 
   var bounds = s.bounds.toRect(parent_rect_moved)
   var vp = s.bounds.toRect(parent_rect)
@@ -247,25 +249,24 @@ method propagate*(s: UIScroll): bool =
         min_y = e.bounds.YMin + e.bounds.anchorYMin * s.vpHeight
         max_y = e.bounds.YMax + e.bounds.anchorYMax * s.vpHeight
 
-        y = (min_y + max_y) / 2
+        mid_y = (min_y + max_y) / 2
 
-        diff = s.scrollPos.value.y -
-          (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0))
+        targ = mid_y - s.vpHeight / 2
+        yp = if targ < 0: min_y - (s.vpHeight / 2)
+             elif targ > max(s.height - s.vpHeight, 0): max_y - (s.vpHeight / 2)
+             else: targ
 
-        pc = s.vpHeight * 0.1
+      for j in 0..<s.elements.len:
+        s.elements[j].moveCenter(newVector2(0, yp - s.scrollPos.value.y))
 
-      if diff < -pc or diff > pc:
-        for j in 0..<s.elements.len:
-          s.elements[j].moveCenter(newVector2(0, diff))
-
-        if s.isActive:
-          s.scrollPos.value = newVector2(
-            s.scrollPos.value.x,
-            (y - s.vpHeight / 2).clamp(0, max(s.height - s.vpHeight, 0)),
-          )
-          if s.onScroll != nil:
-            s.onScroll(s.scrollPos.value)
-        result = true
+      if s.isActive:
+        s.scrollPos.value = newVector2(
+          s.scrollPos.value.x,
+          yp,
+        )
+        if s.onScroll != nil:
+          s.onScroll(s.scrollPos.value)
+      result = true
 
 method updateTooltip*(s: UIScroll, dt: float32) =
   for e in s.elements:
@@ -280,8 +281,8 @@ method drawDebug*(s: UIScroll, parent_rect: Rect) =
   var
     parent_rect_moved = parent_rect
 
-  parent_rect_moved.x -= s.scrollVis.x
-  parent_rect_moved.y -= s.scrollVis.y
+  parent_rect_moved.x -= s.scrollPos.value.x
+  parent_rect_moved.y -= s.scrollPos.value.y
 
   var
     bounds = s.bounds.toRect(parent_rect_moved)
@@ -298,11 +299,12 @@ method drawDebug*(s: UIScroll, parent_rect: Rect) =
     scroll_bounds.x += scroll_bounds.width
     scroll_bounds.width = 0
 
-  for e in s.elements:
-    e.drawDebug(bounds)
+  withScissor vp.scale(uiScaleMult):
+    for e in s.elements:
+      e.drawDebug(bounds)
 
   let 
-    y = bounds.y + s.scrollPos.value.y 
+    y = bounds.y + s.vpHeight * 2 * (s.scrollPos.value.y) / (s.height - s.vpHeight)
 
   drawLine(
     newVector2(scroll_bounds.x, y),

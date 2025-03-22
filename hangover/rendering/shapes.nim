@@ -1,3 +1,4 @@
+import hangover/core/types/shader
 import hangover/core/types/texture
 import hangover/core/types/vector2
 import hangover/core/types/color
@@ -8,7 +9,44 @@ import opengl
 import math
 
 var
+  shapeProgram*: Shader
   shapeTexture*: Texture
+
+const
+  shapeVertexCode* = """
+layout (location = 0) in vec4 vertex;
+layout (location = 1) in vec4 tintColorIn;
+
+uniform float rotation;
+uniform mat4 projection;
+
+out vec2 texCoords;
+out vec4 tintColor;
+
+void main()
+{
+    gl_Position = projection * vec4(vertex.xy, 1.0, 1.0);
+    texCoords = vertex.zw;
+    tintColor = tintColorIn;
+}
+"""
+  shapeFragmentCode* = """
+in vec2 texCoords;
+in vec4 tintColor;
+
+out vec4 color;
+
+uniform sampler2D text;
+uniform sampler2D contrast_tex;
+uniform int contrast_override;
+uniform int mode;
+uniform float contrast;
+
+void main()
+{
+  color = tintColor;
+}
+"""
 
 proc setupShapeTexture*() =
   let data = [newColor(255, 255, 255)]
@@ -19,31 +57,70 @@ proc setupShapeTexture*() =
       0, GL_RGBA, GL_UNSIGNED_BYTE, addr data)
     glGenerateMipmap(GL_TEXTURE_2D)
 
+  shapeProgram = newShader(shapeVertexCode, shapeFragmentCode)
+  shapeProgram.registerParam("tintColor", SPKFloat4)
+  shapeProgram.registerParam("projection", SPKProj4)
+  shapeProgram.registerParam("rotation", SPKFloat1)
+  shapeProgram.registerParam("contrast", SPKFloat1)
+  shapeProgram.registerParam("contrast_override", SPKInt1)
+  shapeProgram.registerParam("contrast_tex", SPKInt1)
+  shapeProgram.registerParam("mode", SPKInt1)
+
 proc drawRectOutline*(r: Rect, width: int, c: Color, contrast: ContrastEntry = ContrastEntry(mode: noContrast)) =
   block:
     var tmp = r
     tmp.width = width.float32
-    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
+    shapeTexture.draw(
+      newRect(0, 0, 1, 1),
+      tmp,
+      shader = shapeProgram,
+      color = c,
+      contrast = contrast,
+    )
 
   block:
     var tmp = r
     tmp.height = width.float32
-    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
+    shapeTexture.draw(
+      newRect(0, 0, 1, 1),
+      tmp,
+      shader = shapeProgram,
+      color = c,
+      contrast = contrast,
+    )
 
   block:
     var tmp = r
     tmp.x += tmp.width - width.float32
     tmp.width = width.float32
-    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
+    shapeTexture.draw(
+      newRect(0, 0, 1, 1),
+      tmp,
+      shader = shapeProgram,
+      color = c,
+      contrast = contrast,
+    )
 
   block:
     var tmp = r
     tmp.y += tmp.height - width.float32
     tmp.height = width.float32
-    shapeTexture.draw(newRect(0, 0, 1, 1), tmp, color = c, contrast = contrast)
+    shapeTexture.draw(
+      newRect(0, 0, 1, 1),
+      tmp,
+      shader = shapeProgram,
+      color = c,
+      contrast = contrast,
+    )
 
 proc drawRectFill*(r: Rect, c: Color, contrast: ContrastEntry = ContrastEntry(mode: noContrast)) =
-  shapeTexture.draw(newRect(0, 0, 1, 1), r, color = c, contrast = contrast)
+  shapeTexture.draw(
+    newRect(0, 0, 1, 1),
+    r,
+    shader = shapeProgram,
+    color = c,
+    contrast = contrast,
+  )
 
 proc drawPoly*(points: seq[Vector2], c: Color) =
   var center = newVector2(0, 0)
@@ -69,7 +146,12 @@ proc drawLine*(a, b: Vector2, thickness: float32, c: Color, contrast: ContrastEn
   verts &= [(b.x - px).float32, b.y - py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
   verts &= [(a.x - px).float32, a.y - py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-  shapeTexture.drawVerts(verts, color = c, contrast = contrast)
+  shapeTexture.drawVerts(
+    verts,
+    shader = shapeProgram,
+    color = c,
+    contrast = contrast,
+  )
 
 proc drawCircleOutline*(center: Vector2, radius: float32, thickness: float32, c: Color) =
   var

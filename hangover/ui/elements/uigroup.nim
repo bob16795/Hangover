@@ -78,6 +78,9 @@ method update*(g: UIGroup, parentRect: Rect, mousePos: Vector2,
     g.elements[i].update(bounds, mousePos, dt, g.isActive and active)
 
 method drag*(g: UIGroup, button: int, done: bool) =
+  if not g.isActive:
+    return
+
   for i in 0..<g.elements.len:
     g.elements[i].drag(button, done)
 
@@ -110,8 +113,10 @@ method navigate*(g: UIGroup, dir: UIDir, parent: Rect): bool =
 method focus*(g: UIGroup, focus: bool) =
   ## returns true if you can focus the element
   g.focused = focus
+
   for e in g.elements:
-    if not e.isActive: continue
+    if not e.isActive:
+      continue
 
     if e.focusable():
       e.focus(focus)
@@ -147,7 +152,7 @@ method updateCenter*(g: UIGroup, parentRect: Rect) =
 
   for e in g.elements:
     e.updateCenter(bounds)
-
+  
   g.navPoint = bounds.location
 
 method drawDebug*(g: UIGroup, parentRect: Rect) =
@@ -162,6 +167,7 @@ method drawDebug*(g: UIGroup, parentRect: Rect) =
 method getElems*(g: UIGroup): seq[UIElement] =
   if not g.isActive:
     return
+
   for e in g.elements:
     result &= e.getElems()
 
@@ -171,7 +177,6 @@ method propagate*(g: UIGroup): bool =
       result = true
 
 method moveCenter*(g: UIGroup, diff: Vector2) =
-  ## returns true if you can focus the element
   g.bounds.lastCenter += diff
 
   for e in 0..<len g.elements:

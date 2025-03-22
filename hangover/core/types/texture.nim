@@ -51,7 +51,6 @@ out vec4 color;
 
 uniform sampler2D text;
 uniform sampler2D contrast_tex;
-uniform int contrast_override;
 uniform int mode;
 uniform float contrast;
 
@@ -61,6 +60,7 @@ void main()
 {
     vec4 tex = tintColor * texture(text, texCoords);
 
+#if defined(debug)
     float L = (17.8824 * tex.r) + (43.5161 * tex.g) + (4.11935 * tex.b);
     float M = (3.45565 * tex.r) + (27.1554 * tex.g) + (3.86714 * tex.b);
     float S = (0.02995 * tex.r) + (0.184309 * tex.g) + (1.46709 * tex.b);
@@ -123,21 +123,23 @@ void main()
     } else {
       color = tex;
     }      
-    
-    if (contrast_override != 0) // has contrast tex
-    {
-      color.rgb = mix(
-        mix(vec3(0.0), vec3(1.0 - contrast), color.rgb),
-        mix(vec3(0.0 + contrast), vec3(1.0), color.rgb),
-        texture(contrast_tex, texCoords).r
-      );
+#else
+    color = tex;
+#endif
+
+#if defined(contrast_tex_mode)
+    color.rgb = mix(
+      mix(vec3(0.0), vec3(1.0 - contrast), color.rgb),
+      mix(vec3(0.0 + contrast), vec3(1.0), color.rgb),
+      texture(contrast_tex, texCoords).r
+    );
+#else
+    if (contrast < 0) {
+      color.rgb = mix(vec3(0.0), vec3(1.0 + contrast), color.rgb);
     } else {
-      if (contrast < 0) {
-        color.rgb = mix(vec3(0.0), vec3(1.0 + contrast), color.rgb);
-      } else {
-        color.rgb = mix(vec3(0.0 + contrast), vec3(1.0), color.rgb);
-      }
+      color.rgb = mix(vec3(0.0 + contrast), vec3(1.0), color.rgb);
     }
+#endif 
 }
 """
 
@@ -274,7 +276,6 @@ proc setupTexture*() =
   textureProgram.registerParam("projection", SPKProj4)
   textureProgram.registerParam("rotation", SPKFloat1)
   textureProgram.registerParam("contrast", SPKFloat1)
-  textureProgram.registerParam("contrast_override", SPKInt1)
   textureProgram.registerParam("contrast_tex", SPKInt1)
   textureProgram.registerParam("mode", SPKInt1)
 

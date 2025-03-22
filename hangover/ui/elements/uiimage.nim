@@ -38,4 +38,5 @@ method draw*(b: UIImage, parentRect: Rect) =
     bounds.size = b.size * scale
     bounds.location = center - bounds.size / 2
 
-  b.sprite.draw(bounds.location, 0, bounds.size, color = b.color.value)
+  if b.sprite != nil:
+    b.sprite.draw(bounds.location, 0, bounds.size, color = b.color.value)

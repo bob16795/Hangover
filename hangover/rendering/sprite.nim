@@ -44,6 +44,8 @@ method draw*(
   contrast: ContrastEntry = ContrastEntry(mode: noContrast),
 ) {.base.} =
   ## draws a sprite at `target`
+  if sprite.texture == nil:
+    return
 
   # get target bounds
   var trgSize = target.size
@@ -77,6 +79,10 @@ method draw*(
   contrast: ContrastEntry = ContrastEntry(mode: noContrast),
 ) {.deprecated: "Use targetRect instead", base.} =
   ## old sprite draw proc
+
+  if sprite.texture == nil:
+    return
+
   sprite.draw(
     newRect(position, size),
     rotation,

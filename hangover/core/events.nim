@@ -23,23 +23,14 @@ type
     when defined debug:
       name: Option[string]
   
+
   EventListener*[T] = object
     ## stores a proc that can be attached to an event
     id: Oid
-    p: proc(data: T): bool
-  
-  VoidEvent* = object
-    ## an event object
-    listeners: seq[VoidEventListener]
-    onCrash: bool
-
-    when defined debug:
-      name: Option[string]
-
-  VoidEventListener* = object
-    ## stores a proc that can be attached to an event
-    id: Oid
-    p: proc(): bool
+    when T is void:
+      p: proc(): bool
+    else:
+      p: proc(data: T): bool
 
 when defined debug:
   macro getDbgName(x: untyped): string = x.toStrLit()
@@ -56,8 +47,7 @@ template createEvent*[T](
   flags: set[EventFlag] = {}, 
 ): untyped =
   ## creates an event
-  var eventName = when T is void: VoidEvent()
-  else: Event[T]()
+  var eventName = Event[T]()
   
   export eventName
 
@@ -140,26 +130,25 @@ proc setupEventCallbacks*(ctx: GraphicsContext) =
   ## sets the default callbacks
 
   # if using glfm dont glfw stuff
-  when not defined(ginGLFM):
-    ctx.window.keyCb = keyCb
-    ctx.window.framebufferSizeCb = sizeCB
-    ctx.window.windowSizeCb = resizeCB
-    ctx.window.windowFocusCb = focusCb
-    ctx.window.cursorPositionCb = mouseMoveCb
-    ctx.window.mouseButtonCb = mouseButtonCb
-    ctx.window.scrollCb = mouseScrollCb
-    ctx.window.charCb = charCb
-    ctx.window.dropCb = dropCb
+  ctx.window.keyCb = keyCb
+  ctx.window.framebufferSizeCb = sizeCB
+  ctx.window.windowSizeCb = resizeCB
+  ctx.window.windowFocusCb = focusCb
+  ctx.window.cursorPositionCb = mouseMoveCb
+  ctx.window.mouseButtonCb = mouseButtonCb
+  ctx.window.scrollCb = mouseScrollCb
+  ctx.window.charCb = charCb
+  ctx.window.dropCb = dropCb
 
   # setup listeners for keyboard
   eventStartLineEnter.listen do () -> bool:
     lineInput = true
-    lineText = ""
+    setLineText("")
 
   eventStopLineEnter.listen do () -> bool:
     lineInput = false
     lineInputNew = false
-    lineText = ""
+    setLineText("")
 
   eventSetLineEnter.listen do (data: string) -> bool:
     setLineText(data)
