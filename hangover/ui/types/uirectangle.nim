@@ -15,10 +15,10 @@ type
 var 
   rectUpdate* = false
 
-method setup*(rect: UIRectangle) {.base.} =
+method setup*(rect: UIRectangle) {.base, gcsafe.} =
   discard
 
-method toRect*(rect: UIRectangle, parent: Rect): Rect {.base.} =
+method toRect*(rect: UIRectangle, parent: Rect): Rect {.base, gcsafe.} =
   ## converts the UIRectangle to a Rect
 
   # calculate anchored positions

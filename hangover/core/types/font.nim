@@ -16,6 +16,7 @@ import hangover/core/loop
 import hangover/core/events
 import options
 import locks
+import atomics
 
 # TODO: comment
 
@@ -154,10 +155,10 @@ type
     font: Font
 
 var
-  fontTooltips*: seq[ToolTipData]
+  fontTooltips* {.threadvar.}: seq[ToolTipData]
+  fontProgram* {.threadvar.}: Shader
   ft: FT_Library
   fontScreen*: Rect 
-  fontProgram*: Shader
   fontMousePos: Vector2
 
 eventMouseMove.listen do (pos: Vector2) -> bool:
@@ -172,11 +173,13 @@ proc initFT*() =
     quit(2)
   LOG_DEBUG("ho->font", "Loaded font library")
 
-  fontProgram = newShader(vertexCode, fragmentCode)
-  fontProgram.registerParam("projection", SPKProj4)
-  fontProgram.registerParam("tintColor", SPKFloat4)
-  fontProgram.registerParam("contrast", SPKFloat1)
-  fontProgram.registerParam("mode", SPKInt1)
+  var program = newShader(vertexCode, fragmentCode)
+  program.registerParam("projection", SPKProj4)
+  program.registerParam("tintColor", SPKFloat4)
+  program.registerParam("contrast", SPKFloat1)
+  program.registerParam("mode", SPKInt1)
+
+  fontProgram = program
 
 proc deinitFT*() =
   discard FT_Done_FreeType(ft)
@@ -325,7 +328,7 @@ proc draw*(
   scale: float32 = 1,
   wrap: float32 = 0,
   contrast: ContrastEntry = ContrastEntry(mode: noContrast),
-) =
+) {.gcsafe.} =
   withLock font.emojiLock:
     var pos = position
 
@@ -353,7 +356,7 @@ proc draw*(
           contrast = contrast,
         )
 
-        font.emojis[c.Rune].tooltip.map do (tip: string) -> void:
+        font.emojis[c.Rune].tooltip.map do (tip: string) -> void {.gcsafe.}:
           fontTooltips &= TooltipData(
             text: tip,
             scale: scale,

@@ -5,6 +5,7 @@ import random
 import openal
 import hangover/core/logging
 import options
+import sets
 
 const
   SOURCES = 30
@@ -42,10 +43,10 @@ var
   nextSoundSource: uint = 0
   loopBuffers: array[MAX_SONG_LAYERS, ALuint]
   alPaused: bool
-  framePlayed: seq[Sound]
+  framePlayed {.threadvar.}: HashSet[Sound]
 
   audioSize*: Vector2 = newVector2(1.0, 1.0)
-  songQueue: seq[SongQueueEntry]
+  songQueue {.threadvar.}: seq[SongQueueEntry]
 
   volume: array[VolumeEntry, float32]
 
@@ -86,6 +87,8 @@ proc initAudio*() {.exportc, cdecl, dynlib.} =
     musicVols[0] = 1.0
     for v in VolumeEntry.low..VolumeEntry.high:
       volume[v] = 1.0
+
+    framePlayed = initHashSet[Sound]()
   finally:
     while alGetError() != AL_NO_ERROR:
       discard
@@ -159,7 +162,8 @@ proc play*(
   fade: bool = false,
   force: bool = false,
   skip: bool = false,
-  inQueue: bool = false) =
+  inQueue: bool = false
+) {.gcsafe.} =
   ## plays a song
   if song.layers[0].get().loopBuffer == loopBuffers[0]: return
 
@@ -239,15 +243,18 @@ proc setMusicSpeed*(speed: float32) =
     alSourcef(m, AL_PITCH, speed)
     checkAudioErr("sourcef")
 
-proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0),
-    pitch: float32 = 1.0) =
+proc play*(
+  sound: Sound,
+  pos: Vector2 = newVector2(0, 0),
+  pitch: float32 = 1.0
+) {.gcsafe.} =
   ## plays a sound, pos is for spacial sound
   if sound == nil:
     return
 
   if sound in framePlayed:
     return
-  framePlayed &= sound
+  framePlayed.incl sound
   var sourceState: ALint
   nextSoundSource += 1
 
@@ -285,20 +292,26 @@ proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0),
   alSourcePlay(soundSources[nextSoundSource mod SOURCES])
   checkAudioErr("sourcePlay")
 
-proc playRand*(sound: Sound, r: HSlice[float32, float32],
-    pos: Vector2 = newVector2(0, 0)) =
+proc playRand*(
+  sound: Sound,
+  r: HSlice[float32, float32],
+  pos: Vector2 = newVector2(0, 0),
+) {.gcsafe.} =
   ## plays a sound at a random pitch
   play(sound, pos, rand(r))
 
-proc playRand*(sound: Sound, rs, re: float32, pos: Vector2 = newVector2(0,
-    0)) {.deprecated.} =
+proc playRand*(
+  sound: Sound,
+  rs, re: float32,
+  pos: Vector2 = newVector2(0,0),
+) {.gcsafe, deprecated.} =
   playRand(sound, rs..re, pos)
 
 proc updateAudio*(dt: float32) =
   ## updates audio
   ## checks if music should loop
   ## checks for openAL errors
-  framePlayed = @[]
+  framePlayed.clear()
   if alPaused: return
 
   for layer in 0..<musicSources.len:

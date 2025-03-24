@@ -7,7 +7,7 @@ import hangover/core/types/shader
 import options
 
 type
-  Sprite* = ref object of RootObj
+  Sprite* {.acyclic.} = ref object of RootObj
     ## a sprite object stores a source rect and texture
     texture*: Texture   ## the texture
     sourceBounds*: Rect ## the source rect
@@ -42,7 +42,7 @@ method draw*(
   params: seq[TextureParam] = @[],
   rotation_center = newVector2(0.5),
   contrast: ContrastEntry = ContrastEntry(mode: noContrast),
-) {.base.} =
+) {.base, gcsafe.} =
   ## draws a sprite at `target`
   if sprite.texture == nil:
     return
@@ -77,7 +77,7 @@ method draw*(
   color: Color = newColor(255, 255, 255, 255),
   rotation_center = newVector2(0.5),
   contrast: ContrastEntry = ContrastEntry(mode: noContrast),
-) {.deprecated: "Use targetRect instead", base.} =
+) {.deprecated: "Use targetRect instead", base, gcsafe.} =
   ## old sprite draw proc
 
   if sprite.texture == nil:

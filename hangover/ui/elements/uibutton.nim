@@ -39,11 +39,11 @@ type
     pad*: float32
 
 var
-  buttonHoverSound*: Sound
-  buttonClickSound*: Sound
-  buttonFailSound*: Sound
+  buttonHoverSound* {.threadvar.}: Sound
+  buttonClickSound* {.threadvar.}: Sound
+  buttonFailSound* {.threadvar.}: Sound
 
-method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
+method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) {.gcsafe.} =
   ## updates the button element on a mouse move
 
   let wasFocused = b.focused
@@ -60,7 +60,7 @@ method checkHover*(b: UIButton, parentRect: Rect, mousePos: Vector2) =
       buttonHoverSound.play()
     b.focused = true
 
-method click*(b: UIButton, button: int, key: bool) =
+method click*(b: UIButton, button: int, key: bool) {.gcsafe.} =
   ## processes a click event for a button element
   if not b.focused:
     return
@@ -78,7 +78,7 @@ method click*(b: UIButton, button: int, key: bool) =
       return
     buttonFailSound.play()
 
-method draw*(b: UIButton, parentRect: Rect) =
+method draw*(b: UIButton, parentRect: Rect) {.gcsafe.} =
   ## draw a button element
 
   # return if the button isnt active

@@ -13,8 +13,8 @@ import sugar
 
 type
   UIDynamic* = ref object of UIGroup
-    dynamicUpdate*: () -> bool
-    dynamicGenerate*: (e: UIDynamic) -> seq[UIElement]
+    dynamicUpdate*: proc(): bool {.gcsafe.}
+    dynamicGenerate*: proc(e: UIDynamic): seq[UIElement] {.gcsafe.}
 
     lastAct: bool
 
@@ -23,8 +23,13 @@ proc newUIDynamic*(bounds: UIRectangle): UIDynamic =
   result.isActive = true
   result.bounds = bounds
 
-method update*(d: UIDynamic, parentRect: Rect, mousePos: Vector2,
-    dt: float32, active: bool) =
+method update*(
+  d: UIDynamic,
+  parentRect: Rect,
+  mousePos: Vector2,
+  dt: float32,
+  active: bool,
+) {.gcsafe.} =
   if (d.dynamicUpdate == nil or d.dynamicUpdate()) or
      (not(d.lastAct) and (d.isActive and active)):
     d.elements = d.dynamicGenerate(d)

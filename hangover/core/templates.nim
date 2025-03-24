@@ -94,18 +94,17 @@ template runGame*(data: AppData = newAppData()) =
   loadLock.initLock()
 
   proc initThread() {.thread.} =
-    {.cast(gcsafe).}:
-      try:
-        let loadStartTime = cpuTime()
-        lastTime = loadStartTime
-        withLock loadLock:
-          started = true
-          eventInitialize.send
-        let time = cpuTime() - loadStartTime
-        LOG_TRACE "ho->templates", "Loaded game in " & formatFloat(time, ffDecimal, 9) & "s"
-      except Exception as ex:
-        LOG_CRITICAL "ho->templates", ex.msg
-        raise ex
+    try:
+      let loadStartTime = cpuTime()
+      lastTime = loadStartTime
+      withLock loadLock:
+        started = true
+        eventInitialize.send
+      let time = cpuTime() - loadStartTime
+      LOG_TRACE "ho->templates", "Loaded game in " & formatFloat(time, ffDecimal, 9) & "s"
+    except Exception as ex:
+      LOG_CRITICAL "ho->templates", ex.msg
+      raise ex
 
   proc drawLoadingAsync() {.async.} =
     var tmp: Thread[void]

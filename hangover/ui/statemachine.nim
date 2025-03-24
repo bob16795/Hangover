@@ -4,95 +4,82 @@ import options
 createEvent[HSlice[int, int]] eventFsmChange
 
 type
-  StateMachine*[S] = object
+  StateMachine*[S, F] = object
     ## A state machine
     currentState: S
     ## The current state machine state
-    states: array[S, StateMachineState[S]]
+    states: array[S, StateMachineState[S, F]]
     ## the next flag to trigger on update
-    flag: Option[int]
+    flag: Option[F]
 
-  StateMachineState*[S] = object
-    conds: seq[Flag[S]]
-  Flag*[S] = object
+  StateMachineState*[S, F] = object
+    conds: array[F, Option[S]]
+
+  Flag*[S, F] = object
     ## a state machine flag
-    id: int
+    id: F
     nextState: S
-    value: bool
 
-proc newFlag*[S](id: int, next: S): Flag[S] =
+proc newFlag*[S, F](id: F, nextState: S): Flag[S, F] =
   ## creates a new state machine flag
   ## `id`: the signal to trigger the flag
   ## `next`: the next state to go to
-  result.id = id
-  result.nextState = next
+  result.id = F(id)
+  result.nextState = nextState
 
-proc newState*[S](flags: varargs[Flag[S]]): StateMachineState[S] =
+proc newState*[S, F](flags: varargs[Flag[S, F]]): StateMachineState[S, F] =
   ## Inits a state machine state
   for flag in flags:
-    result.conds &= flag
+    result.conds[flag.id] = some(flag.nextState)
 
-proc newStateMachine*[S](states: array[S, StateMachineState[S]]): StateMachine[S] =
+proc newStateMachine*[S, F](states: array[S, StateMachineState[S, F]]): StateMachine[S, F] =
   ## Creates a state machine
   result.states = states
   result.currentState = 0.S
 
-proc initFlag*[S](id: int, next: S): Flag[S] {.deprecated.} =
+proc initFlag*[S, F](id: F, next: S): Flag[S, F] {.deprecated.} =
   newFlag(id, next)
 
-proc initState*[S](flags: seq[Flag[S]]): StateMachineState[S] {.deprecated.} =
+proc initState*[S, F](flags: array[F, Option[S]]): StateMachineState[S, F] {.deprecated.} =
   newState(flags)
 
-proc initStateMachine*[S](states: seq[StateMachineState[S]]): StateMachine[S] {.deprecated.} =
+proc initStateMachine*[S, F](states: seq[StateMachineState[S, F]]): StateMachine[S, F] {.deprecated.} =
   newStateMachine(states)
 
-proc checkConds[S](sms: StateMachineState[S]): bool =
+proc checkConds[S, F](sms: StateMachineState[S, F]): bool =
   ## checks for the next state machine state
   for cond in sms.conds:
     if cond.value:
       return true
   return false
 
-proc checkCondsNext[S](sms: StateMachineState[S]): Option[S] =
-  ## gets the next state
-  for cond in sms.conds:
-    if cond.value:
-      return some(cond.nextState)
-  return none[S]()
-
-proc setFlag*(sm: var StateMachine, id: int) =
+proc setFlag*[S, F](sm: var StateMachine[S, F], id: F) =
   sm.flag = some(id)
 
-proc update*(sm: var StateMachine) =
-  if sm.flag.isSome():
+proc update*[S, F](sm: var StateMachine[S, F]) =
+  sm.flag.map do (flagId: F):
     ## triggerss a state machine flag
-    var id = sm.flag.get()
-    sm.flag = none[int]()
+    let
+      startState = sm.currentState.int
+      id = sm.flag.get()
+    
+    sm.states[startState][flagId.int].map do (newState: S):
+      sm.currentState = newState
+      eventFsmChange.send((startState.int)..(newState.int))
+  sm.flag = none[F]()
 
-    let start = sm.currentState
-
-    for i in 0..<sm.states[sm.currentState].conds.len:
-      if sm.states[sm.currentState].conds[i].id == id:
-        sm.states[sm.currentState].conds[i].value = true
-    if sm.states[sm.currentState].checkConds():
-      sm.currentState = sm.states[sm.currentState].checkCondsNext().get
-    for i in 0..<sm.states[sm.currentState].conds.len:
-      sm.states[sm.currentState].conds[i].value = false
-    if sm.currentState != start:
-      eventFsmChange.send((start.int)..(sm.currentState.int))
-
-proc contains*[S](states: set[S], sm: StateMachine[S]): bool =
+proc contains*[S, F](states: set[S], sm: StateMachine[S, F]): bool =
   sm.currentState in states
 
-proc forceState*[S](sm: var StateMachine[S], state: S) =
+proc forceState*[S, F](sm: var StateMachine[S, F], state: S) =
   sm.currentState = state
 
-proc `currentState=`*[S](sm: var StateMachine[S], state: S) =
+proc `currentState=`*[S, F](sm: var StateMachine[S, F], state: S) =
   if sm.currentState != state:
     let start = sm.currentState
     sm.currentState = state
 
     eventFsmChange.send(start.int..state.int)
 
-proc getState*[S](sm: StateMachine[S]): S =
+proc getState*[S, F](sm: StateMachine[S, F]): S =
   sm.currentState

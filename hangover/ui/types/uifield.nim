@@ -12,8 +12,8 @@ type
       of staticv:
         this*: T
       of dynamic:
-        getter*: proc (): T
-        setter*: proc (data: T)
+        getter*: proc (): T {.gcsafe.}
+        setter*: proc (data: T) {.gcsafe.}
 
 template fieldValue*[T](data: static[T]): UIField[T] =
   let tmp = data
@@ -24,7 +24,7 @@ template fieldValue*[T](data: static[T]): UIField[T] =
       this: tmp,
     )
 
-proc fieldGetter*(T: type, getter: proc(): T): UIField[T] =
+proc fieldGetter*(T: type, getter: proc(): T {.gcsafe.}): UIField[T] =
   UIField[T](
     kind: dynamic,
     getter: getter,
@@ -35,19 +35,19 @@ template fieldVar*(value: untyped): untyped =
 
   UIField[T](
     kind: dynamic,
-    getter: proc(): T =
+    getter: proc(): T {.gcsafe.} =
       value,
-    setter: proc(n: T) =
+    setter: proc(n: T) {.gcsafe.} =
       value = n,
   )
 
-proc `value`*[T](a: var UIField[T]): T =
+proc `value`*[T](a: var UIField[T]): T {.gcsafe.} =
   case a.kind:
   of default: return
   of staticv: return a.this
   of dynamic: return a.getter()
 
-proc `value=`*[T](a: var UIField[T], b: T) =
+proc `value=`*[T](a: var UIField[T], b: T) {.gcsafe.} =
   case a.kind:
   of default: discard
   of staticv: a.this = b

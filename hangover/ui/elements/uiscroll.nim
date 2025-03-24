@@ -26,7 +26,7 @@ type
     scrollVis*: Vector2
     sprite*, handleSprite*: UISprite
     scrollSensitivity*: float
-    onScroll*: (Vector2) -> void
+    onScroll*: proc(pos: Vector2) {.gcsafe.}
     scrollFocus: bool
     inside: bool
 
@@ -131,7 +131,7 @@ method checkHover*(s: UIScroll, parent_rect: Rect, mousePos: Vector2) =
     if s.elements[i].focused and s.inside:
       s.focused = true
 
-method click*(s: UIScroll, button: int, key: bool) =
+method click*(s: UIScroll, button: int, key: bool) {.gcsafe.} =
   if not s.isActive:
     return
 

@@ -24,7 +24,7 @@ type
   UIFillMode* = enum
     FM_STRETCH ## fast, stretches the element to 9 quads
     FM_TILE    ## slow, repeats sprites to make the element cleaner
-  UISprite* = ref object of Sprite
+  UISprite* {.acyclic.} = ref object of Sprite
     ## a ui sprite, renders in 8 elements
     renderSecs: array[0..2, array[0..2, Rect]]
     center: Rect

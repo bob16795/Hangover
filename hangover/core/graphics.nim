@@ -49,7 +49,7 @@ proc setCameraPos*(pos: Vector2) =
 proc setFontScreen*(screen: Rect) =
   fontScreen = screen
 
-proc setCameraSize*(size: Vector2) =
+proc setCameraSize*(size: Vector2) {.gcsafe.} =
   # update the viewport in glfm
   when not defined(hangui):
     withGraphics:
@@ -83,6 +83,11 @@ proc scaleBuffer*(scale: float32) =
 
     # update viewport
     glViewport(0, 0, GLsizei(cameraSize.x), GLsizei(cameraSize.y))
+  
+# attach resize listener
+eventResize.listen do (size: Point) -> bool {.gcsafe.}:
+  ## called when window is resized
+  setCameraSize(size.toVector2())
 
 proc initGraphics*(data: AppData): GraphicsContext =
   ## setup graphics
@@ -103,8 +108,9 @@ proc initGraphics*(data: AppData): GraphicsContext =
       c.nMultiSamples = data.aa.int32
 
     result.window = newWindow(c)
-    result.window.setSizeLimits(600, 400, -1, -1)
     # TODO: make part of init data
+
+    result.window.setSizeLimits(600, 400, -1, -1)
 
     loadExtensions()
 
@@ -119,11 +125,6 @@ proc initGraphics*(data: AppData): GraphicsContext =
 
   # setup fonts
   initFT()
-
-  # attach resize listener
-  eventResize.listen do (size: Point) -> bool:
-    ## called when window is resized
-    setCameraSize(size.toVector2())
 
   # quick resize to fix bugs
   eventResize.send(data.size)

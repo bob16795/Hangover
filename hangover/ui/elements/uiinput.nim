@@ -6,6 +6,7 @@ import hangover/core/types/font
 import hangover/core/events
 import hangover/ui/elements/uielement
 import hangover/ui/types/uisprite
+import hangover/ui/types/uifield
 import options
 import sugar
 import oids
@@ -14,24 +15,15 @@ import oids
 
 type
   UIInput* = ref object of UIElement
-    getText*: proc(): string {.gcsafe.}
-    setText*: proc(text: string) {.gcsafe.}
+    text*: UIField[string] 
     hint*: string
     font*: Font
     fontMult*: float32
     active*: bool
     eventOid*: Oid
 
-var tmpText = ""
-
-proc text*(i: UIInput): string =
-  i.getText()
-
-proc `text=`*(i: UIInput, text: string) =
-  i.setText(text)
-
-eventUpdateLineEnter.listen do (text: string) -> bool:
-  tmpText = text
+var tmpText {.threadvar.}: string
+tmpText = ""
 
 method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2) =
   e.focused = false
@@ -47,30 +39,36 @@ method checkHover*(e: UIInput, parentRect: Rect, mousePos: Vector2) =
               bounds.height > mousePos.y):
     e.focused = true
 
-method click*(e: UIInput, button: int, key: bool) =
+method click*(e: UIInput, button: int, key: bool) {.gcsafe.} =
   if not e.focused: return
   if not e.active:
     tmpText = ""
 
     eventStartLineEnter.send
-    eventSetLineEnter.send e.text
+    eventSetLineEnter.send e.text.value
+
+    e.eventOid = eventUpdateLineEnter.listen do (text: string) -> bool {.gcsafe.}:
+      e.text.value = text
 
     e.active = true
   else:
     eventStopLineEnter.send
+    eventUpdateLineEnter.remove e.eventOid
     e.active = false
 
 method draw*(e: UIInput, parentRect: Rect) =
   if not e.isActive:
     return
   let bounds = e.bounds.toRect(parentRect)
-  if (e.text != ""):
-    var text = e.text
+  if e.text.value.len == 0:
+    var text = e.text.value
     if e.active: text &= "|"
     let
       h: float32 = e.font.size.float32 * e.fontMult * uiElemScale
-      posx: float32 = bounds.x + (bounds.width - sizeText(e.font,
-        e.text, e.fontMult * uiElemScale).x) / 2
+      posx: float32 = bounds.x + (bounds.width - e.font.sizeText(
+        text,
+        e.fontMult * uiElemScale,
+      ).x) / 2
       posy: float32 = bounds.y + ((bounds.height - h) / 2)
     e.font.draw(
       text,
@@ -79,7 +77,7 @@ method draw*(e: UIInput, parentRect: Rect) =
       e.fontMult * uiElemScale,
       contrast = ContrastEntry(mode: fg),
     )
-  elif (e.hint != ""):
+  elif e.hint.len == 0:
     let
       text = e.hint
       h: float32 = e.font.size.float32 * e.fontMult * uiElemScale
@@ -112,17 +110,17 @@ method propagate*(i: UIInput): bool =
   return i.focused
 
 method update*(
-  b: UIInput,
+  i: UIInput,
   parentRect: Rect,
   mousePos: Vector2,
   dt: float32,
   active: bool
 ) =
-  if b.isActive and active:
-    let bounds = b.bounds.toRect(parentRect)
+  if i.isActive and active:
+    let bounds = i.bounds.toRect(parentRect)
 
-    if b.active:
-      b.text = tmpText
+    if i.active:
+      i.text.value = tmpText
 
 method focusable*(e: UIInput): bool =
   return true

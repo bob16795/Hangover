@@ -9,9 +9,9 @@ import logging
 export LOG_INFO
 
 type
-  GraphicsContext* = ref object
+  GraphicsContext* = object
     ## stores some random graphics data for a loop
-    window*: Window      ## the game window
+    windowH*: WindowHandle      ## the game window
     size*: Vector2             ## the screen dimensions
     pos*: Vector2              ## the screen position
     color*: Color              ## color data
@@ -32,6 +32,11 @@ type
 var
   globalCtx*: GraphicsContext
 
+proc window*(ctx: GraphicsContext): Window = 
+  newWindow(ctx.windowH)
+
+proc `window=`*(ctx: var GraphicsContext, window: sink Window) = 
+  ctx.windowH = window.getHandle()
 
 proc lockGraphics(ctx: var GraphicsContext) =
   ctx.lock.acquire()

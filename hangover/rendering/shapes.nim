@@ -9,8 +9,8 @@ import opengl
 import math
 
 var
-  shapeProgram*: Shader
-  shapeTexture*: Texture
+  shapeProgram* {.threadvar.}: Shader
+  shapeTexture* {.threadvar.}: Texture
 
 const
   shapeVertexCode* = """

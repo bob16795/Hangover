@@ -27,8 +27,8 @@ type
     barSize*: float
     default*: float
     tmpVal: float
-    update*: (v: float) -> void
-    release*: (v: float) -> void
+    update*: proc(v: float) {.gcsafe.}
+    release*: proc(v: float) {.gcsafe.}
     scrollSensitivity*: float
     smooth*: float32
     dragging: bool

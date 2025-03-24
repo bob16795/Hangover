@@ -12,7 +12,7 @@ import options
 import lists
 
 type
-  Texture* = ref object of RootObj
+  Texture* {.acyclic.} = ref object of RootObj
     ## A texture object
     tex*: GLuint
     ## A texture object
@@ -159,7 +159,7 @@ type
     case mode*: ContrastMode:
     of noContrast, fg, bg, texture: discard
 
-  QueueEntry* = ref object
+  QueueEntry* = object
     update*: bool
     shader*: Shader
     tex*: Texture
@@ -178,9 +178,9 @@ proc `==`*(a, b: ContrastEntry): bool =
   a.mode == b.mode
 
 var
-  textureProgram*: Shader
   ## the default program used to render textures
-  queue*: SinglyLinkedList[QueueEntry]
+  textureProgram* {.threadvar.}: Shader
+  queue* {.threadvar.}: SinglyLinkedList[QueueEntry]
   buffers*: seq[GLUint]
   textureScissor*: Rect
   textureSize*: Vector2
@@ -271,13 +271,16 @@ proc addVBO*() =
 
 proc setupTexture*() =
   ## setup texture stuff
-  textureProgram = newShader(textureVertexCode, textureFragmentCode)
-  textureProgram.registerParam("tintColor", SPKFloat4)
-  textureProgram.registerParam("projection", SPKProj4)
-  textureProgram.registerParam("rotation", SPKFloat1)
-  textureProgram.registerParam("contrast", SPKFloat1)
-  textureProgram.registerParam("contrast_tex", SPKInt1)
-  textureProgram.registerParam("mode", SPKInt1)
+  var program = newShader(textureVertexCode, textureFragmentCode)
+  program.registerParam("tintColor", SPKFloat4)
+  program.registerParam("projection", SPKProj4)
+  program.registerParam("rotation", SPKFloat1)
+  program.registerParam("contrast", SPKFloat1)
+  program.registerParam("contrast_tex", SPKInt1)
+  program.registerParam("mode", SPKInt1)
+
+  GC_ref(program)
+  textureProgram = program
 
   block:
     let tmp: float32 = 1.0
@@ -400,7 +403,7 @@ method drawVerts*(
     flip: array[2, bool] = [false, false],
     mul: bool = false,
     contrast: ContrastEntry = ContrastEntry(mode: noContrast),
-  ) {.base.} =
+  ) {.base, gcsafe.} =
   ## draws verts in a texture
 
   # check the program
@@ -459,7 +462,7 @@ method draw*(
   mul: bool = false,
   rotation_center = newVector2(0.5),
   contrast: ContrastEntry = ContrastEntry(mode: noContrast),
-) {.base.} =
+) {.base, gcsafe.} =
   ## draws a texture
 
   # calc the dest rectangle

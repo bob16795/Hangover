@@ -87,7 +87,7 @@ createEvent[void] eventStartUiDraw, {hideLogs}
 createEvent[void] eventEndUiDraw, {hideLogs}
 
 var
-  um*: UIManager
+  um* {.threadvar.}: UIManager
   ## The ui manager
   uiTransparency*: float32
   uiWidthTarget*: float32
@@ -131,7 +131,7 @@ proc initUIManager*(size: Point) =
   um.spriteScaleMult = 1.0
 
   # attach events
-  eventMouseMove.listen do (data: Vector2) -> bool:
+  eventMouseMove.listen do (data: Vector2) -> bool {.gcsafe.}:
     var pos = data
 
     let
@@ -167,13 +167,13 @@ proc initUIManager*(size: Point) =
   eventMouseScroll.listen do (offset: Vector2) -> bool:
     for e in um.elements.mitems: 
       e.scroll(offset)
-
+  
       e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
 
   eventResize.listen do (size: Point) -> bool:
     if size.x != 0 and size.y != 0:
       um.size = newVector2(size.x.float32, size.y.float32)
-
+  
   withGraphics:
     glGenFramebuffers(1, addr um.fbo)
     glGenRenderbuffers(1, addr um.depthTexture);
@@ -257,6 +257,7 @@ proc drawUI*() =
     ))
 
     withGraphics:
+      #glClearColor(um.bg.rf, um.bg.gf, um.bg.bf, um.bg.af)
       glClearColor(0, 0, 0, 0)
       glClear(GL_COLOR_BUFFER_BIT)
 

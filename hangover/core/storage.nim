@@ -6,15 +6,13 @@ when defined(ginGLFM):
 
 #TODO: register custom paths
 
-var
-  APPNAME*: string
+var APPNAME*: string
   ## set to change the app name in storage
 
 proc getContentDir*(): string =
   ## gets the path of cont://
-  when defined(ginGLFM):
-    return $glfmBundleDir()
-  return getConfigDir() / APPNAME
+  {.cast(gcsafe).}:
+    return getConfigDir() / APPNAME
 
 proc hoPath*(file: string): string =
   ## expands a file path

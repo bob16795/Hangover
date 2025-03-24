@@ -15,7 +15,7 @@ type
     border*: UISprite
     color*: Color
 
-proc draw*(t: UIToolTip, mousePos: Vector2, screenSize: Point) =
+proc draw*(t: UIToolTip, mousePos: Vector2, screenSize: Point) {.gcsafe.} =
   let size = t.font.sizeText(t.text.value, 1.0)
   let pos = if mousePos.x + size.x + 40 < screenSize.x.float32:
       mousePos
