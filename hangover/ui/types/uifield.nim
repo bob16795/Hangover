@@ -24,7 +24,7 @@ template fieldValue*[T](data: static[T]): UIField[T] =
       this: tmp,
     )
 
-proc fieldGetter*(T: type, getter: proc(): T): UIField[T] =
+proc fieldGetter*[T](getter: proc(): T): UIField[T] =
   UIField[T](
     kind: dynamic,
     getter: getter,
