@@ -78,6 +78,7 @@ proc loadVorbis*(
   # prepare the result
   result.freq = int(vorbisInfo.sampleRate)
   result.channels = vorbisInfo.channels
+  result.sampleSize = bytesPerSample * vorbisInfo.channels
 
   # close the reader context
   stb_vorbis_close(vorbisCtx)

@@ -89,7 +89,7 @@ proc remove*[T](event: var Event[T], id: Oid) =
       event.listeners.del(tmpCall)
       return
 
-proc send*(event: VoidEvent) =
+proc send*(event: Event[void]) =
   ## sends an event  
   
   if eventsCrashed and not event.onCrash: return
@@ -101,25 +101,6 @@ proc send*(event: VoidEvent) =
   for call in event.listeners:
     if call.p():
       break
-
-proc listen*(event: var VoidEvent, call: proc (): bool): Oid {.discardable.} =
-  ## attaches a listener to an event
-  
-  # create a listener
-  let listener = VoidEventListener(p: call, id: genOid())
-
-  # if the event already has a listener add another
-  # otherwise make it
-  event.listeners &= listener
-
-proc remove*(event: var VoidEvent, id: Oid) =
-  ## detaches a listener
-
-  # search for the listener
-  for tmpCall in 0..<len event.listeners:
-    if event.listeners[tmpCall].id == id:
-      event.listeners.del(tmpCall)
-      return
 
 include events/keyboard
 include events/mouse

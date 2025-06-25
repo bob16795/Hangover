@@ -20,10 +20,16 @@ proc newSoundMem*(s: Stream, ogg: bool = false): Sound =
             else:
               readWav(s)
   s.close()
+  
+  let format = if not ogg or wav.channels == 1: AL_FORMAT_MONO16
+               elif wav.channels == 2: AL_FORMAT_STEREO16
+               else:
+                 LOG_ERROR "ho->sfx", "invalid channel numbers:", wav.channels, "used 2 instead"
+                 AL_FORMAT_STEREO16
 
   # create a buffer and add data
   alGenBuffers(ALsizei 1, addr result.buffer)
-  alBufferData(result.buffer, AL_FORMAT_MONO16, wav.data, ALsizei wav.size,
+  alBufferData(result.buffer, ALenum format, wav.data, ALsizei wav.size,
       ALsizei wav.freq)
 
   let e = alGetError()
