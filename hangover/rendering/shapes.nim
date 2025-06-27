@@ -14,10 +14,18 @@ var
 
 const
   shapeVertexCode* = """
-layout (location = 0) in vec4 vertex;
-layout (location = 1) in vec4 tintColorIn;
+layout (location = 0) in vec2 vertex;
+layout (location = 1) in vec2 uv;
 
-uniform float rotation;
+layout (location = 2) in vec2 srcOff;
+layout (location = 3) in vec2 srcScl;
+
+layout (location = 4) in vec2 dstOff;
+layout (location = 5) in vec2 dstScl;
+
+layout (location = 6) in vec3 rotation;
+layout (location = 7) in vec4 tintColorIn;
+
 uniform mat4 projection;
 
 out vec2 texCoords;
@@ -25,8 +33,15 @@ out vec4 tintColor;
 
 void main()
 {
-    gl_Position = projection * vec4(vertex.xy, 1.0, 1.0);
-    texCoords = vertex.zw;
+    vec2 r = (vertex * (1.0 + dstScl) - rotation.xy);
+    vec2 g = vec2(sin(rotation.z), cos(rotation.z));
+    r = vec2(
+      r.x * g.y - r.y * g.x + rotation.x, 
+      r.x * g.x + r.y * g.y + rotation.y 
+    );
+
+    gl_Position = projection * vec4(r + dstOff, 1.0, 1.0);
+    texCoords = uv * (1.0 + srcScl) + srcOff;
     tintColor = tintColorIn;
 }
 """
@@ -129,7 +144,7 @@ proc drawPoly*(points: seq[Vector2], c: Color) =
   center /= points.len - 1
 
 proc drawLine*(a, b: Vector2, thickness: float32, c: Color, contrast: ContrastEntry = ContrastEntry(mode: noContrast)) =
-  var verts: seq[array[16, float32]]
+  var verts: seq[Vert]
   let
     length = distance(a, b)
     dx = (b.x - a.x) / length
@@ -138,13 +153,30 @@ proc drawLine*(a, b: Vector2, thickness: float32, c: Color, contrast: ContrastEn
     px = 0.5 * thickness * -dy
     py = 0.5 * thickness * dx
 
-  verts &= [(a.x + px).float32, a.y + py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-  verts &= [(b.x - px).float32, b.y - py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-  verts &= [(b.x + px).float32, b.y + py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-
-  verts &= [(a.x + px).float32, a.y + py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-  verts &= [(b.x - px).float32, b.y - py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-  verts &= [(a.x - px).float32, a.y - py, 0.0, 0.0, c.rf, c.gf, c.bf, c.af, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  verts &= Vert(
+    x: (a.x + px).float32, y: a.y + py,
+    r: c.rf, g: c.gf, b: c.bf, a: c.af
+  )
+  verts &= Vert(
+    x: (b.x - px).float32, y: b.y - py,
+    r: c.rf, g: c.gf, b: c.bf, a: c.af
+  )
+  verts &= Vert(
+    x: (b.x + px).float32, y: b.y + py,
+    r: c.rf, g: c.gf, b: c.bf, a: c.af
+  )
+  verts &= Vert(
+    x: (a.x + px).float32, y: a.y + py, 
+    r: c.rf, g: c.gf, b: c.bf, a: c.af
+  )
+  verts &= Vert(
+    x: (b.x - px).float32, y: b.y - py, 
+    r: c.rf, g: c.gf, b: c.bf, a: c.af
+  )
+  verts &= Vert(
+    x: (a.x - px).float32, y: a.y - py, 
+    r: c.rf, g: c.gf, b: c.bf, a: c.af
+  )
 
   shapeTexture.drawVerts(
     verts,

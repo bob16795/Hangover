@@ -159,6 +159,9 @@ proc initUIManager*(size: Point) =
     # update drag
     for e in um.elements.mitems:
       e.click(button, false)
+      
+    for e in um.elements:
+      e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
 
   eventMouseRelease.listen do (button: int) -> bool:
     for e in um.elements:
@@ -519,45 +522,51 @@ proc uiNavigate*(dir: UIDir): bool =
 proc isDashNode(n: NimNode): bool =
   n.kind == nnkPrefix and $n[0] == "-"
 
-proc uiAux(outName, body: NimNode): NimNode =
+proc uiAux(body: NimNode): NimNode =
+  result = newNimNode(nnkStmtListExpr)
+  let
+    outElems = genSym(nskVar, "tmpElement")
+
   var nodes: seq[NimNode]
-  var tmpName = "tmp" & $outName
-  result = newNimNode(nnkStmtList)
   for c in body:
     if c.isDashNode():
       nodes &= c
     else:
       assert false, "Invalid ast"
-  result &= newNimNode(nnkVarSection).add(
-    newIdentDefs(ident(tmpName), ident("UIElement")),
-    newIdentDefs(outName, newNimNode(nnkBracketExpr).add(ident(
-        "seq"), ident("UIElement")))
-  )
-  var i = 0
+
+  result.add quote do:
+    var
+      `outElems`: seq[UIElement]
+
   for n in nodes:
-    var name = $n[1]
-    result &= newAssignment(ident(tmpName), newCall(ident(name)))
-    result &= newAssignment(newDotExpr(ident(tmpName), ident("isActive")),
-        ident("true"))
+    let
+      name = n[1]
+      currentElem = genSym(nskVar, "tmpElement")
+    result.add quote do:
+      var
+        `currentElem`: UIElement = `name`()
+      `currentElem`.isActive = true
     for a in n[2]:
       case a.kind:
       of nnkAsgn:
-        var assignName = newDotExpr(newDotExpr(ident(tmpName), ident(name)),
-            ident($a[0]))
-        var assignValue = a[1]
-        result &= newAssignment(assignName, assignValue)
+        let 
+          assignName = a[0]
+          assignValue = a[1]
+        result.add quote do:
+          `currentElem`.`name`.`assignName` = `assignValue`
       of nnkCall:
-        var outName = ident(tmpName & "Sub" & $i)
-        i += 1
-        var assignName = newDotExpr(newDotExpr(ident(tmpName), ident(name)),
-            ident($a[0]))
-        result &= uiAux(outName, a[1])
-        result &= newAssignment(assignName, outName)
+        let
+          assignName = a[0]
+          assignValue = uiAux(a[1])
+        result.add quote do:
+          `currentElem`.`name`.`assignName` = `assignValue`
       else:
         assert false, "Invalid ast"
 
-    result &= newCall(newDotExpr(outName, ident("add")), ident(tmpName))
+    result.add quote do:
+      `outElems`.add `currentElem`
+  result.add outElems
 
-macro createUIElems*(name: untyped, body: untyped): untyped =
+macro UIElements*(body): seq[UIElement] =
   ## creates a ui system stores the result into a seq[UIElement] in name
-  uiAux(name, body)
+  uiAux(body)

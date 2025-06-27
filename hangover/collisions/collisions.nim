@@ -3,7 +3,6 @@ import hangover/core/types/vector2
 import math
 import tables
 import algorithm
-import segfaults
 
 type
   CollisionLayer* = distinct uint8

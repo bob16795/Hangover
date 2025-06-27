@@ -33,8 +33,13 @@ method update*(
   if (d.dynamicUpdate == nil or d.dynamicUpdate()) or
      (not(d.lastAct) and (d.isActive and active)):
     d.elements = d.dynamicGenerate(d)
-    if d.focused:
-      d.focus(true)
+    block focus_blk:
+      for e in d.elements:
+        if e.focused:
+          break focus_blk
+
+      if d.focused:
+        d.focus(true)
 
   d.lastAct = (d.isActive and active)
 

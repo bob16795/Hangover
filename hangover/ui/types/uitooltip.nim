@@ -9,7 +9,7 @@ import hangover/ui/types/uifield
 import options
 
 type
-  UIToolTip* = ref object of RootObj
+  UITooltip* = ref object of RootObj
     text*: UIField[string] 
     font*: Font
     border*: UISprite

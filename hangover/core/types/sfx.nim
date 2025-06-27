@@ -4,6 +4,9 @@ import ../lib/readwav
 import ../lib/vorbis
 import hangover/core/logging
 
+var
+  audioInit*: bool
+
 type
   Sound* = ref object
     ## stores a sound effect
@@ -14,16 +17,25 @@ proc newSoundMem*(s: Stream, ogg: bool = false): Sound =
 
   result = Sound()
 
+  if not audioInit:
+    return
+
   # read the wav file
   let wav = if ogg:
               loadVorbis(s.readAll())
             else:
               readWav(s)
   s.close()
+  
+  let format = if not ogg or wav.channels == 1: AL_FORMAT_MONO16
+               elif wav.channels == 2: AL_FORMAT_STEREO16
+               else:
+                 LOG_ERROR "ho->sfx", "invalid channel numbers:", wav.channels, "used 2 instead"
+                 AL_FORMAT_STEREO16
 
   # create a buffer and add data
   alGenBuffers(ALsizei 1, addr result.buffer)
-  alBufferData(result.buffer, AL_FORMAT_MONO16, wav.data, ALsizei wav.size,
+  alBufferData(result.buffer, ALenum format, wav.data, ALsizei wav.size,
       ALsizei wav.freq)
 
   let e = alGetError()

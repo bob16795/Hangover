@@ -6,6 +6,7 @@ type WavFile* = object
   size*: int
   freq*: int
   channels*: int
+  sampleSize*: int
 
 proc readWav*(
   f: Stream,
@@ -42,3 +43,4 @@ proc readWav*(
   result.size = data.len
   result.freq = int sampleRate
   result.data = unsafeAddr data[0]
+  result.sampleSize = sizeof(int16) * numChannels.int
