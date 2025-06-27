@@ -30,12 +30,22 @@ createEvent[void] eventBlitEnd, {hideLogs}
 createEvent[void] eventFrameEnd, {hideLogs}
 createEvent[void] eventFrameStart, {hideLogs}
 
+const QUAD_VERTS: seq[GLfloat] = @[
+  0.0, 1.0,
+  1.0, 0.0,
+  0.0, 0.0,
+  0.0, 1.0,
+  1.0, 0.0,
+  1.0, 1.0,
+]
+
 proc finishDraw*()
 
 var
   cameraPos: Vector2
   cameraSize*: Vector2
   projection: Mat4[float32]
+  quad_buffer: GLuint 
 
 proc setCameraPos*(pos: Vector2) =
   cameraPos = pos
@@ -92,23 +102,22 @@ proc initGraphics*(data: AppData): GraphicsContext =
   result.lock.initLock()
 
   # setup glfw
-  when not defined(ginGLFM):
-    glfw.initialize()
+  glfw.initialize()
 
-    var c = DefaultOpenglWindowConfig
-    c.title = data.name
-    c.size = (w: data.size.x.int32, h: data.size.y.int32)
-    c.resizable = true
-    if data.aa != 0:
-      c.nMultiSamples = data.aa.int32
+  var c = DefaultOpenglWindowConfig
+  c.title = data.name
+  c.size = (w: data.size.x.int32, h: data.size.y.int32)
+  c.resizable = true
+  if data.aa != 0:
+    c.nMultiSamples = data.aa.int32
 
-    result.window = newWindow(c)
-    result.window.setSizeLimits(600, 400, -1, -1)
-    # TODO: make part of init data
+  result.window = newWindow(c)
+  result.window.setSizeLimits(600, 400, -1, -1)
+  # TODO: make part of init data
 
-    loadExtensions()
+  loadExtensions()
 
-    detachCurrentContext()
+  detachCurrentContext()
 
   result.color = data.color
   globalCtx = result
@@ -133,6 +142,12 @@ proc initGraphics*(data: AppData): GraphicsContext =
     if data.aa != 0:
       glEnable(GL_MULTISAMPLE)
     glEnable(GL_DEPTH_TEST)
+
+    glGenBuffers(1, addr quad_buffer)
+    glBindBuffer(GL_ARRAY_BUFFER, quad_buffer)
+    glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(GLFloat), addr (QUAD_VERTS[0]), GL_STREAM_DRAW)
+    glBindBuffer(GL_ARRAY_BUFFER, 0)
+
 
 when defined(hangui):
   proc libSetFb*(id: GLuint, w, h: int32) {.exportc, cdecl, dynlib.} =
@@ -281,15 +296,6 @@ proc finishDraw*() =
 
   # redraw needed items
   for q in queue.mitems():
-    i += 1
-
-    if i > len(buffers):
-      withGraphics:
-        addVBO()
-
-    let
-      vertices = q.verts
-
     let
       newShaderContrast = q.contrast.mode == ContrastMode.texture
       newShader = if newShaderContrast: q.shader.id
@@ -352,36 +358,106 @@ proc finishDraw*() =
           glBlendFunc(GL_DST_COLOR, GL_ZERO)
         else:
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-      # bind the queue items texture
+        
       glBindTexture(GL_TEXTURE_2D, q.tex.tex)
-      glBindBuffer(GL_ARRAY_BUFFER, buffers[i - 1])
+   
+      if q.verts.len != 0:
+        i += 1
 
-      # update VBO
-      if q.update:
+        if i > len(buffers):
+          addVBO()
+
+        # bind the queue items texture
+        glBindBuffer(GL_ARRAY_BUFFER, buffers[i - 1])
+
+        # update VBO
         glBufferData(
           GL_ARRAY_BUFFER,
-          GLsizeiptr(len(vertices) *
-          sizeof(vertices[0])),
-          addr(vertices[0]),
+          GLsizeiptr(len(q.verts) *
+          sizeof(q.verts[0])),
+          addr(q.verts[0]),
           GL_STATIC_DRAW,
         )
 
-      # setup vertex attrib data
-      glVertexAttribPointer(0, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(GLfloat), cast[pointer](0))
-      glEnableVertexAttribArray(0)
-      glVertexAttribPointer(1, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(GLfloat), cast[pointer](4 * sizeof(GLfloat)))
-      glEnableVertexAttribArray(1)
-      glVertexAttribPointer(2, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(GLfloat), cast[pointer](8 * sizeof(GLfloat)))
-      glEnableVertexAttribArray(2)
-      glVertexAttribPointer(3, 4, cGL_FLOAT, GL_FALSE.GLboolean, 16 * sizeof(GLfloat), cast[pointer](12 * sizeof(GLfloat)))
-      glEnableVertexAttribArray(3)
+        # setup vertex attrib data
+        glVertexAttribPointer(0, 2, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.verts[0]).GLint, cast[pointer](offsetOf(Vert, x)))
+        glVertexAttribPointer(1, 2, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.verts[0]).GLint, cast[pointer](offsetOf(Vert, u)))
+        glVertexAttribPointer(7, 4, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.verts[0]).GLint, cast[pointer](offsetOf(Vert, r)))
+        
+        glEnableVertexAttribArray(0)
+        glEnableVertexAttribArray(1)
+        glDisableVertexAttribArray(2)
+        glDisableVertexAttribArray(3)
+        glDisableVertexAttribArray(4)
+        glDisableVertexAttribArray(5)
+        glDisableVertexAttribArray(6)
+        glEnableVertexAttribArray(7)
 
-      # render
-      glDrawArrays(GL_TRIANGLES, 0, (len(vertices)).GLsizei)
+        # render verts
+        glDrawArrays(GL_TRIANGLES, 0, (len(q.verts)).GLsizei)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        
+      if q.quads.len != 0:
+        i += 1
 
-      # unbind the buffer
-      glBindBuffer(GL_ARRAY_BUFFER, 0)
+        glEnableVertexAttribArray(0)
+        glEnableVertexAttribArray(1)
+        glEnableVertexAttribArray(2)
+        glEnableVertexAttribArray(3)
+        glEnableVertexAttribArray(4)
+        glEnableVertexAttribArray(5)
+        glEnableVertexAttribArray(6)
+        glEnableVertexAttribArray(7)
+
+        if i > len(buffers):
+          addVBO()
+
+        glBindBuffer(GL_ARRAY_BUFFER, quad_buffer)
+        glVertexAttribPointer(0, 2, cGL_FLOAT, GL_FALSE.GLboolean, 2 * sizeof(GLfloat), cast[pointer](0))
+        glVertexAttribPointer(1, 2, cGL_FLOAT, GL_FALSE.GLboolean, 2 * sizeof(GLfloat), cast[pointer](0))
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+        # bind the queue items texture
+        glBindBuffer(GL_ARRAY_BUFFER, buffers[i - 1])
+
+        # update VBO
+        glBufferData(
+          GL_ARRAY_BUFFER,
+          GLsizeiptr(len(q.quads) *
+          sizeof(q.quads[0])),
+          addr(q.quads[0]),
+          GL_STATIC_DRAW,
+        )
+
+        glVertexAttribPointer(2, 2, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.quads[0]).GLint, cast[pointer](offsetOf(Quad, sxo)))
+        glVertexAttribPointer(3, 2, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.quads[0]).GLint, cast[pointer](offsetOf(Quad, sxs)))
+        glVertexAttribPointer(4, 2, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.quads[0]).GLint, cast[pointer](offsetOf(Quad, dxo)))
+        glVertexAttribPointer(5, 2, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.quads[0]).GLint, cast[pointer](offsetOf(Quad, dxs)))
+        glVertexAttribPointer(6, 3, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.quads[0]).GLint, cast[pointer](offsetOf(Quad, rox)))
+        glVertexAttribPointer(7, 4, cGL_FLOAT, GL_FALSE.GLboolean, sizeof(q.quads[0]).GLint, cast[pointer](offsetOf(Quad, r)))
+
+        # setup vertex attrib data
+        glVertexAttribDivisor(2, 1)
+        glVertexAttribDivisor(3, 1)
+        glVertexAttribDivisor(4, 1)
+        glVertexAttribDivisor(5, 1)
+        glVertexAttribDivisor(6, 1)
+        glVertexAttribDivisor(7, 1)
+
+        # render verts
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, (len(q.quads)).GLsizei)
+
+        glVertexAttribDivisor(2, 0)
+        glVertexAttribDivisor(3, 0)
+        glVertexAttribDivisor(4, 0)
+        glVertexAttribDivisor(5, 0)
+        glVertexAttribDivisor(6, 0)
+        glVertexAttribDivisor(7, 0)
+        
+        # unbind the buffer
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
 
   withGraphics:
     # unbind the texture

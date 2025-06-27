@@ -6,7 +6,6 @@ import hangover/core/types/point
 import hangover/core/loop
 import hangover/core/events
 import sugar
-import segfaults
 import asyncdispatch
 import times
 import locks
@@ -87,32 +86,21 @@ template runGame*(data: AppData = newAppData()) =
     pc = status.percent
     loadStatus = status.name
 
-  var loadLock: Lock
   var started: bool
   var crashed: bool
 
-  loadLock.initLock()
-
   proc initThread() {.thread.} =
     {.cast(gcsafe).}:
-      try:
-        let loadStartTime = cpuTime()
-        lastTime = loadStartTime
-        withLock loadLock:
-          started = true
-          eventInitialize.send
-        let time = cpuTime() - loadStartTime
-        LOG_TRACE "ho->templates", "Loaded game in " & formatFloat(time, ffDecimal, 9) & "s"
-      except Exception as ex:
-        LOG_CRITICAL "ho->templates", ex.msg
-        raise ex
+      let loadStartTime = cpuTime()
+      lastTime = loadStartTime
+      started = true
+      eventInitialize.send
+      let time = cpuTime() - loadStartTime
+      LOG_TRACE "ho->templates", "Loaded game in " & formatFloat(time, ffDecimal, 9) & "s"
 
-  proc drawLoadingAsync() {.async.} =
+  proc drawLoadingAsync() =
     var tmp: Thread[void]
     createThread(tmp, initThread)
-    
-    while not started:
-      await sleepAsync(1000.0 / 60.0)
 
     while true:
       var loadData = LoadDrawEventData(
@@ -122,10 +110,9 @@ template runGame*(data: AppData = newAppData()) =
       ) 
       eventDrawLoad.send loadData
 
-      if (loadData.done or crashed) and tryAcquire(loadLock):
+      if loadData.done or crashed:
         finishDraw()
         finishRender(ctx)
-        loadLock.release()
         return
       when not defined(ginGLFM):
         glfw.pollEvents()
@@ -133,19 +120,23 @@ template runGame*(data: AppData = newAppData()) =
           quit()
       finishDraw()
       finishRender(ctx)
-      updateAudio(1.0 / 60.0)
-      await sleepAsync(1000.0 / 60.0)
 
   try:
     LOG_TRACE("ho->templates", "start loading game")
 
-    initFT()
     initAudio()
+
+    LOG_TRACE "ho->templates", "loaded audio"
+
     initUIManager(data.size)
 
-    setupEventCallbacks(ctx)
+    LOG_TRACE "ho->templates", "loaded ui"
 
-    waitFor drawLoadingAsync()
+    setupEventCallbacks(ctx)
+    
+    LOG_TRACE("ho->templates", "start init game")
+
+    drawLoadingAsync()
     
     eventClose.listen do () -> bool:
       mainLoop.done = true

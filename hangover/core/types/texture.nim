@@ -27,10 +27,18 @@ var
 
 const
   textureVertexCode* = """
-layout (location = 0) in vec4 vertex;
-layout (location = 1) in vec4 tintColorIn;
+layout (location = 0) in vec2 vertex;
+layout (location = 1) in vec2 uv;
 
-uniform float rotation;
+layout (location = 2) in vec2 srcOff;
+layout (location = 3) in vec2 srcScl;
+
+layout (location = 4) in vec2 dstOff;
+layout (location = 5) in vec2 dstScl;
+
+layout (location = 6) in vec3 rotation;
+layout (location = 7) in vec4 tintColorIn;
+
 uniform mat4 projection;
 
 out vec2 texCoords;
@@ -38,8 +46,15 @@ out vec4 tintColor;
 
 void main()
 {
-    gl_Position = projection * vec4(vertex.xy, 1.0, 1.0);
-    texCoords = vertex.zw;
+    vec2 r = (vertex - rotation.xy) * (1.0 + dstScl);
+    vec2 g = vec2(sin(rotation.z), cos(rotation.z));
+    r = vec2(
+      r.x * g.y - r.y * g.x + rotation.x * (1.0 + dstScl.x), 
+      r.x * g.x + r.y * g.y + rotation.y * (1.0 + dstScl.y) 
+    );
+
+    gl_Position = projection * vec4(r + dstOff, 1.0, 1.0);
+    texCoords = uv * (1.0 + srcScl) + srcOff;
     tintColor = tintColorIn;
 }
 """
@@ -144,7 +159,19 @@ void main()
 """
 
 type
-  Vert = array[0..15, GLfloat]
+  Vert* = object 
+    x*, y*: GLFloat
+    u*, v*: GLFloat
+    r*, g*, b*, a*: GLfloat
+  Quad* = object 
+    sxo*, syo*: GLfloat
+    sxs*, sys*: GLfloat
+    dxo*, dyo*: GLfloat
+    dxs*, dys*: GLfloat
+    rox*, roy*: GLfloat
+    rot*: GLfloat
+    r*, g*, b*, a*: GLfloat
+
   TextureParam* = object
     data*: pointer
     name*: string
@@ -164,6 +191,7 @@ type
     shader*: Shader
     tex*: Texture
     verts*: seq[Vert]
+    quads*: seq[Quad]
     params*: seq[TextureParam]
     scissor*: Rect
     mul*: bool
@@ -228,41 +256,35 @@ func rotated(pos: Vector2, center: Vector2, rotation: float32): Vector2 {.inline
     )
 
 
-func rotated(v: Vert, rotation: float32, rot_center: Vector2): Vert {.inline.} =
-  result = v
+# func rotated(v: Vert, rotation: float32, rot_center: Vector2): Vert {.inline.} =
+#   result = v
 
-  if abs(rotation) > 0.005:
-    let
-      center = newVector2(
-        v[8] + (v[10] - v[8]) * rot_center.x,
-        v[9] + (v[11] - v[9]) * rot_center.y
-      )
-      pos1 = newvector2(v[0], v[1]).rotated(center, rotation)
-      pos2 = newvector2(v[8], v[9]).rotated(center, rotation)
-      pos3 = newvector2(v[10], v[11]).rotated(center, rotation)
+#   if abs(rotation) > 0.005:
+#     let
+#       center = newVector2(
+#         v[8] + (v[10] - v[8]) * rot_center.x,
+#         v[9] + (v[11] - v[9]) * rot_center.y
+#       )
+#       pos1 = newvector2(v[0], v[1]).rotated(center, rotation)
+#       pos2 = newvector2(v[8], v[9]).rotated(center, rotation)
+#       pos3 = newvector2(v[10], v[11]).rotated(center, rotation)
 
-    result[0] = pos1.x
-    result[1] = pos1.y
-    result[8] = pos2.x
-    result[9] = pos2.y
-    result[10] = pos3.x
-    result[11] = pos3.y
+#     result[0] = pos1.x
+#     result[1] = pos1.y
+#     result[8] = pos2.x
+#     result[9] = pos2.y
+#     result[10] = pos3.x
+#     result[11] = pos3.y
 
-template verts(ds, de: Vector2, ss, se: Vector2, c: Color, rotation: float32, rot_center: Vector2): untyped =
-  @[
-    rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
-        de.y, ss.x, ss.y, se.x, se.y], rotation, rot_center),
-    rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
-        de.y, ss.x, ss.y, se.x, se.y], rotation, rot_center),
-    rotated([de.x, ds.y, se.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
-        de.y, ss.x, ss.y, se.x, se.y], rotation, rot_center),
-    rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
-        de.y, ss.x, ss.y, se.x, se.y], rotation, rot_center),
-    rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
-        de.y, ss.x, ss.y, se.x, se.y], rotation, rot_center),
-    rotated([ds.x, de.y, ss.x, se.y, c.rf, c.gf, c.bf, c.af, ds.x, ds.y, de.x,
-        de.y, ss.x, ss.y, se.x, se.y], rotation, rot_center),
-  ]
+# template verts(ds, de: Vector2, ss, se: Vector2, c: Color, rotation: float32, rot_center: Vector2): untyped =
+#   @[
+#     rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af], rotation, rot_center),
+#     rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af], rotation, rot_center),
+#     rotated([de.x, ds.y, se.x, ss.y, c.rf, c.gf, c.bf, c.af], rotation, rot_center),
+#     rotated([ds.x, ds.y, ss.x, ss.y, c.rf, c.gf, c.bf, c.af], rotation, rot_center),
+#     rotated([de.x, de.y, se.x, se.y, c.rf, c.gf, c.bf, c.af], rotation, rot_center),
+#     rotated([ds.x, de.y, ss.x, se.y, c.rf, c.gf, c.bf, c.af], rotation, rot_center),
+#   ]
 
 proc addVBO*() =
   ## adds a vbo
@@ -390,6 +412,63 @@ proc freeTexture*(t: Texture) =
   withGraphics:
     glDeleteTextures(1, addr t.tex)
 
+method drawQuads*(
+    texture: Texture,
+    quads: seq[Quad],
+    shader: Shader = nil,
+    color = newColor(255, 255, 255, 255),
+    rotation: float = 0,
+    params: seq[TextureParam] = @[],
+    flip: array[2, bool] = [false, false],
+    mul: bool = false,
+    contrast: ContrastEntry = ContrastEntry(mode: noContrast),
+  ) {.base.} =
+  ## draws verts in a texture
+
+  # check the program
+  var program = shader
+  if program == nil:
+    program = textureProgram
+  if texture == nil:
+    return
+  # if the queue is empty create it
+  if queue.tail == nil:
+    queue &= QueueEntry(
+      update: true,
+      shader: program,
+      tex: texture,
+      quads: quads,
+      params: params,
+      scissor: textureScissor,
+      mul: mul,
+      contrast: contrast,
+    )
+    return
+
+  let tail = queue.tail.value
+
+  # attempt to add to the last queue item
+  if texture.tex == tail.tex.tex and
+     program[].id == tail.shader.id and
+     params == tail.params and
+     mul == tail.mul and
+     contrast == tail.contrast and
+     textureScissor == tail.scissor:
+    queue.tail.value.quads &= quads
+
+  # create a new queue item
+  else:
+    queue &= QueueEntry(
+      update: true,
+      shader: program,
+      tex: texture,
+      quads: quads,
+      params: params,
+      scissor: textureScissor,
+      mul: mul,
+      contrast: contrast,
+    )
+
 method drawVerts*(
     texture: Texture,
     vertices: seq[Vert],
@@ -480,18 +559,21 @@ method draw*(
     dst.width = dst.width * - 1
 
   # get the verts for the new rect
-  let vertices = verts(
-    dst.location,
-    dst.location + dst.size,
-    srcRect.location,
-    srcRect.location + srcRect.size,
-    color,
-    rotation,
-    rotation_center,
-  )
+  let quads = @[
+    Quad(
+      sxo: srcRect.x, syo: srcRect.y,
+      sxs: srcRect.width - 1.0, sys: srcRect.height - 1.0,
+      dxo: dst.x, dyo: dst.y,
+      dxs: dst.width - 1.0, dys: dst.height - 1.0,
+      r: color.rf, g: color.gf, b: color.bf, a: color.af,
+      rox: rotation_center.x,
+      roy: rotation_center.y,
+      rot: rotation,
+    )
+  ]
 
-  texture.drawVerts(
-    vertices,
+  texture.drawQuads(
+    quads,
     shader,
     color,
     rotation,

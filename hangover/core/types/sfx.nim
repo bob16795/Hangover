@@ -4,6 +4,9 @@ import ../lib/readwav
 import ../lib/vorbis
 import hangover/core/logging
 
+var
+  audioInit*: bool
+
 type
   Sound* = ref object
     ## stores a sound effect
@@ -13,6 +16,9 @@ proc newSoundMem*(s: Stream, ogg: bool = false): Sound =
   ## creates a new sound from a stream
 
   result = Sound()
+
+  if not audioInit:
+    return
 
   # read the wav file
   let wav = if ogg:

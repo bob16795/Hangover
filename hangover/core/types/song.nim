@@ -47,7 +47,7 @@ proc addLayer*(song: var Song, s: Stream, idx: range[0..MAX_SONG_LAYERS - 1], og
   var baseLayer: SongLayer
 
   if wav.size != song.baseLen:
-    LOG_WARN "ho->song", "could not add incorrectly sized layer to song"
+    LOG_WARN "ho->song", "Incorrectly sized layer for song"
 
     # return
   

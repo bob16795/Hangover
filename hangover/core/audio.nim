@@ -41,7 +41,7 @@ type
 var
   device: ALCdevice
   audioCtx: ALCcontext
-
+  
   # music
   playingSong: Song
   playingOffset: int
@@ -66,9 +66,9 @@ var
   stereo: bool
 
 proc checkAudioErr*(name: string) {.inline.} =
-  let e = alGetError()
+  let e = algetError()
   if e != AL_NO_ERROR:
-    raise newException(AudioError, name & " " & $e)
+    LOG_INFO "ho->audio", "openal error", e, "in", name
 
 proc initMusicSource*(): MusicSource =
   alGenSources(ALsizei 1, addr result.source)
@@ -76,43 +76,45 @@ proc initMusicSource*(): MusicSource =
   result.targetVolume = 1.0
   result.volume = 1.0
 
-proc initAudio*() {.exportc, cdecl, dynlib.} =
+proc initAudio*() =
   ## sets up the audio system
-  try:
-    let
-      devicename = alcGetString(nil, ALC_DEFAULT_DEVICE_SPECIFIER);
-    
-    device = alcOpenDevice(devicename)
+  device = alcOpenDevice(nil)
 
-    if device == nil:
-      raise newException(AudioError, "Failed to get default audio device") 
+  if device == nil:
+    LOG_ERROR "ho->audio", "Failed to get default audio device"
+    return
 
-    audioCtx = device.alcCreateContext(nil)
+  audioCtx = device.alcCreateContext(nil)
 
-    if audioCtx == nil:
-      raise newException(AudioError, "Failed to create openal context") 
+  if audioCtx == nil:
+    LOG_ERROR "ho->audio", "Failed to make audio context"
+    return
 
-    if not alcMakeContextCurrent(audioCtx):
-      raise newException(AudioError, "Failed to use openal context") 
+  if not alcMakeContextCurrent(audioCtx):
+    LOG_ERROR "ho->audio", "Failed to use audio context"
+    return
 
-    # generate song source
-    for source in musicSources.mitems():
-      source = initMusicSource()
+  # generate song source
+  for source in musicSources.mitems():
+    source = initMusicSource()
 
-    # geenrate sound sources
-    alGenSources(ALsizei SOURCES, addr soundSources[0])
+  # geenrate sound sources
+  alGenSources(ALsizei SOURCES, addr soundSources[0])
 
-    # set default music data
-    for v in VolumeEntry.low..VolumeEntry.high:
-      volume[v] = 1.0
-  finally:
-    while alGetError() != AL_NO_ERROR:
-      discard
+  # set default music data
+  for v in VolumeEntry.low..VolumeEntry.high:
+    volume[v] = 1.0
+  
+  audioInit = true
 
 proc setStereo*(value: bool) =
+  if not audioInit: return
+
   stereo = value
 
-proc pauseAudio*() {.exportc, cdecl, dynlib.} =
+proc pauseAudio*() =
+  if not audioInit: return
+
   if alPaused: return
   for musicSource in musicSources:
     alSourcePause(musicSource.source)
@@ -120,7 +122,9 @@ proc pauseAudio*() {.exportc, cdecl, dynlib.} =
 
   alPaused = true
 
-proc playAudio*() {.exportc, cdecl, dynlib.} =
+proc playAudio*() =
+  if not audioInit: return
+
   if not alPaused: return
   for musicSource in musicSources:
     alSourcePlay(musicSource.source)
@@ -128,9 +132,13 @@ proc playAudio*() {.exportc, cdecl, dynlib.} =
   alPaused = false
 
 proc setLayerMuffle*(layer: int, muffle: float32) =
+  if not audioInit: return
+
   musicSources[layer].targetMuffle = muffle
 
 proc setVolume*(vol: float32, kind: VolumeEntry) =
+  if not audioInit: return
+
   volume[kind] = vol.clamp(0, 1)
 
   case kind:
@@ -158,8 +166,11 @@ proc setVolume*(vol: float32, kind: VolumeEntry) =
 # 
 #   return looping != 0
 
+  
 proc getSongQueueSize*(): int =
-  # gets how many songs are queued
+  ## gets how many songs are queued
+  if not audioInit: return
+
   result = songQueue.len
 
 var
@@ -167,6 +178,8 @@ var
   fadingGlitchOffset: int
 
 proc glitchAudio*(save: bool = false) =
+  if not audioInit: return
+
   if not save:
     playingOffset = playingGlitchOffset
     fadingOffset = fadingGlitchOffset
@@ -182,6 +195,8 @@ proc play*(
   inQueue: bool = false,
 ) =
   ## plays a song
+  
+  if not audioInit: return
   if playingSong == song: return
 
   var playing: ALint
@@ -220,6 +235,8 @@ proc play*(
     playingOffset = fadingOffset - fadingSong.loop
 
 proc setLayerVolume*(layer: range[0..MAX_SONG_LAYERS-1], vol: float32, force: bool = false) =
+  if not audioInit: return
+
   if not musicSources[layer].active: return
   musicSources[layer].targetVolume = vol
   if force:
@@ -232,21 +249,26 @@ proc setLayerVolume*(layer: range[0..MAX_SONG_LAYERS-1], vol: float32, force: bo
     checkAudioErr("sourcef")
 
 proc setMusicSpeed*(speed: float32) =
+  if not audioInit: return
+
   for m in musicSources:
     alSourcef(m.source, AL_PITCH, speed)
     checkAudioErr("sourcef")
 
 proc getMusicOffset*(): int =
+  if not audioInit: return
+
   playingOffset - playingSong.loop
 
 proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0),
     pitch: float32 = 1.0) =
   ## plays a sound, pos is for spacial sound
-  if sound == nil:
-    return
+  if not audioInit: return
 
-  if sound in framePlayed:
-    return
+  if sound == nil: return
+
+  if sound in framePlayed: return
+
   framePlayed &= sound
   var sourceState: ALint
   nextSoundSource += 1
@@ -298,6 +320,8 @@ proc updateAudio*(dt: float32) =
   ## updates audio
   ## checks if music should loop
   ## checks for openAL errors
+  if not audioInit: return
+
   framePlayed = @[]
   if alPaused: return
   playingOffset = max(0, playingOffset)

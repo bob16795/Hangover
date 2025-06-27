@@ -159,6 +159,9 @@ proc initUIManager*(size: Point) =
     # update drag
     for e in um.elements.mitems:
       e.click(button, false)
+      
+    for e in um.elements:
+      e.checkHover(newRect(newVector2(0, 0), um.asize), um.mousePos)
 
   eventMouseRelease.listen do (button: int) -> bool:
     for e in um.elements:
@@ -562,7 +565,6 @@ proc uiAux(body: NimNode): NimNode =
     result.add quote do:
       `outElems`.add `currentElem`
   result.add outElems
-  echo repr result
 
 macro UIElements*(body): seq[UIElement] =
   ## creates a ui system stores the result into a seq[UIElement] in name
