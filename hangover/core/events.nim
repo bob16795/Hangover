@@ -25,7 +25,7 @@ type
     onCrash: bool
 
     when defined debug:
-      name: Option[string]
+      named: bool
 
   EventListener*[T] = object
     ## stores a proc that can be attached to an event
@@ -36,7 +36,7 @@ type
       p: proc(data: T): bool {.gcsafe.}
 
 when defined debug:
-  macro getDbgName(x: untyped): string = x.toStrLit()
+  macro getDbgName(x: Event[untyped]): string = x.toStrLit()
 
 var eventsCrashed*: bool
 
@@ -59,34 +59,30 @@ template createEvent*[T](
     eventName.lock.initLock()
 
   when defined(debug) and hideLogs notin flags:
-    eventName.name = some(getDbgName(eventName))
+    eventName.named = true
 
 {.push checks: off.}
-proc send*[T](event: var Event[T], data: T) {.inline.} =
+template send*[T](event: var Event[T], data: T) =
   ## sends an event  
-  if eventsCrashed and not event.onCrash: return
+  if not eventsCrashed or event.onCrash:
+    when defined debug:
+      if event.named:
+        LOG_TRACE("ho->events", getDbgName(event))
 
-  ## sends an event to the manager
-  when defined debug:
-    if event.name.isSome():
-      LOG_TRACE("ho->events", event.name.get())
+    for call in event.listeners.toOpenArray(0, event.count):
+      if call.p(data):
+        break
 
-  for call in event.listeners.toOpenArray(0, event.count):
-    if call.p(data):
-      break
+template send*(event: var Event[void]) =
+  ## sends an event
+  if not eventsCrashed or event.onCrash:
+    when defined debug:
+      if event.named:
+        LOG_TRACE("ho->events", getDbgName(event))
 
-proc send*(event: var Event[void]) {.inline.} =
-  ## sends an event  
-  
-  if eventsCrashed and not event.onCrash: return
-
-  when defined debug:
-    if event.name.isSome():
-      LOG_TRACE("ho->events", event.name.get())
-  
-  for call in event.listeners.toOpenArray(0, event.count):
-    if call.p():
-      break
+    for call in event.listeners.toOpenArray(0, event.count):
+      if call.p():
+        break
 {.pop.}
 
 proc listen*[T](event: var Event[T], call: proc (data: T): bool {.gcsafe.}): Oid {.gcsafe, discardable.} =

@@ -44,12 +44,12 @@ var
   audioCtx: ALCcontext
   
   # music
-  playingSong: Song
+  playingSong {.threadvar.}: Song
   playingOffset: int
-  fadingSong: Song
+  fadingSong {.threadvar.}: Song
   fadingOffset: int 
   fadingVolume: float32
-  songQueue: seq[SongQueueEntry]
+  songQueue {.threadvar.}: seq[SongQueueEntry]
   musicSources: array[MAX_SONG_LAYERS, MusicSource]
   musicFade: float32
 
@@ -270,7 +270,7 @@ proc play*(sound: Sound, pos: Vector2 = newVector2(0, 0),
 
   if sound in framePlayed: return
 
-  framePlayed &= sound
+  framePlayed.incl sound
   var sourceState: ALint
   nextSoundSource += 1
 
@@ -329,7 +329,7 @@ proc updateAudio*(dt: float32) =
   ## checks for openAL errors
   if not audioInit: return
 
-  framePlayed = @[]
+  framePlayed.clear()
   if alPaused: return
   playingOffset = max(0, playingOffset)
 

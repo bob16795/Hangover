@@ -5,7 +5,7 @@ import ../lib/vorbis
 import hangover/core/logging
 
 var
-  audioInit*: bool
+  audioInit* {.threadvar.}: bool
 
 type
   Sound* = ref object
